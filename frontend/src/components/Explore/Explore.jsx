@@ -1,95 +1,138 @@
-import Img1 from "../../assets/1.jpg";
-import Img2 from "../../assets/2.jpg";
-import Img3 from "../../assets/3.jpg";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { SlideUp } from "../../utility/animation";
-import { useInView } from "react-intersection-observer";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const ExploreData = [
-  {
-    id: 1,
-    title: "Nearoyfjordan",
-    place: "Norway",
-    url: "#",
-    image: Img1,
-    delay: 0.2,
-  },
-  {
-    id: 2,
-    title: "Antelop Canyon",
-    place: "United States",
-    url: "#",
-    image: Img2,
-    delay: 0.4,
-  },
-  {
-    id: 3,
-    title: "Lakes",
-    place: "Austria",
-    url: "#",
-    image: Img3,
-    delay: 0.6,
-  },
+import img4 from "../../assets/4.jpg";
+import img5 from "../../assets/5.jpg";
+import img6 from "../../assets/6.jpg";
+
+import video1 from "../../assets/video1.mp4";
+import video2 from "../../assets/video2.mp4";
+import video3 from "../../assets/video3.mp4";
+
+const videoData = [
+  { id: 1, src: video1, type: "video" },
+  { id: 2, src: video2, type: "video" },
+  { id: 3, src: video3, type: "video" },
+  { id: 4, src: img4, type: "image" },
+  { id: 5, src: img5, type: "image" },
+  { id: 6, src: img6, type: "image" },
 ];
+
 const Explore = () => {
-  // threshold'u artırdım, kaybolma animasyonunu yavaşlattım
-  const { ref, inView } = useInView({ triggerOnce: false, threshold: 0.35 });
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [hasMounted, setHasMounted] = useState(false);
+  const videoRefs = useRef([]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setHasMounted(true);
+    }, 50);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  const getIndex = (offset) =>
+    (currentIndex + offset + videoData.length) % videoData.length;
+
+  const visibleSlots = [
+    { slot: "prev2", index: getIndex(-2) },
+    { slot: "prev1", index: getIndex(-1) },
+    { slot: "center", index: getIndex(0) },
+    { slot: "next1", index: getIndex(1) },
+    { slot: "next2", index: getIndex(2) },
+  ];
+
+  const slotClassMap = {
+    prev2: "hidden md:block scale-75 blur-sm -translate-x-56 z-0 opacity-40",
+    prev1: "scale-90 blur-sm -translate-x-28 z-10 opacity-70",
+    center: "scale-100 blur-0 translate-x-0 z-20 opacity-100",
+    next1: "scale-90 blur-sm translate-x-28 z-10 opacity-70",
+    next2: "hidden md:block scale-75 blur-sm translate-x-56 z-0 opacity-40",
+  };
+
+  const getSlotClass = (slot) => {
+    return hasMounted ? slotClassMap[slot] : "opacity-0 scale-95";
+  };
+
+  const stopAllVideosExcept = (indexToPlay) => {
+    videoRefs.current.forEach((video, idx) => {
+      if (video) {
+        if (idx === indexToPlay) {
+          video.play();
+        } else {
+          video.pause();
+          video.currentTime = 0;
+        }
+      }
+    });
+  };
+
+  useEffect(() => {
+    stopAllVideosExcept(getIndex(0));
+  }, [currentIndex]);
+
+  const next = () => {
+    setCurrentIndex((prev) => (prev + 1) % videoData.length);
+  };
+
+  const prev = () => {
+    setCurrentIndex((prev) => (prev - 1 + videoData.length) % videoData.length);
+  };
 
   return (
-    <>
-      <section className="container" id="explore" ref={ref}>
-        {/* header section */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-          transition={{ duration: 1.2, delay: 0.5, ease: [0.4, 0, 0.2, 1] }}
-          className="text-center md:max-w-[650px] mx-auto space-y-4 "
+    <section className="bg-[#0f172a] text-white py-20 px-6 overflow-hidden relative">
+      <div className="flex items-center justify-center gap-4">
+        <button
+          onClick={prev}
+          className="text-white bg-black/40 p-2 rounded-full hover:bg-white/20 z-30"
         >
-          <p className="text-3xl"> Explore the world</p>
-          <p>
-            we are all explorers, driven by curiosity and the desire to discover
-            new horizons. Join us on a journey to uncover the wonders of our
-            planet.
-          </p>
-        </motion.div>
+          <ChevronLeft size={28} />
+        </button>
 
-        {/* cards section */}
-        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 place-items-center ">
-          {ExploreData.map((data) => (
+        <div className="relative flex items-center justify-center w-full max-w-full md:max-w-7xl h-[500px]">
+          {visibleSlots.map(({ slot, index }) => (
             <motion.div
-              variants={SlideUp(data.delay)}
-              initial="hidden"
-              animate={inView ? "visible" : "hidden"}
-              key={data.id}
-              className="relative"
+              key={videoData[index].id}
+              className={`absolute transition-all duration-500 ease-in-out rounded-xl overflow-hidden ${getSlotClass(slot)}`}
             >
-              <img
-                src={data.image}
-                alt=""
-                className="w-[380px] h-[559px] object-cover "
-              />
-              <div
-                className="absolute w-full bottom-0 inset-0 bg-brandDark/15"
-              >
-                <div className="h-full space-y-1 py-6 flex flex-col jıstify-end items-center">
-                  <h3 className="text-2xl font-semibold"> {data.title}</h3>
-                  <p className="uppercase">{data.place} </p>
+              {videoData[index].type === "video" ? (
+                <video
+                  ref={(el) => (videoRefs.current[index] = el)}
+                  src={videoData[index].src}
+                  muted
+                  loop
+                  playsInline
+                  className="w-[220px] h-[330px] md:w-[320px] md:h-[480px] object-cover rounded-xl"
+                />
+              ) : (
+                <img
+                  src={videoData[index].src}
+                  alt={`Media ${videoData[index].id}`}
+                  className="w-[220px] h-[330px] md:w-[320px] md:h-[480px] object-cover rounded-xl"
+                />
+              )}
+
+              {slot === "center" && (
+                <div className="absolute inset-0 bg-black/40 flex items-end justify-center p-4">
+                  <p className="text-white text-lg font-semibold">
+                    {videoData[index].type === "video"
+                      ? `Video ${videoData[index].id} Oynatılıyor`
+                      : `Proje ${videoData[index].id}`}
+                  </p>
                 </div>
-              </div>
+              )}
             </motion.div>
           ))}
         </div>
-        {/* Button Section */}
-        <motion.button
-          initial={{ opacity: 0, y: 40 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-          transition={{ duration: 1, delay: 1.1, ease: [0.4, 0, 0.2, 1] }}
-          className="block mx-auto mt-6 text-brandBlue uppercase font-bold"
+
+        <button
+          onClick={next}
+          className="text-white bg-black/40 p-2 rounded-full hover:bg-white/20 z-30"
         >
-          See More
-        </motion.button>
-      </section>
-    </>
+          <ChevronRight size={28} />
+        </button>
+      </div>
+    </section>
   );
 };
 
