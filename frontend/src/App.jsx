@@ -4,6 +4,9 @@ import HeroImg from "./assets/hero.png";
 import Explore from "./components/Explore/Explore";
 import Journal from "./components/Journal/Journal";
 import Footer from "./components/Footer/Footer";
+import ProjeGrid from "./components/ProjeGrid/projeGrid";
+import WhyUs from "./components/WhyUs/WhyUs";
+import About from "./components/About/About";
 
 const bgImage = {
   backgroundImage: `url(${HeroImg})`,
@@ -19,10 +22,16 @@ const App = () => {
         <Navbar />
         <Hero />
       </div>
+      Yaptıklarımız
+      <ProjeGrid />
       Markalar
       <Explore />
       Haberler
       <Journal />
+      Neden Biz
+      <WhyUs />
+      Hakkımızda
+      <About />
       <Footer />
     </div>
   );
