@@ -22,15 +22,10 @@ const App = () => {
         <Navbar />
         <Hero />
       </div>
-      Yaptıklarımız
       <ProjeGrid />
-      Markalar
       <Explore />
-      Haberler
       <Journal />
-      Neden Biz
       <WhyUs />
-      Hakkımızda
       <About />
       <Footer />
     </div>

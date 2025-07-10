@@ -4,50 +4,59 @@ import { motion } from "framer-motion";
 
 const Navbar = () => {
   return (
-    <>
-      <nav className="container flex flex-row justify-around items-center py-4 md:py-8 uppercase font-semibold relative z-20 text-xs md:text-lg">
+    <header className="w-full shadow-sm z-20">
+      {" "}
+      <nav className="container mx-auto flex justify-around items-center py-4 md:py-6 uppercase font-semibold text-xs md:text-lg text-white">
         <motion.a
           variants={SlideBottom(0)}
           initial="hidden"
           animate="visible"
-          href="#"
+          href="#about"
+          className="hover:text-green-400 transition"
         >
           About
         </motion.a>
+
         <motion.a
           variants={SlideBottom(0.2)}
           initial="hidden"
           animate="visible"
-          href="#"
+          href="#explore"
+          className="hover:text-green-400 transition"
         >
           Explore
         </motion.a>
+
         <motion.a
           variants={SlideBottom(0.4)}
           initial="hidden"
           animate="visible"
           href="#"
         >
-          {" "}
-          <img src={Logo} alt="" className="w-[250px]" />        </motion.a>
+          <img src={Logo} alt="Logo" className="w-[180px] md:w-[250px]" />
+        </motion.a>
+
         <motion.a
           variants={SlideBottom(0.6)}
           initial="hidden"
           animate="visible"
-          href="#"
+          href="#journal"
+          className="hover:text-green-400 transition"
         >
           Journal
         </motion.a>
+
         <motion.a
           variants={SlideBottom(0.8)}
           initial="hidden"
           animate="visible"
-          href="#"
+          href="#search"
+          className="hover:text-green-400 transition"
         >
           Search
         </motion.a>
       </nav>
-    </>
+    </header>
   );
 };
 
