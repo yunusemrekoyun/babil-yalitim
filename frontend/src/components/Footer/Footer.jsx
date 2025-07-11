@@ -1,39 +1,55 @@
 import React from "react";
-import FooterImg from "../../assets/footer.jpg";
-import { motion } from "framer-motion";
-import { useInView } from "react-intersection-observer";
-
-const bgImg = {
-  backgroundImage: `url(${FooterImg})`,
-  backgroundRepeat: "no-repeat",
-  backgroundPosition: "center",
-  backgroundSize: "cover",
-};
+import Logo from "../../assets/logo.png";
+import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin } from "lucide-react";
 
 const Footer = () => {
-  const { ref, inView } = useInView({ triggerOnce: false, threshold: 0.18 });
-
   return (
-    <motion.footer
-      ref={ref}
-      initial={{ opacity: 0, y: 40 }}
-      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-      transition={{ duration: 1.2, delay: 0.2 }}
-      style={bgImg}
-      className="mt-0 pt-0 h-[500px] bg-brandDark relative flex justify-center items-end"
-    >
-      {/* Radial overlay */}
-      <div
-        className="absolute inset-0 z-10"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(0, 0, 0, 0.3) 50%, rgba(11, 11, 13, 0.5) 70%, rgba(11, 11, 13, 0.8) 90%)",
-        }}
-      ></div>
+    <footer className="bg-tertiaryColor text-secondaryColor pt-12 pb-6 px-4 border-t border-secondaryColor">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
+        {/* Logo & Kısa Açıklama */}
+        <div className="flex flex-col gap-4">
+          <img src={Logo} alt="Logo" className="w-36 mb-2" />
+          <p className="text-secondaryColor text-sm">
+            10+ yıllık tecrübe ile su yalıtımında uzman, güvenilir ve yenilikçi çözümler sunuyoruz. Kalite ve müşteri memnuniyeti önceliğimizdir.
+          </p>
+        </div>
 
-      {/* Footer text */}
-      <p className="relative z-20 mb-6 text-white text-sm tracking-wide"></p>
-    </motion.footer>
+        {/* Site Haritası */}
+        <div>
+          <h4 className="text-lg font-semibold mb-4 text-quaternaryColor">Site Haritası</h4>
+          <ul className="space-y-2">
+            <li><a href="#about" className="text-secondaryColor hover:text-quaternaryColor transition">Hakkımızda</a></li>
+            <li><a href="#explore" className="text-secondaryColor hover:text-quaternaryColor transition">Projeler</a></li>
+            <li><a href="#journal" className="text-secondaryColor hover:text-quaternaryColor transition">Blog</a></li>
+            <li><a href="#search" className="text-secondaryColor hover:text-quaternaryColor transition">Arama</a></li>
+          </ul>
+        </div>
+
+        {/* İletişim Bilgileri */}
+        <div>
+          <h4 className="text-lg font-semibold mb-4 text-quaternaryColor">İletişim</h4>
+          <ul className="space-y-3 text-sm">
+            <li className="flex items-center gap-2 "><MapPin size={18} className="text-secondaryColor" /> Kütahya, Türkiye</li>
+            <li className="flex items-center gap-2 "><Phone size={18} className="text-secondaryColor" /> <a href="tel:+905551234567" className="hover:text-quaternaryColor transition">+90 555 123 45 67</a></li>
+            <li className="flex items-center gap-2 "><Mail size={18} className="text-secondaryColor" /> <a href="mailto:info@babilyalitim.com" className="hover:text-quaternaryColor transition">info@babilyalitim.com</a></li>
+          </ul>
+        </div>
+
+        {/* Sosyal Medya */}
+        <div>
+          <h4 className="text-lg font-semibold mb-4 text-quaternaryColor">Bizi Takip Edin</h4>
+          <div className="flex gap-4">
+            <a href="#" aria-label="Facebook" className="hover:text-quaternaryColor transition"><Facebook size={28} /></a>
+            <a href="#" aria-label="Instagram" className="hover:text-quaternaryColor transition"><Instagram size={28} /></a>
+            <a href="#" aria-label="Twitter" className="hover:text-quaternaryColor transition"><Twitter size={28} /></a>
+            <a href="#" aria-label="Linkedin" className="hover:text-quaternaryColor transition"><Linkedin size={28} /></a>
+          </div>
+        </div>
+      </div>
+      <div className="mt-10 border-t border-secondaryColor pt-6 text-center text-secondaryColor text-xs">
+        © {new Date().getFullYear()} Babil Yalıtım. Tüm hakları saklıdır.
+      </div>
+    </footer>
   );
 };
 

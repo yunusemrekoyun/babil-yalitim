@@ -49,7 +49,11 @@ const projectData = [
 
 const ProjeGrid = () => {
   return (
-    <section className="w-full px-4 py-16 bg-[#0f172a]">
+    <section className="w-full px-4 py-16 bg-tertiaryColor">
+      <div className="max-w-6xl mx-auto mb-10 text-center">
+        <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">Projeler</h2>
+        <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded"></div>
+      </div>
       <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-3 gap-4 auto-rows-[200px] md:auto-rows-[250px]">
         {projectData.map((project, index) => (
      <motion.div

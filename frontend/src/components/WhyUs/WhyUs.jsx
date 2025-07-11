@@ -26,13 +26,13 @@ const features = [
 
 const WhyUs = () => {
   return (
-    <section className="w-full bg-[#0f172a] text-white py-20 px-6">
+    <section className="w-full bg-tertiaryColor text-white py-20 px-6">
       <div className="max-w-5xl mx-auto text-center">
         {/* Başlık */}
-        <h2 className="text-3xl md:text-4xl font-bold mb-2">
+        <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
           Neden Babil Yalıtım?
         </h2>
-        <div className="h-1 w-20 bg-green-400 mx-auto mb-6 rounded"></div>
+        <div className="h-1 w-20 bg-quaternaryColor mx-auto mb-6 rounded"></div>
 
         {/* Açıklama */}
         <p className="text-gray-300 max-w-3xl mx-auto mb-12">
@@ -46,9 +46,9 @@ const WhyUs = () => {
           {features.map((feature, index) => (
             <div
               key={index}
-              className="bg-[#152238] rounded-xl p-6 flex items-start gap-4 hover:bg-[#1d2b45] transition"
+              className="bg-secondaryColor rounded-xl p-6 flex items-start gap-4 transition transform hover:shadow-2xl hover:-translate-y-2"
             >
-              <div className="bg-green-500 p-3 rounded-full">
+              <div className="bg-quaternaryColor p-3 rounded-full">
                 {feature.icon}
               </div>
               <div>

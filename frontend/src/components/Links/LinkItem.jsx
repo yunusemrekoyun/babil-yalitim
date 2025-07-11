@@ -1,12 +1,18 @@
+const bgVariants = {
+  Hizmetler: "bg-secondaryColor/10 hover:bg-secondaryColor/20",
+  Projeler: "bg-quaternaryColor/10 hover:bg-quaternaryColor/20",
+  Markalar: "bg-brandBlue/10 hover:bg-brandBlue/20",
+};
+
 const LinkItem = ({ label, href, icon }) => {
   return (
     <a
       href={href}
-      className="group flex flex-col items-center justify-center w-32 h-28 rounded-xl bg-brandDark/80 border border-brandDark/40 shadow-lg hover:bg-brandDark/60 hover:shadow-xl transition-all duration-200 cursor-pointer select-none text-white"
+      className={`group flex flex-row items-center justify-center flex-1 min-w-0 h-16 rounded-2xl border border-gray-200 shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer select-none text-brandDark gap-3 px-6 font-medium text-lg ${bgVariants[label] || "bg-white/80 hover:bg-white"} transform hover:-translate-y-1`}
       style={{ textDecoration: 'none' }}
     >
-      <span className="text-3xl mb-2 transition-transform group-hover:scale-110">{icon}</span>
-      <span className="font-semibold text-lg tracking-wide group-hover:text-brandPrimary transition-colors">
+      <span className="text-2xl transition-transform group-hover:scale-110 flex-shrink-0">{icon}</span>
+      <span className="truncate group-hover:text-quaternaryColor transition-colors">
         {label}
       </span>
     </a>

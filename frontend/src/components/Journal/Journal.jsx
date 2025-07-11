@@ -32,24 +32,18 @@ const Journal = () => {
 
   return (
     <section
-      className="w-full bg-[#0f172a] text-white py-20 px-6"
+      className="w-full bg-tertiaryColor text-white py-20 px-6"
       id="journal"
       ref={ref}
     >
       {/* header section */}
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-        transition={{ duration: 1.2, delay: 0.2 }}
-        className="text-center md:max-w-[650px] mx-auto space-y-4"
-      >
-        <p className="text-3xl font-semibold">The Journal</p>
-        <p className="text-gray-300">
-          We are all explorers, driven by curiosity and the desire to discover
-          new horizons. Join us on a journey to uncover the wonders of our
-          planet.
+      <div className="max-w-6xl mx-auto mb-10 text-center">
+        <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">The Journal</h2>
+        <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded mb-6"></div>
+        <p className="text-gray-300 max-w-2xl mx-auto">
+          We are all explorers, driven by curiosity and the desire to discover new horizons. Join us on a journey to uncover the wonders of our planet.
         </p>
-      </motion.div>
+      </div>
 
       {/* cards section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-14 place-items-center mt-20">
@@ -59,7 +53,7 @@ const Journal = () => {
             initial="hidden"
             animate={inView ? "visible" : "hidden"}
             key={data.id}
-            className="bg-[#152337] rounded-xl overflow-hidden shadow-md"
+            className="bg-secondaryColor rounded-xl overflow-hidden shadow-md"
           >
             <img
               src={data.image}

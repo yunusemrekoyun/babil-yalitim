@@ -80,7 +80,11 @@ const Explore = () => {
   };
 
   return (
-    <section className="bg-[#0f172a] text-white py-20 px-6 overflow-hidden relative">
+    <section className="bg-tertiaryColor text-white py-20 px-6 overflow-hidden relative">
+      <div className="max-w-6xl mx-auto mb-10 text-center">
+        <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">Hizmetlerimiz</h2>
+        <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded"></div>
+      </div>
       <div className="flex items-center justify-center gap-4">
         <button
           onClick={prev}
