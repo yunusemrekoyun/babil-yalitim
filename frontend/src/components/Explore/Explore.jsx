@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -82,7 +82,9 @@ const Explore = () => {
   return (
     <section className="bg-tertiaryColor text-white py-20 px-6 overflow-hidden relative">
       <div className="max-w-6xl mx-auto mb-10 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">Hizmetlerimiz</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
+          Hizmetlerimiz
+        </h2>
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded"></div>
       </div>
       <div className="flex items-center justify-center gap-4">
@@ -97,7 +99,9 @@ const Explore = () => {
           {visibleSlots.map(({ slot, index }) => (
             <motion.div
               key={videoData[index].id}
-              className={`absolute transition-all duration-500 ease-in-out rounded-xl overflow-hidden ${getSlotClass(slot)}`}
+              className={`absolute transition-all duration-500 ease-in-out rounded-xl overflow-hidden ${getSlotClass(
+                slot
+              )}`}
             >
               {videoData[index].type === "video" ? (
                 <video

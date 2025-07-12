@@ -1,7 +1,6 @@
 import Logo from "../../assets/logo.png";
 import { SlideBottom } from "../../utility/animation";
 import { motion } from "framer-motion";
-import heroVideo from "../../assets/hero.mp4";
 
 const Navbar = () => {
   return (

@@ -15,7 +15,7 @@ const LinksSection = () => {
     <div className="w-full flex justify-center mt-6">
       <div className="flex flex-row w-full max-w-4xl gap-8 items-end justify-center">
         {links.map((link, idx) => (
-          <div
+          <div 
             key={link.label}
             className={`bg-white rounded-2xl border-4 border-white shadow-lg flex flex-col items-center transition-all duration-300 ease-in-out cursor-pointer relative
               ${hovered === idx ? 'z-20 scale-110 shadow-2xl p-6 w-72 -mb-8' : 'z-0 scale-100 p-4 w-60'}

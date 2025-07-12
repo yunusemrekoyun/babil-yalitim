@@ -1,4 +1,3 @@
-import React from 'react'
 import { motion } from 'framer-motion'
 
 import img1 from '../../assets/1.jpg'
@@ -21,7 +20,7 @@ const projectData = [
     description: 'Kaymaz ve hijyenik epoksi kaplama sistemi kullanıldı.',
     size: 'small',
   },
-  {
+  { 
     title: 'Temel İzolasyon',
     image: img3,
     description: 'Yeraltı su sızıntısına karşı yüksek izolasyon sağlandı.',

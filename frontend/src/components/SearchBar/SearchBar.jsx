@@ -1,4 +1,3 @@
-import React from "react";
 
 const SearchBar = () => {
   return (
@@ -12,4 +11,4 @@ const SearchBar = () => {
   );
 };
 
-export default SearchBar; 
+export default SearchBar;  

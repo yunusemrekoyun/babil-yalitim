@@ -4,6 +4,8 @@ const bgVariants = {
   Markalar: "bg-brandBlue/10 hover:bg-brandBlue/20",
 };
 
+import PropTypes from 'prop-types';
+
 const LinkItem = ({ label, href, icon }) => {
   return (
     <a
@@ -17,6 +19,12 @@ const LinkItem = ({ label, href, icon }) => {
       </span>
     </a>
   );
+};
+
+LinkItem.propTypes = {
+  label: PropTypes.string.isRequired,
+  href: PropTypes.string.isRequired,
+  icon: PropTypes.node.isRequired,
 };
 
 export default LinkItem; 

@@ -1,4 +1,3 @@
-import React from 'react'
 import img1 from '../../assets/1.jpg'
 import { Users, CheckCircle } from 'lucide-react'
 
@@ -9,7 +8,7 @@ const About = () => {
         {/* Sol: Görsel */}
         <div className="rounded-xl overflow-hidden shadow-lg max-h-[450px]">
           <img
-            src={img1}
+            src={img1} 
             alt="Yalıtım uygulaması"
             className="w-full h-full object-cover object-center"
           />

@@ -17,7 +17,7 @@ const JournalData = [
   },
   {
     id: 2,
-    title: "Symphonies in Steel",
+    title: "Symphonies in Steel", 
     about:
       "Crossing the Golden Gate Bridge from San Francisco, you arrive in March even before landing on solid ground.",
     date: "April 30, 2021",

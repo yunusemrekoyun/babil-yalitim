@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import SearchBar from "../SearchBar/SearchBar";
 import LinksSection from "../Links/LinksSection";
-import heroVideo from "../../assets/hero.mp4"
 
 const Hero = () => {
   return (
@@ -14,13 +13,13 @@ const Hero = () => {
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.3 }}
+            transition={{ duration: 1, delay: 0.3 }} 
           >
             <h1 className="text-3xl md:text-5xl font-bold text-white drop-shadow-lg">
             Yapı Korumada Uzman
             </h1>
             <p className="mt-2 text-md md:text-2xl text-gray-300">
-            <span className="text-quaternaryColor">Babil'e</span> Hoş Geldiniz.
+            <span className="text-quaternaryColor">Babil&#39;e</span> Hoş Geldiniz.
             </p>
           </motion.div>
 
