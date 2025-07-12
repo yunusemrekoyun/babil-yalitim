@@ -1,30 +1,67 @@
-const bgVariants = {
-  Hizmetler: "bg-secondaryColor/10 hover:bg-secondaryColor/20",
-  Projeler: "bg-quaternaryColor/10 hover:bg-quaternaryColor/20",
-  Markalar: "bg-brandBlue/10 hover:bg-brandBlue/20",
-};
+// LinkItem.jsx
+import PropTypes from "prop-types";
 
-import PropTypes from 'prop-types';
-
-const LinkItem = ({ label, href, icon }) => {
-  return (
+const LinkItem = ({
+  label,
+  img,
+  color,
+  desc,
+  href,
+  isHovered,
+  onMouseEnter,
+  onMouseLeave,
+}) => (
+  <div
+    className={`bg-tertiaryColor rounded-2xl  shadow-lg flex flex-col items-center transition-all duration-300 ease-in-out cursor-pointer relative w-60
+      ${isHovered ? "z-20 scale-110 shadow-2xl p-6 -mb-8" : "z-0 scale-100 p-4"}
+    `}
+    onMouseEnter={onMouseEnter}
+    onMouseLeave={onMouseLeave}
+    style={{ minHeight: isHovered ? 320 : 220 }}
+  >
+    <img
+      src={img}
+      alt={label}
+      className={`object-cover rounded-xl mb-2 transition-all duration-300 shadow-lg
+        ${isHovered ? "w-32 h-32 -mt-12" : "w-full h-32 mt-0"}`}
+    />
+    <span
+      className={`font-bold ${
+        isHovered ? "text-xl mb-2 mt-2" : "text-lg mt-2"
+      } ${color}`}
+    >
+      {label}
+    </span>
+    <div
+      className={`transition-all duration-300 text-gray-500 text-center text-sm mb-4 overflow-hidden
+        ${isHovered ? "max-h-32 opacity-100 mt-2" : "max-h-0 opacity-0 m-0"}`}
+    >
+      {desc}
+    </div>
     <a
       href={href}
-      className={`group flex flex-row items-center justify-center flex-1 min-w-0 h-16 rounded-2xl border border-gray-200 shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer select-none text-brandDark gap-3 px-6 font-medium text-lg ${bgVariants[label] || "bg-white/80 hover:bg-white"} transform hover:-translate-y-1`}
-      style={{ textDecoration: 'none' }}
+      className={`transition-all duration-300 bg-quaternaryColor text-white px-6 py-2 rounded-full font-semibold shadow hover:bg-secondaryColor
+        ${
+          isHovered
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        }
+      `}
     >
-      <span className="text-2xl transition-transform group-hover:scale-110 flex-shrink-0">{icon}</span>
-      <span className="truncate group-hover:text-quaternaryColor transition-colors">
-        {label}
-      </span>
+      Detay
     </a>
-  );
-};
+  </div>
+);
 
 LinkItem.propTypes = {
   label: PropTypes.string.isRequired,
-  href: PropTypes.string.isRequired,
-  icon: PropTypes.node.isRequired,
+  img: PropTypes.string.isRequired,
+  color: PropTypes.string,
+  desc: PropTypes.string,
+  href: PropTypes.string,
+  isHovered: PropTypes.bool.isRequired,
+  onMouseEnter: PropTypes.func,
+  onMouseLeave: PropTypes.func,
 };
 
-export default LinkItem; 
+export default LinkItem;

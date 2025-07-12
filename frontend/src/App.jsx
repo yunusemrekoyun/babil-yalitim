@@ -1,6 +1,5 @@
 import Navbar from "./components/Navbar/Navbar";
 import Hero from "./components/Hero/Hero";
-import HeroImg from "./assets/hero.png";
 import Explore from "./components/Explore/Explore";
 import Journal from "./components/Journal/Journal";
 import Footer from "./components/Footer/Footer";
@@ -9,13 +8,7 @@ import WhyUs from "./components/WhyUs/WhyUs";
 import About from "./components/About/About";
 import heroVideo from "./assets/hero.mp4";
 
-const bgImage = {
-  backgroundImage: `url(${HeroImg})`,
-  backgroundRepeat: "no-repeat",
-  backgroundPosition: "bottom",
-  backgroundSize: "cover",
-  position: "relative",
-};
+
 const App = () => {
   return (
     <div className="">
@@ -28,7 +21,6 @@ const App = () => {
         muted
         playsInline
         style={{ objectFit: "cover" }}
-        playbackRate={0.5}
         onLoadedMetadata={e => { e.target.playbackRate = 0.5; }}
       />
       {/* Alt siyah overlay veya gradient yok, sadece içerik */}

@@ -7,12 +7,11 @@ export default {
         brandDark: "#0b0b0d",
         brandBlue: "#125795",
         // primaryColor:"#D9C6BA",
-        primaryColor:"#FFFFFF",
-        secondaryColor:"#226473",
-        tertiaryColor:"#807c7cd4",
-        quaternaryColor:"#195973"
-
-
+        primaryColor: "#FFFFFF",
+        secondaryColor: "#226473",
+        tertiaryColor: "#807c7cd4",
+        quaternaryColor: "#195973",
+        transparanColor: "#000000",
       },
       fontFamily: {
         merriweather: ["Merriweather", "serif"],
