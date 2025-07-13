@@ -10,12 +10,13 @@ export default {
         secondaryColor: "#226473",
         tertiaryColor: "#807c7cd4",
         quaternaryColor: "#195973",
-        transparanColor: "#000000",
+        transparanColor: "#ffffff00",
 
         koyumavi: "#01587a",
         açıkmavi: "#5cb3c1",
         buzbeyaz: "#98d8dd",
-        buzbeyazseffaf:"#98d8dd8b",
+        // buzbeyazseffaf:"#98d8dd8b",
+        buzbeyazseffaf:"#FFFFFF",
         gri: "#e1e8eb",
       },
       fontFamily: {

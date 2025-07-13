@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Hero from "../components/Hero/Hero";
 import Journal from "../components/Journal/Journal";
@@ -6,29 +5,14 @@ import Footer from "../components/Footer/Footer";
 import ProjectsSection from "../components/ProjeGrid/ProjectsSection";
 import WhyUs from "../components/WhyUs/WhyUs";
 import heroVideo from "../assets/hero.mp4";
-import PropTypes from "prop-types";
 import ExploreSection from "../components/Explore/ExploreSection";
 import AboutSection from "../components/About/AboutSection";
+import GlassSection from "../components/Layout/GlassSection";
+// Tekil section sarmalayıcı
 
 const HomePage = () => {
-  const navigate = useNavigate();
-  const Wrapper = ({ children, to }) => (
-    <div className="relative group border-4 border-transparent transition-all duration-300">
-      <div
-        onClick={() => navigate(to)}
-        className="absolute inset-0 z-10 cursor-pointer"
-      />
-      {children}
-    </div>
-  );
-
-  Wrapper.propTypes = {
-    children: PropTypes.node,
-    to: PropTypes.string.isRequired,
-  };
-
   return (
-    <div className="">
+    <div>
       {/* Arka plan video */}
       <video
         src={heroVideo}
@@ -37,7 +21,6 @@ const HomePage = () => {
         loop
         muted
         playsInline
-        style={{ objectFit: "cover" }}
         onLoadedMetadata={(e) => {
           e.target.playbackRate = 0.5;
         }}
@@ -47,24 +30,25 @@ const HomePage = () => {
         <Navbar />
         <Hero />
 
-        <div className="bg-buzbeyazseffaf space-y-6">
-          <Wrapper to="/projects">
+        <div className="bg-transparanColor space-y-12 relative w-full px-4 py-16 flex flex-col items-center justify-center">
+          <GlassSection>
             <ProjectsSection />
-          </Wrapper>
-          <Wrapper to="/explore">
+          </GlassSection>
+          <GlassSection>
             <ExploreSection />
-          </Wrapper>
-          <Wrapper to="/journal">
+          </GlassSection>
+          <GlassSection>
             <Journal />
-          </Wrapper>
-          <Wrapper to="/whyus">
+          </GlassSection>
+          <GlassSection>
             <WhyUs />
-          </Wrapper>
-          <Wrapper to="/about">
+          </GlassSection>
+          <GlassSection>
             <AboutSection />
-          </Wrapper>
-          <Footer />
+          </GlassSection>
         </div>
+
+        <Footer />
       </div>
     </div>
   );

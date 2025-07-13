@@ -48,7 +48,7 @@ const projectData = [
 
 const ProjectGrid = () => {
   return (
-    <section className="w-full px-4 py-16">
+    <section className="w-full px-4 py-16 ">
       <div className="max-w-6xl mx-auto mb-10 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
           Projeler
