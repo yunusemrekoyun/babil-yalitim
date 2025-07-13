@@ -1,17 +1,14 @@
-// src/components/ProjectGrid/ProjectGridItem.jsx
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
+import { useState } from "react";
 
 const ProjectGridItem = ({ project, index }) => {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <motion.div
-      className={`
-        group relative overflow-hidden rounded-xl bg-cover bg-center text-white 
-        ${
-          project.size === "large"
-            ? "col-span-2 row-span-2 md:row-span-2 md:col-span-2"
-            : ""
-        }
+      className={`relative overflow-hidden rounded-xl bg-cover bg-center text-white 
+        ${project.size === "large" ? "col-span-2 row-span-2 md:row-span-2 md:col-span-2" : ""}
       `}
       style={{ backgroundImage: `url(${project.image})` }}
       initial="hidden"
@@ -25,36 +22,42 @@ const ProjectGridItem = ({ project, index }) => {
           transition: { duration: 0.6, delay: index * 0.1 },
         },
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      {/* Arka plan karartması */}
+      {/* Karartma */}
       <div className="absolute inset-0 bg-black/40 z-10"></div>
 
-      {/* Title */}
+      {/* Başlık */}
       <div
-        className="absolute bottom-4 left-4 z-20 text-xl font-semibold 
-        transition-transform duration-300 group-hover:-translate-y-12"
+        className={`absolute bottom-4 left-4 z-20 text-xl font-semibold 
+          transition-transform duration-300 ${hovered ? "-translate-y-12" : ""}
+        `}
       >
         {project.title}
       </div>
 
-      {/* Hover Açıklama */}
-      <div
-        className="absolute bottom-0 left-0 w-full bg-black/70 text-sm p-4 z-30
-        opacity-0 translate-y-full pointer-events-none 
-        group-hover:opacity-100 group-hover:translate-y-0 
-        transition-all duration-300 ease-in-out"
-      >
-        {project.description}
+      {/* Açıklama */}
+      <div className="absolute bottom-0 left-0 w-full z-30 pointer-events-none">
+        <div
+          className={`w-full bg-black/70 text-sm p-4
+            transition-all duration-300 ease-in-out
+            ${hovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full"}
+          `}
+        >
+          {project.description}
+        </div>
       </div>
     </motion.div>
   );
 };
+
 ProjectGridItem.propTypes = {
   project: PropTypes.shape({
     image: PropTypes.string,
     size: PropTypes.string,
     title: PropTypes.string,
-    description: PropTypes.string, // Add description validation
+    description: PropTypes.string,
   }).isRequired,
   index: PropTypes.number.isRequired,
 };
