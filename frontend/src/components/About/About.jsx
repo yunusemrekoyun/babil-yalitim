@@ -3,7 +3,7 @@ import { Users, CheckCircle } from 'lucide-react'
 
 const About = () => {
   return (
-    <section className="w-full bg-tertiaryColor text-white py-16 px-6">
+    <section className="w-full  text-white py-16 px-6">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 items-center">
         {/* Sol: Görsel */}
         <div className="rounded-xl overflow-hidden shadow-lg max-h-[450px]">

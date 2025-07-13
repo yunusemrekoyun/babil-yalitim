@@ -32,7 +32,7 @@ const Journal = () => {
 
   return (
     <section
-      className="w-full bg-tertiaryColor text-white py-20 px-6"
+      className="w-full text-white py-20 px-6"
       id="journal"
       ref={ref}
     >

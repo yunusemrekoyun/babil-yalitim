@@ -15,19 +15,21 @@ const App = () => {
       {/* Video arka plan */}
       <video
         src={heroVideo}
-        className="fixed top-0 left-0 w-full h-[700px] object-cover z-0"
+        className="fixed top-0 left-0 w-full h-full object-cover z-0"
         autoPlay
         loop
         muted
         playsInline
         style={{ objectFit: "cover" }}
-        onLoadedMetadata={e => { e.target.playbackRate = 0.5; }}
+        onLoadedMetadata={(e) => {
+          e.target.playbackRate = 0.5;
+        }}
       />
       {/* Alt siyah overlay veya gradient yok, sadece içerik */}
       <div className="relative z-10">
         <Navbar />
         <Hero />
-        <div className="relative z-10 -mt-16 bg-tertiaryColor rounded-t-3xl shadow-2xl pt-12 pb-2 px-0">
+        <div className=" bg-buzbeyazseffaf ">
           <ProjeGrid />
           <Explore />
           <Journal />

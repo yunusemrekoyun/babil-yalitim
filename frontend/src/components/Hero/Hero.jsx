@@ -5,21 +5,22 @@ import LinksSection from "../Links/LinksSection";
 const Hero = () => {
   return (
     <>
-      <section className="min-h-[700px] flex justify-center items-center bg-gradient-to-t from-brandDark from-2% to-transparent to-15% h-full relative px-4 sm:px-8">
+      <section className="min-h-[700px] flex justify-center items-center bg-gradient-to-t from-white/10 to-transparent h-full relative px-4 sm:px-8">
+        {" "}
         {/* Overlay kaldırıldı */}
-
         <div className="container relative z-20 flex flex-col items-center text-center space-y-6">
           {/* Başlık */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.3 }} 
+            transition={{ duration: 1, delay: 0.3 }}
           >
             <h1 className="text-3xl md:text-5xl font-bold text-white drop-shadow-lg">
-            Yapı Korumada Uzman
+              Yapı Korumada Uzman
             </h1>
             <p className="mt-2 text-md md:text-2xl text-gray-300">
-            <span className="text-quaternaryColor">Babil&#39;e</span> Hoş Geldiniz.
+              <span className="text-quaternaryColor">Babil&#39;e</span> Hoş
+              Geldiniz.
             </p>
           </motion.div>
 
@@ -45,7 +46,6 @@ const Hero = () => {
         <div className="w-full flex justify-center mt-16 relative z-20">
           <LinksSection />
         </div>
-
         {/* Scroll oku */}
         <motion.div
           initial={{ opacity: 0 }}

@@ -26,7 +26,7 @@ const features = [
 
 const WhyUs = () => {
   return (
-    <section className="w-full bg-tertiaryColor text-white py-20 px-6">
+    <section className="w-full text-white py-20 px-6">
       <div className="max-w-5xl mx-auto text-center">
         {/* Başlık */}
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">

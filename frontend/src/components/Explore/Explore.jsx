@@ -80,7 +80,7 @@ const Explore = () => {
   };
 
   return (
-    <section className="bg-tertiaryColor text-white py-20 px-6 overflow-hidden relative">
+    <section className=" text-white py-20 px-6 overflow-hidden relative">
       <div className="max-w-6xl mx-auto mb-10 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
           Hizmetlerimiz
