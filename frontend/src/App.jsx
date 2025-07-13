@@ -4,7 +4,9 @@ import {
   Route,
   useLocation,
 } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
+
+// Sayfalar
 import HomePage from "./pages/HomePage";
 import ProjectsPage from "./pages/ProjectsPage";
 import ExplorePage from "./pages/ExplorePage";
@@ -12,27 +14,20 @@ import JournalPage from "./pages/JournalPage";
 import WhyUsPage from "./pages/WhyUsPage";
 import AboutPage from "./pages/AboutPage";
 
+// Route geçişleri için iç bileşen
 const AnimatedRoutes = () => {
   const location = useLocation();
 
   return (
     <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -50 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Routes location={location}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/explore" element={<ExplorePage />} />
-          <Route path="/journal" element={<JournalPage />} />
-          <Route path="/whyus" element={<WhyUsPage />} />
-          <Route path="/about" element={<AboutPage />} />
-        </Routes>
-      </motion.div>
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/explore" element={<ExplorePage />} />
+        <Route path="/journal" element={<JournalPage />} />
+        <Route path="/whyus" element={<WhyUsPage />} />
+        <Route path="/about" element={<AboutPage />} />
+      </Routes>
     </AnimatePresence>
   );
 };
