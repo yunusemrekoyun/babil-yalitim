@@ -1,29 +1,35 @@
-import React from 'react'
-import { CheckCircle, Users, Search, Headphones, ChevronRight } from 'lucide-react'
+import React from "react";
+import {
+  CheckCircle,
+  Users,
+  Search,
+  Headphones,
+  ChevronRight,
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 const features = [
   {
     icon: <CheckCircle className="w-6 h-6 text-white" />,
-    title: 'Kaliteli Hizmet',
-    desc: 'Uzun ömürlü ve etkili yalıtım çözümleri sunar.',
+    title: "Kaliteli Hizmet",
+    desc: "Uzun ömürlü ve etkili yalıtım çözümleri sunar.",
   },
   {
     icon: <Users className="w-6 h-6 text-white" />,
-    title: 'Uzman Kadro',
-    desc: 'Alanında deneyimli profesyonel ekip ile çalışır.',
+    title: "Uzman Kadro",
+    desc: "Alanında deneyimli profesyonel ekip ile çalışır.",
   },
   {
     icon: <Search className="w-6 h-6 text-white" />,
-    title: 'Ücretsiz Keşif',
-    desc: 'Yerinde inceleme ile doğru çözüm planı oluşturur.',
+    title: "Ücretsiz Keşif",
+    desc: "Yerinde inceleme ile doğru çözüm planı oluşturur.",
   },
   {
     icon: <Headphones className="w-6 h-6 text-white" />,
-    title: '7/24 Destek',
-    desc: 'Her zaman ulaşabileceğiniz güçlü bir iletişim hattı.',
+    title: "7/24 Destek",
+    desc: "Her zaman ulaşabileceğiniz güçlü bir iletişim hattı.",
   },
-]
+];
 
 const WhyUs = () => {
   return (
@@ -37,9 +43,10 @@ const WhyUs = () => {
 
         {/* Açıklama */}
         <p className="text-gray-300 max-w-3xl mx-auto mb-12">
-          Su yalıtımı sektöründe edindiğimiz 10 yılı aşkın deneyim ile, 
-          projelerinize özel kalıcı çözümler geliştiriyoruz. Kalite, uzmanlık ve 
-          müşteri memnuniyetini temel alan yaklaşımımızla her zaman yanınızdayız.
+          Su yalıtımı sektöründe edindiğimiz 10 yılı aşkın deneyim ile,
+          projelerinize özel kalıcı çözümler geliştiriyoruz. Kalite, uzmanlık ve
+          müşteri memnuniyetini temel alan yaklaşımımızla her zaman
+          yanınızdayız.
         </p>
 
         {/* Özellik Kutuları */}
@@ -65,7 +72,7 @@ const WhyUs = () => {
       <motion.div
         initial={{ x: 100, opacity: 0 }}
         whileInView={{ x: 0, opacity: 1 }}
-        viewport={{ once: false, amount: 0.5 }}
+        viewport={{ once: false, amount: 0.1 }}
         transition={{ duration: 0.6 }}
         whileHover={{ scale: 1.05 }}
         className="absolute bottom-6 right-6 z-40"
@@ -73,15 +80,15 @@ const WhyUs = () => {
         <a
           href="/whyus"
           className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-            px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
-            transition-all duration-300"
+      px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
+      transition-all duration-300"
         >
           Daha Fazlası
           <ChevronRight size={16} />
         </a>
       </motion.div>
     </section>
-  )
-}
+  );
+};
 
-export default WhyUs
+export default WhyUs;
