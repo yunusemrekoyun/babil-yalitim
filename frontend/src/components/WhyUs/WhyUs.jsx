@@ -1,5 +1,6 @@
 import React from 'react'
-import { CheckCircle, Users, Search, Headphones } from 'lucide-react'
+import { CheckCircle, Users, Search, Headphones, ChevronRight } from 'lucide-react'
+import { motion } from "framer-motion";
 
 const features = [
   {
@@ -26,7 +27,7 @@ const features = [
 
 const WhyUs = () => {
   return (
-    <section className="w-full text-white py-20 px-6">
+    <section className="relative w-full text-white py-20 px-6 pb-28">
       <div className="max-w-5xl mx-auto text-center">
         {/* Başlık */}
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
@@ -59,6 +60,26 @@ const WhyUs = () => {
           ))}
         </div>
       </div>
+
+      {/* Sağ alt buton */}
+      <motion.div
+        initial={{ x: 100, opacity: 0 }}
+        whileInView={{ x: 0, opacity: 1 }}
+        viewport={{ once: false, amount: 0.5 }}
+        transition={{ duration: 0.6 }}
+        whileHover={{ scale: 1.05 }}
+        className="absolute bottom-6 right-6 z-40"
+      >
+        <a
+          href="/whyus"
+          className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+            px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
+            transition-all duration-300"
+        >
+          Daha Fazlası
+          <ChevronRight size={16} />
+        </a>
+      </motion.div>
     </section>
   )
 }

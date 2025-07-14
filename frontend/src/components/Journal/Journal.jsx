@@ -3,6 +3,10 @@ import Img2 from "../../assets/6.jpg";
 import { motion } from "framer-motion";
 import { SlideUp } from "../../utility/animation";
 import { useInView } from "react-intersection-observer";
+import { useNavigate } from "react-router-dom";
+import { FiArrowRight } from "react-icons/fi";
+
+
 
 const JournalData = [
   {
@@ -17,7 +21,7 @@ const JournalData = [
   },
   {
     id: 2,
-    title: "Symphonies in Steel", 
+    title: "Symphonies in Steel",
     about:
       "Crossing the Golden Gate Bridge from San Francisco, you arrive in March even before landing on solid ground.",
     date: "April 30, 2021",
@@ -29,24 +33,29 @@ const JournalData = [
 
 const Journal = () => {
   const { ref, inView } = useInView({ triggerOnce: false, threshold: 0.18 });
+  const navigate = useNavigate();
 
   return (
     <section
-      className="w-full text-white py-20 px-6"
+      className="w-full text-white py-20 px-6 relative"
       id="journal"
       ref={ref}
     >
-      {/* header section */}
+      {/* header */}
       <div className="max-w-6xl mx-auto mb-10 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">The Journal</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
+          The Journal
+        </h2>
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded mb-6"></div>
         <p className="text-gray-300 max-w-2xl mx-auto">
-          We are all explorers, driven by curiosity and the desire to discover new horizons. Join us on a journey to uncover the wonders of our planet.
+          We are all explorers, driven by curiosity and the desire to discover
+          new horizons. Join us on a journey to uncover the wonders of our
+          planet.
         </p>
       </div>
 
-      {/* cards section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-14 place-items-center mt-20">
+      {/* cards */}
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-14 place-items-center mt-20">
         {JournalData.map((data) => (
           <motion.div
             variants={SlideUp(data.delay)}
@@ -68,6 +77,20 @@ const Journal = () => {
           </motion.div>
         ))}
       </div>
+
+      {/* Sağ alt köşe linki */}
+      <motion.button
+  onClick={() => navigate("/journal")}
+  className="absolute bottom-6 right-6 flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+    px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 transition-all duration-300"
+  initial={{ x: 100, opacity: 0 }}
+  whileInView={{ x: 0, opacity: 1 }}
+  viewport={{ once: false, amount: 0.5 }}
+  transition={{ duration: 0.6 }}
+>
+  Journal'ın devamı için...
+  <FiArrowRight className="text-lg" />
+</motion.button>
     </section>
   );
 };
