@@ -27,7 +27,7 @@ const features = [
 
 const WhyUs = () => {
   return (
-    <section className="relative w-full text-white py-20 px-6">
+    <section className="relative w-full text-white py-20 px-6 pb-28">
       <div className="max-w-5xl mx-auto text-center">
         {/* Başlık */}
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
@@ -63,6 +63,10 @@ const WhyUs = () => {
 
       {/* Sağ alt buton */}
       <motion.div
+        initial={{ x: 100, opacity: 0 }}
+        whileInView={{ x: 0, opacity: 1 }}
+        viewport={{ once: false, amount: 0.5 }}
+        transition={{ duration: 0.6 }}
         whileHover={{ scale: 1.05 }}
         className="absolute bottom-6 right-6 z-40"
       >

@@ -6,6 +6,8 @@ import { useInView } from "react-intersection-observer";
 import { useNavigate } from "react-router-dom";
 import { FiArrowRight } from "react-icons/fi";
 
+
+
 const JournalData = [
   {
     id: 1,
@@ -77,14 +79,18 @@ const Journal = () => {
       </div>
 
       {/* Sağ alt köşe linki */}
-      <button
-        onClick={() => navigate("/journal")}
-        className="absolute bottom-6 right-6 flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-        px-4 py-2 rounded-full hover:bg-opacity-90  hover:shadow-lg hover:bg-white/20 transition-all duration-300"
-      >
-        Journal'ın devamı için...
-        <FiArrowRight className="text-lg" />
-      </button>
+      <motion.button
+  onClick={() => navigate("/journal")}
+  className="absolute bottom-6 right-6 flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+    px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 transition-all duration-300"
+  initial={{ x: 100, opacity: 0 }}
+  whileInView={{ x: 0, opacity: 1 }}
+  viewport={{ once: false, amount: 0.5 }}
+  transition={{ duration: 0.6 }}
+>
+  Journal'ın devamı için...
+  <FiArrowRight className="text-lg" />
+</motion.button>
     </section>
   );
 };
