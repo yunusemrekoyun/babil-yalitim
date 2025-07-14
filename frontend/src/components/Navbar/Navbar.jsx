@@ -32,7 +32,7 @@ const Navbar = () => {
           animate="visible"
           href="#"
         >
-          <img src={Logo} alt="Logo" className="w-[180px] md:w-[250px]" />
+          <img src={Logo} alt="Logo" className="w-[250px] md:w-[250px]" />
         </motion.a>
 
         <motion.a

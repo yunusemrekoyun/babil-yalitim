@@ -8,6 +8,7 @@ import heroVideo from "../assets/hero.mp4";
 import ExploreSection from "../components/Explore/ExploreSection";
 import AboutSection from "../components/About/AboutSection";
 import GlassSection from "../components/Layout/GlassSection";
+import BrandsSection from "../components/Brands/BrandsSection";
 // Tekil section sarmalayıcı
 
 const HomePage = () => {
@@ -45,6 +46,9 @@ const HomePage = () => {
           </GlassSection>
           <GlassSection>
             <AboutSection />
+          </GlassSection>
+           <GlassSection>
+            <BrandsSection />
           </GlassSection>
         </div>
 
