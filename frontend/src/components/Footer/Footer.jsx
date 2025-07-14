@@ -3,7 +3,7 @@ import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin } from "luc
 
 const Footer = () => {
   return (
-    <footer className="bg-tertiaryColor text-secondaryColor pt-12 pb-6 px-4 border-t border-secondaryColor">
+    <footer className="bg-buzbeyazseffaf text-secondaryColor pt-12 pb-6 px-4 border-t border-secondaryColor">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
         {/* Logo & Kısa Açıklama */}
         <div className="flex flex-col gap-4">

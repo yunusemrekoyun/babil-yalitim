@@ -1,8 +1,8 @@
 // LinksSection.jsx
 import { useState } from "react";
-import img1 from "../../assets/1.jpg";
-import img2 from "../../assets/2.jpg";
-import img3 from "../../assets/3.jpg";
+import img1 from "../../assets/services.jpg";
+import img2 from "../../assets/projects.jpg";
+import img3 from "../../assets/brands.jpg";
 import LinkItem from "./LinkItem";
 
 const links = [

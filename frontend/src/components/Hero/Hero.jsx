@@ -5,7 +5,7 @@ import LinksSection from "../Links/LinksSection";
 const Hero = () => {
   return (
     <>
-      <section className="min-h-[700px] flex justify-center items-center bg-gradient-to-t from-white/10 to-transparent h-full relative px-4 sm:px-8">
+      <section className="min-h-[700px] -mt-10 flex justify-center items-center bg-gradient-to-t from-white/10 to-transparent h-full relative px-4 sm:px-8">
         {" "}
         {/* Overlay kaldırıldı */}
         <div className="container relative z-20 flex flex-col items-center text-center space-y-6">
@@ -19,8 +19,7 @@ const Hero = () => {
               Yapı Korumada Uzman
             </h1>
             <p className="mt-2 text-md md:text-2xl text-gray-300">
-              <span className="text-quaternaryColor">Babil&#39;e</span> Hoş
-              Geldiniz.
+              Babil&#39;e Hoş Geldiniz.
             </p>
           </motion.div>
 
