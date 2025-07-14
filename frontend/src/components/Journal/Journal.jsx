@@ -6,8 +6,6 @@ import { useInView } from "react-intersection-observer";
 import { useNavigate } from "react-router-dom";
 import { FiArrowRight } from "react-icons/fi";
 
-
-
 const JournalData = [
   {
     id: 1,
@@ -58,9 +56,9 @@ const Journal = () => {
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-14 place-items-center mt-20">
         {JournalData.map((data) => (
           <motion.div
-            variants={SlideUp(data.delay)}
-            initial="hidden"
-            animate={inView ? "visible" : "hidden"}
+            initial={{ x: 100, opacity: 0 }}
+            animate={inView ? { x: 0, opacity: 1 } : { x: 100, opacity: 0 }}
+            transition={{ duration: 0.6, delay: data.delay }}
             key={data.id}
             className="bg-secondaryColor rounded-xl overflow-hidden shadow-md"
           >
@@ -80,17 +78,17 @@ const Journal = () => {
 
       {/* Sağ alt köşe linki */}
       <motion.button
-  onClick={() => navigate("/journal")}
-  className="absolute bottom-6 right-6 flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+        onClick={() => navigate("/journal")}
+        initial={{ x: 100, opacity: 0 }}
+        whileInView={{ x: 0, opacity: 1 }}
+        viewport={{ once: false, amount: 0.5 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="absolute bottom-6 right-6 flex items-center gap-2 text-sm text-white bg-quaternaryColor 
     px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 transition-all duration-300"
-  initial={{ x: 100, opacity: 0 }}
-  whileInView={{ x: 0, opacity: 1 }}
-  viewport={{ once: false, amount: 0.5 }}
-  transition={{ duration: 0.6 }}
->
-  Journal'ın devamı için...
-  <FiArrowRight className="text-lg" />
-</motion.button>
+      >
+        Journal'ın devamı için...
+        <FiArrowRight className="text-lg" />
+      </motion.button>
     </section>
   );
 };

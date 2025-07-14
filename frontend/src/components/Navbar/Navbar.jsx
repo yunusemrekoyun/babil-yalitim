@@ -1,59 +1,74 @@
 import Logo from "../../assets/logo.png";
-import { SlideBottom } from "../../utility/animation";
 import { motion } from "framer-motion";
+
+const SlideBottom = (delay = 0) => ({
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { delay, duration: 0.6, ease: "easeOut" },
+  },
+});
 
 const Navbar = () => {
   return (
     <header className="w-full shadow-sm z-20 relative bg-transparent">
       <nav className="container mx-auto flex justify-around items-center py-4 md:py-6 uppercase font-semibold text-xs md:text-lg text-white relative z-10">
+
+        {/* Hakkımızda */}
         <motion.a
           variants={SlideBottom(0)}
           initial="hidden"
           animate="visible"
-          href="#about"
-          className="hover:text-quaternaryColor transition"
+          href="/about"
+          className="px-4 py-2 rounded-full border border-white/80 hover:bg-white/10 transition"
         >
-          About
+          Hakkımızda
         </motion.a>
 
+        {/* Projeler */}
         <motion.a
           variants={SlideBottom(0.2)}
           initial="hidden"
           animate="visible"
-          href="#explore"
-          className="hover:text-quaternaryColor transition"
+          href="/projects"
+          className="px-4 py-2 rounded-full border border-white/80 hover:bg-white/10 transition"
         >
-          Explore
+          Projeler
         </motion.a>
 
+        {/* Logo */}
         <motion.a
           variants={SlideBottom(0.4)}
           initial="hidden"
           animate="visible"
-          href="#"
+          href="/"
         >
           <img src={Logo} alt="Logo" className="w-[250px] md:w-[250px]" />
         </motion.a>
 
+        {/* Hizmetler */}
         <motion.a
           variants={SlideBottom(0.6)}
           initial="hidden"
           animate="visible"
-          href="#journal"
-          className="hover:text-quaternaryColor transition"
+          href="/services"
+          className="px-4 py-2 rounded-full border border-white/80 hover:bg-white/10 transition"
         >
-          Journal
+          Hizmetler
         </motion.a>
 
+        {/* Blog */}
         <motion.a
           variants={SlideBottom(0.8)}
           initial="hidden"
           animate="visible"
-          href="#search"
-          className="hover:text-quaternaryColor transition"
+          href="/blog"
+          className="px-4 py-2 rounded-full border border-white/80 hover:bg-white/10 transition"
         >
-          Search
+          Blog
         </motion.a>
+
       </nav>
     </header>
   );
