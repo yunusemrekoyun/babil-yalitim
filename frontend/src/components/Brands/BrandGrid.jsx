@@ -1,9 +1,9 @@
-import brand1 from "../../assets/logo.png";
-import brand2 from "../../assets/logo.png";
-import brand3 from "../../assets/logo.png";
-import brand4 from "../../assets/logo.png";
-import brand5 from "../../assets/logo.png";
-import brand6 from "../../assets/logo.png";
+import brand1 from "../../assets/brand-geoplas.png";
+import brand2 from "../../assets/brand-sika.png";
+import brand3 from "../../assets/brand-koster.png";
+import brand4 from "../../assets/brand-monokim.png";
+import brand5 from "../../assets/brand-ode.png";
+import brand6 from "../../assets/brand-geoplas.png";
 import BrandItem from "./BrandItem";
 
 const brands = [

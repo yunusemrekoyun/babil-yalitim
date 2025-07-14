@@ -2,21 +2,19 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import img4 from "../../assets/4.jpg";
-import img5 from "../../assets/5.jpg";
-import img6 from "../../assets/6.jpg";
-
-import video1 from "../../assets/video1.mp4";
-import video2 from "../../assets/video2.mp4";
-import video3 from "../../assets/video3.mp4";
-
+import video1 from "../../assets/service1.mp4";
+import video2 from "../../assets/service2.mp4";
+import video3 from "../../assets/service3.mp4";
+import video4 from "../../assets/service4.mp4";
+import video5 from "../../assets/service5.mp4";
+import video6 from "../../assets/service6.mp4";
 const videoData = [
   { id: 1, src: video1, type: "video" },
   { id: 2, src: video2, type: "video" },
   { id: 3, src: video3, type: "video" },
-  { id: 4, src: img4, type: "image" },
-  { id: 5, src: img5, type: "image" },
-  { id: 6, src: img6, type: "image" },
+  { id: 1, src: video4, type: "video" },
+  { id: 2, src: video5, type: "video" },
+  { id: 3, src: video6, type: "video" },
 ];
 
 const Explore = () => {
