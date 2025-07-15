@@ -1,7 +1,6 @@
-import Img1 from "../../assets/5.jpg";
-import Img2 from "../../assets/6.jpg";
+import Img1 from "../../assets/banner.png";
+import Img2 from "../../assets/banner.png";
 import { motion } from "framer-motion";
-import { SlideUp } from "../../utility/animation";
 import { useInView } from "react-intersection-observer";
 import { useNavigate } from "react-router-dom";
 import { FiArrowRight } from "react-icons/fi";
@@ -9,20 +8,20 @@ import { FiArrowRight } from "react-icons/fi";
 const JournalData = [
   {
     id: 1,
-    title: "An Unforgettable",
+    title: "Su Yalıtımında Doğru Malzeme Seçimi",
     about:
-      "If you only have one day to visit Yosemite National Park and you want to make the most out of it.",
-    date: "May 30, 2022",
+      "Su yalıtımı, yapıların ömrünü uzatmak için hayati öneme sahiptir. Bu yazımızda hangi yalıtım malzemesinin hangi yüzeylerde daha verimli olduğunu inceliyoruz.",
+    date: "14 Temmuz 2025",
     url: "#",
     image: Img1,
     delay: 0.2,
   },
   {
     id: 2,
-    title: "Symphonies in Steel",
+    title: "Isı Yalıtımı ile Enerji Tasarrufu",
     about:
-      "Crossing the Golden Gate Bridge from San Francisco, you arrive in March even before landing on solid ground.",
-    date: "April 30, 2021",
+      "Doğru uygulanan ısı yalıtımı, hem konforunuzu artırır hem de enerji faturalarınızı azaltır. Bu blogda, farklı ısı yalıtım sistemlerini ve avantajlarını ele alıyoruz.",
+    date: "10 Temmuz 2025",
     url: "#",
     image: Img2,
     delay: 0.4,
@@ -42,7 +41,7 @@ const Journal = () => {
       {/* header */}
       <div className="max-w-6xl mx-auto mb-10 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
-          The Journal
+          Haberler
         </h2>
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded mb-6"></div>
         <p className="text-gray-300 max-w-2xl mx-auto">
@@ -86,7 +85,7 @@ const Journal = () => {
         className="absolute bottom-6 right-6 flex items-center gap-2 text-sm text-white bg-quaternaryColor 
     px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 transition-all duration-300"
       >
-        Journal'ın devamı için...
+        Journal&apos;ın devamı için...
         <FiArrowRight className="text-lg" />
       </motion.button>
     </section>
