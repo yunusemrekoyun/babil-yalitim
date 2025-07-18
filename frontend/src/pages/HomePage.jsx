@@ -30,6 +30,9 @@ const HomePage = () => {
       <div className="relative z-10">
         <Navbar />
         <Hero />
+          
+            <BrandsSection />
+          
 
         <div className="bg-transparanColor space-y-12 relative w-full px-4 py-16 flex flex-col items-center justify-center">
           <GlassSection>
@@ -47,9 +50,7 @@ const HomePage = () => {
           <GlassSection>
             <AboutSection />
           </GlassSection>
-           <GlassSection>
-            <BrandsSection />
-          </GlassSection>
+         
         </div>
 
         <Footer />

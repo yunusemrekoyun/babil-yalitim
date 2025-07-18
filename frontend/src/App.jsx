@@ -13,6 +13,7 @@ import ExplorePage from "./pages/ExplorePage";
 import JournalPage from "./pages/JournalPage";
 import WhyUsPage from "./pages/WhyUsPage";
 import AboutPage from "./pages/AboutPage";
+import BlogPage from "./pages/BlogPage";
 
 // Route geçişleri için iç bileşen
 const AnimatedRoutes = () => {
@@ -23,10 +24,11 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<HomePage />} />
         <Route path="/projects" element={<ProjectsPage />} />
-        <Route path="/explore" element={<ExplorePage />} />
+        <Route path="/services" element={<ExplorePage />} />
         <Route path="/journal" element={<JournalPage />} />
         <Route path="/whyus" element={<WhyUsPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/blog" element={<BlogPage />} />
       </Routes>
     </AnimatePresence>
   );

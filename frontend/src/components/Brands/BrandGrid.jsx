@@ -1,26 +1,25 @@
-import brand1 from "../../assets/brand-geoplas.png";
-import brand2 from "../../assets/brand-sika.png";
-import brand3 from "../../assets/brand-koster.png";
-import brand4 from "../../assets/brand-monokim.png";
-import brand5 from "../../assets/brand-ode.png";
-import brand6 from "../../assets/brand-geoplas.png";
+import React from "react";
 import BrandItem from "./BrandItem";
 
 const brands = [
-  { name: "Marka 1", image: brand1 },
-  { name: "Marka 2", image: brand2 },
-  { name: "Marka 3", image: brand3 },
-  { name: "Marka 4", image: brand4 },
-  { name: "Marka 5", image: brand5 },
-  { name: "Marka 6", image: brand6 },
+  { id: 1, name: "Marka 1", img: "/logos/logo1.png" },
+  { id: 2, name: "Marka 2", img: "/logos/logo2.png" },
+  { id: 3, name: "Marka 3", img: "/logos/logo3.png" },
+  { id: 4, name: "Marka 4", img: "/logos/logo4.png" },
+  { id: 5, name: "Marka 5", img: "/logos/logo5.png" },
+  { id: 6, name: "Marka 6", img: "/logos/logo6.png" },
 ];
 
 const BrandGrid = () => {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 px-6 pb-10">
-      {brands.map((brand, index) => (
-        <BrandItem key={index} brand={brand} />
-      ))}
+    <div className="w-full overflow-hidden">
+      <div className="flex gap-12 animate-scroll-x whitespace-nowrap">
+        {brands.concat(brands).map((brand, index) => (
+          <div key={index} className="inline-block">
+            <BrandItem brand={brand} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
