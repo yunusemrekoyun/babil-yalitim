@@ -23,7 +23,7 @@ const blogData = [
     date: "12 Temmuz 2025",
     image: Img2,
   },
-    {
+  {
     id: 3,
     title: "Yalıtımda Sık Yapılan Hatalar ve Çözümleri",
     about:
@@ -47,12 +47,14 @@ const BlogPage = () => {
 
         <div className="px-4 py-16 flex flex-col items-center justify-center space-y-8">
           <GlassSection>
-            <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2 text-center">
-              Bloglar
-            </h2>
-            <div className="h-1 w-20 bg-secondaryColor/80 mx-auto rounded-full mb-8"></div>
+            <div className="w-full px-4 md:px-10 py-6 max-h-[80vh] overflow-y-auto pr-2 scroll-smooth">
+              <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor text-center">
+                Bloglar
+              </h2>
+              <div className="h-1 w-20 bg-secondaryColor/80 mx-auto my-4 rounded-full"></div>
 
-            <BlogPageComponent data={blogData} />
+              <BlogPageComponent data={blogData} />
+            </div>
           </GlassSection>
         </div>
       </motion.div>

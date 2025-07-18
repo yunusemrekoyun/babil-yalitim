@@ -39,7 +39,7 @@ const JournalPage = () => {
 
         <div className="px-4 py-16 flex flex-col items-center justify-center space-y-8">
           <GlassSection>
-            <div className="w-full px-4 md:px-10 py-6">
+            <div className="w-full px-4 md:px-10 py-6 max-h-[80vh] overflow-y-auto pr-2 scroll-smooth">
               <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor text-center">
                 Haberler
               </h2>
@@ -48,7 +48,7 @@ const JournalPage = () => {
               <JournalPreview data={journalData} />
             </div>
           </GlassSection>
-        </div>a
+        </div>
       </motion.div>
 
       <Footer />
