@@ -76,18 +76,23 @@ const Journal = () => {
       </div>
 
       {/* Sağ alt köşe linki */}
-      <motion.button
-        onClick={() => navigate("/journal")}
+      {/* Sağ alt köşe butonu */}
+      <motion.div
+        key={inView ? "visible" : "hidden"} // Her girişte key değişir ve animasyon tetiklenir
         initial={{ x: 100, opacity: 0 }}
-        whileInView={{ x: 0, opacity: 1 }}
-        viewport={{ once: false, amount: 0.5 }}
+        animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="absolute bottom-6 right-6 flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-    px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 transition-all duration-300"
+        className="absolute bottom-6 right-6 z-20"
       >
-        Journal&apos;ın devamı için...
-        <FiArrowRight className="text-lg" />
-      </motion.button>
+        <button
+          onClick={() => navigate("/journal")}
+          className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+            px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 transition-all duration-300"
+        >
+          Journal&apos;ın devamı için...
+          <FiArrowRight className="text-lg" />
+        </button>
+      </motion.div>
     </section>
   );
 };

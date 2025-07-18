@@ -14,6 +14,8 @@ import JournalPage from "./pages/JournalPage";
 import WhyUsPage from "./pages/WhyUsPage";
 import AboutPage from "./pages/AboutPage";
 import BlogPage from "./pages/BlogPage";
+import JournalDetailPage from "./pages/JournalDetailPage"; // ✅ EKLENDİ
+import BlogDetailPage from "./pages/BlogDetailPage";
 
 // Route geçişleri için iç bileşen
 const AnimatedRoutes = () => {
@@ -26,9 +28,11 @@ const AnimatedRoutes = () => {
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/services" element={<ExplorePage />} />
         <Route path="/journal" element={<JournalPage />} />
+        <Route path="/journal/:id" element={<JournalDetailPage />} /> {/* ✅ EKLENDİ */}
         <Route path="/whyus" element={<WhyUsPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:id" element={<BlogDetailPage />} />
       </Routes>
     </AnimatePresence>
   );

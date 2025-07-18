@@ -2,12 +2,12 @@ import React from "react";
 import BrandItem from "./BrandItem";
 
 const brands = [
-  { id: 1, name: "Marka 1", img: "/logos/logo1.png" },
-  { id: 2, name: "Marka 2", img: "/logos/logo2.png" },
-  { id: 3, name: "Marka 3", img: "/logos/logo3.png" },
-  { id: 4, name: "Marka 4", img: "/logos/logo4.png" },
-  { id: 5, name: "Marka 5", img: "/logos/logo5.png" },
-  { id: 6, name: "Marka 6", img: "/logos/logo6.png" },
+  { id: 1, name: "Marka 1", img: "../src/assets/brand-koster.png" },
+  { id: 2, name: "Marka 2", img: "../src/assets/brand-sika.png" },
+  { id: 3, name: "Marka 3", img: "../src/assets/brand-ode.png" },
+  { id: 4, name: "Marka 4", img: "../src/assets/brand-geoplas.png" },
+  { id: 5, name: "Marka 5", img: "../src/assets/brand-huntsman.png" },
+  { id: 6, name: "Marka 6", img: "../src/assets/brand-monokim.png" },
 ];
 
 const BrandGrid = () => {
