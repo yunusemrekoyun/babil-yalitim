@@ -1,4 +1,3 @@
-// src/admin/pages/Login.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -6,43 +5,51 @@ const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const [error, setError] = useState("");
 
   const handleLogin = (e) => {
     e.preventDefault();
 
-    // Basit sabit kullanıcı kontrolü
+    // Basit kontrol (şimdilik sabit kullanıcı)
     if (username === "admin" && password === "1234") {
       localStorage.setItem("isAdmin", "true");
       navigate("/admin/dashboard");
     } else {
-      alert("Kullanıcı adı veya şifre yanlış");
+      setError("Kullanıcı adı veya şifre hatalı");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <form
         onSubmit={handleLogin}
-        className="bg-white p-8 rounded-lg shadow-lg w-[350px]"
+        className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm"
       >
-        <h2 className="text-2xl font-bold text-center mb-6">Admin Giriş</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Admin Girişi</h2>
+
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
         <input
           type="text"
           placeholder="Kullanıcı Adı"
-          className="w-full mb-4 p-2 border rounded"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          className="w-full mb-4 px-4 py-2 border rounded"
+          required
         />
+
         <input
           type="password"
           placeholder="Şifre"
-          className="w-full mb-6 p-2 border rounded"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          className="w-full mb-6 px-4 py-2 border rounded"
+          required
         />
+
         <button
           type="submit"
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
         >
           Giriş Yap
         </button>
