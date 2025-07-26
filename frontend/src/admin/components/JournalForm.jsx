@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 
-const BlogForm = ({ initialData = {}, onSubmit }) => {
+const JournalForm = ({ initialData = {}, onSubmit }) => {
   const [formData, setFormData] = useState({
     title: "",
     summary: "",
-    about: "",
-    image: "",
+    content: "",
     date: "",
   });
 
@@ -49,19 +48,11 @@ const BlogForm = ({ initialData = {}, onSubmit }) => {
         className="w-full border p-2 rounded"
       />
       <textarea
-        name="about"
+        name="content"
         placeholder="İçerik"
-        value={formData.about}
+        value={formData.content}
         onChange={handleChange}
         rows={6}
-        className="w-full border p-2 rounded"
-      />
-      <input
-        type="text"
-        name="image"
-        placeholder="Görsel URL"
-        value={formData.image}
-        onChange={handleChange}
         className="w-full border p-2 rounded"
       />
       <input
@@ -82,4 +73,4 @@ const BlogForm = ({ initialData = {}, onSubmit }) => {
   );
 };
 
-export default BlogForm;
+export default JournalForm;

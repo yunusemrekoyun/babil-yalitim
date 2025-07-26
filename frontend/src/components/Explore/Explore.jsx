@@ -97,7 +97,7 @@ const Explore = () => {
         <div className="relative flex items-center justify-center w-full max-w-full md:max-w-7xl h-[500px]">
           {visibleSlots.map(({ slot, index }) => (
             <motion.div
-              key={videoData[index].id}
+              key={`${slot}-${index}`} // 🔧 Burayı değiştirdim
               className={`absolute transition-all duration-500 ease-in-out rounded-xl overflow-hidden ${getSlotClass(
                 slot
               )}`}

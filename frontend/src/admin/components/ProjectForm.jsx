@@ -1,23 +1,18 @@
 import { useState, useEffect } from "react";
 
-const BlogForm = ({ initialData = {}, onSubmit }) => {
+const ProjectForm = ({ initialData = {}, onSubmit }) => {
   const [formData, setFormData] = useState({
     title: "",
     summary: "",
-    about: "",
-    image: "",
+    content: "",
     date: "",
   });
 
   useEffect(() => {
-    const hasData = Object.keys(initialData).length > 0;
-    if (hasData) {
-      setFormData((prev) => ({
-        ...prev,
-        ...initialData,
-      }));
+    if (initialData && Object.keys(initialData).length > 0) {
+      setFormData((prev) => ({ ...prev, ...initialData }));
     }
-  }, [JSON.stringify(initialData)]);
+  }, [JSON.stringify(initialData)]); // yalnızca veri gerçekten değiştiğinde güncelle
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,19 +44,11 @@ const BlogForm = ({ initialData = {}, onSubmit }) => {
         className="w-full border p-2 rounded"
       />
       <textarea
-        name="about"
+        name="content"
         placeholder="İçerik"
-        value={formData.about}
+        value={formData.content}
         onChange={handleChange}
         rows={6}
-        className="w-full border p-2 rounded"
-      />
-      <input
-        type="text"
-        name="image"
-        placeholder="Görsel URL"
-        value={formData.image}
-        onChange={handleChange}
         className="w-full border p-2 rounded"
       />
       <input
@@ -74,7 +61,7 @@ const BlogForm = ({ initialData = {}, onSubmit }) => {
       />
       <button
         type="submit"
-        className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
+        className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
       >
         Kaydet
       </button>
@@ -82,4 +69,4 @@ const BlogForm = ({ initialData = {}, onSubmit }) => {
   );
 };
 
-export default BlogForm;
+export default ProjectForm;
