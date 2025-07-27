@@ -1,33 +1,27 @@
-// src/api.js
 import axios from "axios";
 
-// 1️⃣ Axios örneği oluştur
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, // örn. "http://localhost:5000/api"
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
   withCredentials: true,
 });
 
-// 2️⃣ Her isteğe token ekleyen request interceptor
+// İstek interceptor: localStorage'dan token ekle
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// 3️⃣ 401 yakalayıp otomatik logout + yönlendirme yapan response interceptor
+// Yanıt interceptor: 401 veya 403 gelirse logout + login sayfasına yönlendir
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token geçersizse temizle ve login’e dön
+    const status = error.response?.status;
+    if (status === 401 || status === 403) {
       localStorage.removeItem("token");
       window.location.href = "/admin";
     }
@@ -35,7 +29,7 @@ api.interceptors.response.use(
   }
 );
 
-// 4️⃣ Manuel olarak header’ı değiştirmek isterseniz:
+// Manuel header güncellemek isterseniz
 export const setAuthToken = (token) => {
   if (token) {
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;

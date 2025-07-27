@@ -1,5 +1,6 @@
-// admin/components/Sidebar.jsx
+// src/admin/components/Sidebar.jsx
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const links = [
   { path: "/admin/dashboard", label: "Dashboard" },
@@ -11,6 +12,7 @@ const links = [
 
 const Sidebar = () => {
   const location = useLocation();
+  const { logout } = useAuth();
 
   return (
     <div className="w-64 bg-[#1E293B] text-white min-h-screen p-4">
@@ -30,10 +32,7 @@ const Sidebar = () => {
         ))}
       </ul>
       <button
-        onClick={() => {
-          localStorage.removeItem("isAdmin");
-          window.location.href = "/admin";
-        }}
+        onClick={logout}
         className="mt-10 w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded"
       >
         Çıkış Yap

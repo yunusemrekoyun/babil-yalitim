@@ -9,11 +9,9 @@ exports.login = async (req, res) => {
   const { username, password } = req.body;
   if (username === ADMIN_USER && password === ADMIN_PASS) {
     const accessToken = jwt.sign({ username, role: "admin" }, JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN,
     });
     return res.json({ accessToken });
   }
   res.status(401).json({ message: "Kullanıcı adı veya şifre hatalı" });
 };
-
-
