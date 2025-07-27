@@ -9,32 +9,32 @@ import ExploreSection from "../components/Explore/ExploreSection";
 import AboutSection from "../components/About/AboutSection";
 import GlassSection from "../components/Layout/GlassSection";
 import BrandsSection from "../components/Brands/BrandsSection";
-// Tekil section sarmalayıcı
 
 const HomePage = () => {
   return (
-    <div>
+    <div className="relative min-h-screen overflow-x-hidden">
       {/* Arka plan video */}
-      <video
-        src={heroVideo}
-        className="fixed top-0 left-0 w-full h-full object-cover z-0"
-        autoPlay
-        loop
-        muted
-        playsInline
-        onLoadedMetadata={(e) => {
-          e.target.playbackRate = 0.5;
-        }}
-      />
+      <div className="fixed inset-0 w-full h-full -z-10 overflow-hidden">
+        <video
+          src={heroVideo}
+          className="w-full h-full object-cover"
+          autoPlay
+          loop
+          muted
+          playsInline
+          onLoadedMetadata={(e) => {
+            e.target.playbackRate = 0.5;
+          }}
+        />
+      </div>
 
+      {/* İçerik */}
       <div className="relative z-10">
         <Navbar />
         <Hero />
-          
-            <BrandsSection />
-          
+        <BrandsSection />
 
-        <div className="bg-transparanColor space-y-12 relative w-full px-4 py-16 flex flex-col items-center justify-center">
+        <div className="bg-transparanColor space-y-12 w-full px-4 sm:px-6 md:px-8 py-12 sm:py-16 flex flex-col items-center justify-center">
           <GlassSection>
             <ProjectsSection />
           </GlassSection>
@@ -50,7 +50,6 @@ const HomePage = () => {
           <GlassSection>
             <AboutSection />
           </GlassSection>
-         
         </div>
 
         <Footer />

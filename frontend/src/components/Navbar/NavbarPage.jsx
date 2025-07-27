@@ -1,5 +1,7 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X } from "lucide-react";
 import Logo from "../../assets/logo.png";
-import { motion } from "framer-motion";
 
 const SlideBottom = (delay = 0) => ({
   hidden: { opacity: 0, y: 30 },
@@ -10,66 +12,63 @@ const SlideBottom = (delay = 0) => ({
   },
 });
 
+const topBarVariants = {
+  hidden: { y: "-100%", opacity: 0 },
+  visible: {
+    y: "0%",
+    opacity: 1,
+    transition: { duration: 0.4, ease: "easeOut" },
+  },
+  exit: {
+    y: "-100%",
+    opacity: 0,
+    transition: { duration: 0.3, ease: "easeIn" },
+  },
+};
+
 const NavbarPage = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <header className="w-full shadow-sm z-20 relative bg-transparent">
-      <nav className="container mx-auto flex justify-around items-center py-4 md:py-6 uppercase font-semibold text-xs md:text-lg text-neutral-800 relative z-10">
-
-        {/* Hakkımızda */}
-        <motion.a
-          variants={SlideBottom(0)}
-          initial="hidden"
-          animate="visible"
-          href="/about"
-          className="px-4 py-2 rounded-full border border-gray-500 text-gray-800 hover:bg-gray-100 transition"
-        >
-          Hakkımızda
+    <header className="w-full z-30 relative">
+      {/* Masaüstü navbar */}
+      <nav className="hidden md:flex container mx-auto justify-around items-center py-4 md:py-6 uppercase font-semibold text-xs md:text-lg text-neutral-800">
+        <motion.a variants={SlideBottom(0)} initial="hidden" animate="visible" href="/about" className="px-4 py-2 rounded-full border border-gray-500 hover:bg-gray-100 transition">Hakkımızda</motion.a>
+        <motion.a variants={SlideBottom(0.2)} initial="hidden" animate="visible" href="/projects" className="px-4 py-2 rounded-full border border-gray-500 hover:bg-gray-100 transition">Projeler</motion.a>
+        <motion.a variants={SlideBottom(0.4)} initial="hidden" animate="visible" href="/">
+          <img src={Logo} alt="Logo" className="w-[250px]" />
         </motion.a>
-
-        {/* Projeler */}
-        <motion.a
-          variants={SlideBottom(0.2)}
-          initial="hidden"
-          animate="visible"
-          href="/projects"
-          className="px-4 py-2 rounded-full border border-gray-500 text-gray-800 hover:bg-gray-100 transition"
-        >
-          Projeler
-        </motion.a>
-
-        {/* Logo */}
-        <motion.a
-          variants={SlideBottom(0.4)}
-          initial="hidden"
-          animate="visible"
-          href="/"
-        >
-          <img src={Logo} alt="Logo" className="w-[250px] md:w-[250px]" />
-        </motion.a>
-
-        {/* Hizmetler */}
-        <motion.a
-          variants={SlideBottom(0.6)}
-          initial="hidden"
-          animate="visible"
-          href="/services"
-          className="px-4 py-2 rounded-full border border-gray-500 text-gray-800 hover:bg-gray-100 transition"
-        >
-          Hizmetler
-        </motion.a>
-
-        {/* Blog */}
-        <motion.a
-          variants={SlideBottom(0.8)}
-          initial="hidden"
-          animate="visible"
-          href="/blog"
-          className="px-4 py-2 rounded-full border border-gray-500 text-gray-800 hover:bg-gray-100 transition"
-        >
-          Blog
-        </motion.a>
-
+        <motion.a variants={SlideBottom(0.6)} initial="hidden" animate="visible" href="/services" className="px-4 py-2 rounded-full border border-gray-500 hover:bg-gray-100 transition">Hizmetler</motion.a>
+        <motion.a variants={SlideBottom(0.8)} initial="hidden" animate="visible" href="/blog" className="px-4 py-2 rounded-full border border-gray-500 hover:bg-gray-100 transition">Blog</motion.a>
       </nav>
+
+      {/* Mobil navbar */}
+      <div className="md:hidden px-4 py-3 flex justify-between items-center bg-white text-neutral-800 border-b border-gray-300">
+        <a href="/">
+          <img src={Logo} alt="Logo" className="h-10" />
+        </a>
+        <button onClick={() => setIsOpen(!isOpen)} className="z-50">
+          {isOpen ? <X size={28} /> : <Menu size={28} />}
+        </button>
+      </div>
+
+      {/* Açılır TopBar Menü */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            variants={topBarVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="absolute top-0 left-0 right-0 bg-white text-neutral-800 flex flex-col items-center gap-4 py-6 z-40 border-b border-gray-300"
+          >
+            <a href="/about" onClick={() => setIsOpen(false)} className="text-lg uppercase">Hakkımızda</a>
+            <a href="/projects" onClick={() => setIsOpen(false)} className="text-lg uppercase">Projeler</a>
+            <a href="/services" onClick={() => setIsOpen(false)} className="text-lg uppercase">Hizmetler</a>
+            <a href="/blog" onClick={() => setIsOpen(false)} className="text-lg uppercase">Blog</a>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 };
