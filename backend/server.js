@@ -1,28 +1,37 @@
 // backend/server.js
-
 const express = require("express");
 const dotenv = require("dotenv");
-const cors = require("cors"); // 🆕 CORS eklendi
+const cors = require("cors");
 const connectDB = require("./config/db");
-const mainRoutes = require("./routes/index");
 
 dotenv.config();
 connectDB();
 
 const app = express();
 
-// ✅ CORS AYARI (Frontend'den gelen isteklere izin veriyoruz)
-app.use(cors({
-  origin: "http://localhost:5173", // frontend portu
-  credentials: true, // eğer cookie veya auth varsa
-}));
-
+app.use(
+  cors({
+    origin: process.env.BASE_URL,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
-// ✅ API route
-app.use("/api", mainRoutes);
+// 🔐 Auth routes
+const authRoutes = require("./routes/authRoutes");
+app.use("/api/auth", authRoutes);
 
-const PORT = process.env.PORT || 5000;
+// 🛡️ Protect tüm API rotalarını JWT ile
+const verifyToken = require("./middleware/verifyToken");
+const mainRoutes = require("./routes/index");
+app.use("/api", verifyToken, mainRoutes);
+
+// Eğer istersen sadece write işlemlerini korumak için şöyle ayırabilirsin:
+// app.use("/api/blogs", verifyToken, require("./routes/blogRoutes"));
+// app.use("/api/journals", verifyToken, require("./routes/journalRoutes"));
+// … vs.
+
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`✅ Sunucu ${PORT} portunda çalışıyor`);
 });

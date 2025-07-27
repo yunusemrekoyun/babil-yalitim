@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import PropTypes from "prop-types";
 
 // Sahte yorum verisi
 const dummyComments = [
@@ -87,6 +88,15 @@ const BlogDetail = ({ blog }) => {
       </div>
     </motion.div>
   );
+};
+BlogDetail.propTypes = {
+  blog: PropTypes.shape({
+    image: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    date: PropTypes.string.isRequired,
+    summary: PropTypes.string.isRequired,
+    about: PropTypes.string.isRequired,
+  }).isRequired,
 };
 
 export default BlogDetail;

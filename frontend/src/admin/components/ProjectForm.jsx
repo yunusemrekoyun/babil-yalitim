@@ -1,22 +1,29 @@
+// src/components/ProjectForm.jsx
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 
 const ProjectForm = ({ initialData = {}, onSubmit }) => {
   const [formData, setFormData] = useState({
     title: "",
-    summary: "",
-    content: "",
-    date: "",
+    description: "",
+    category: "",
+    imageUrl: "",
   });
 
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
-      setFormData((prev) => ({ ...prev, ...initialData }));
+      setFormData({
+        title: initialData.title || "",
+        description: initialData.description || "",
+        category: initialData.category || "",
+        imageUrl: initialData.imageUrl || "",
+      });
     }
-  }, [JSON.stringify(initialData)]); // yalnızca veri gerçekten değiştiğinde güncelle
+  }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((p) => ({ ...p, [name]: value }));
   };
 
   const handleSubmit = (e) => {
@@ -27,36 +34,32 @@ const ProjectForm = ({ initialData = {}, onSubmit }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-xl mx-auto">
       <input
-        type="text"
         name="title"
-        placeholder="Başlık"
+        placeholder="Proje Başlığı"
         value={formData.title}
         onChange={handleChange}
         required
         className="w-full border p-2 rounded"
       />
       <input
-        type="text"
-        name="summary"
+        name="description"
         placeholder="Özet"
-        value={formData.summary}
+        value={formData.description}
         onChange={handleChange}
-        className="w-full border p-2 rounded"
-      />
-      <textarea
-        name="content"
-        placeholder="İçerik"
-        value={formData.content}
-        onChange={handleChange}
-        rows={6}
         className="w-full border p-2 rounded"
       />
       <input
-        type="date"
-        name="date"
-        value={formData.date}
+        name="category"
+        placeholder="Kategori"
+        value={formData.category}
         onChange={handleChange}
-        required
+        className="w-full border p-2 rounded"
+      />
+      <input
+        name="imageUrl"
+        placeholder="Resim URL"
+        value={formData.imageUrl}
+        onChange={handleChange}
         className="w-full border p-2 rounded"
       />
       <button
@@ -67,6 +70,11 @@ const ProjectForm = ({ initialData = {}, onSubmit }) => {
       </button>
     </form>
   );
+};
+
+ProjectForm.propTypes = {
+  initialData: PropTypes.object,
+  onSubmit: PropTypes.func.isRequired,
 };
 
 export default ProjectForm;

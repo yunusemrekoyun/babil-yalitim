@@ -1,4 +1,4 @@
-import React from "react";
+import PropTypes from "prop-types";
 
 const BrandItem = ({ brand }) => {
   return (
@@ -6,6 +6,13 @@ const BrandItem = ({ brand }) => {
       <img src={brand.img} alt={brand.name} className="h-12 object-contain" />
     </div>
   );
+};
+
+BrandItem.propTypes = {
+  brand: PropTypes.shape({
+    img: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+  }).isRequired,
 };
 
 export default BrandItem;

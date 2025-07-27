@@ -1,20 +1,24 @@
+// src/admin/pages/journal/JournalList.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../../../api.js";
 
 const JournalList = () => {
   const [journals, setJournals] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchJournals = async () => {
       try {
-        const res = await fetch(`${apiUrl}/journals`);
-        const data = await res.json();
+        const { data } = await api.get("/journals");
         setJournals(data);
-      } catch (error) {
-        console.error("Journaller alınamadı", error);
+      } catch (err) {
+        console.error("Journaller alınamadı", err);
+        setError(
+          err.response?.data?.message ||
+            "Journaller getirilemedi. Lütfen tekrar deneyin."
+        );
       } finally {
         setLoading(false);
       }
@@ -24,33 +28,37 @@ const JournalList = () => {
   }, []);
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Bu journalı silmek istediğinize emin misiniz?");
-    if (!confirmDelete) return;
+    if (!window.confirm("Bu journali silmek istediğinize emin misiniz?"))
+      return;
 
     try {
-      const res = await fetch(`${apiUrl}/journals/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setJournals((prev) => prev.filter((j) => j._id !== id));
-      } else {
-        alert("Silme işlemi başarısız.");
-      }
-    } catch (error) {
-      console.error("Silme hatası", error);
+      await api.delete(`/journals/${id}`);
+      setJournals((prev) => prev.filter((j) => j._id !== id));
+    } catch (err) {
+      console.error("Silme işlemi başarısız", err);
+      alert(err.response?.data?.message || "Silme sırasında hata oluştu");
     }
   };
 
   if (loading) return <p>Yükleniyor...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Journal Listesi</h2>
-        <Link to="/admin/journals/add" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        <Link
+          to="/admin/journals/add"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
           Yeni Journal Ekle
         </Link>
       </div>
+
       {journals.length === 0 ? (
-        <p>Henüz journal eklenmemiş.</p>
+        <p className="text-center text-gray-500 mt-8">
+          Henüz journal eklenmemiş.
+        </p>
       ) : (
         <table className="min-w-full border border-gray-300">
           <thead>
@@ -62,21 +70,25 @@ const JournalList = () => {
           </thead>
           <tbody>
             {journals.map((journal) => (
-              <tr key={journal._id}>
+              <tr key={journal._id} className="hover:bg-gray-50">
                 <td className="py-2 px-4 border-b">{journal.title}</td>
                 <td className="py-2 px-4 border-b">
-                  {new Date(journal.date).toLocaleDateString()}
+                  {new Date(journal.date).toLocaleDateString("tr-TR", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
                 </td>
-                <td className="py-2 px-4 border-b">
+                <td className="py-2 px-4 border-b flex gap-2">
                   <Link
                     to={`/admin/journals/edit/${journal._id}`}
-                    className="text-blue-600 hover:underline mr-4"
+                    className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-200"
                   >
                     Düzenle
                   </Link>
                   <button
                     onClick={() => handleDelete(journal._id)}
-                    className="text-red-600 hover:underline"
+                    className="bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200"
                   >
                     Sil
                   </button>

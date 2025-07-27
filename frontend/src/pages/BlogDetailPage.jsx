@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
 import BlogDetail from "../components/Blog/BlogDetail";
-import { useParams } from "react-router-dom";
 import Img1 from "../assets/banner.png"; // geçici
 
 const dummyData = {
@@ -15,8 +14,6 @@ const dummyData = {
 };
 
 const BlogDetailPage = () => {
-  const { id } = useParams();
-
   return (
     <motion.div
       className="min-h-screen bg-gradient-to-br from-orange-500 via-gray-100 to-orange-300"

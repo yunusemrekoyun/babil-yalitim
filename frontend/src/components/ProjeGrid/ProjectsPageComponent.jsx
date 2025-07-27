@@ -55,7 +55,9 @@ const ProjectsPageComponent = () => {
           Tüm Projeler
         </h2>
         <p className="text-gray-600 max-w-2xl mx-auto text-md">
-          Aşağıda yer alan projeler, Babil Yalıtım'ın gerçekleştirdiği bazı örnek çalışmaları göstermektedir. Her biri özenle tamamlanmış projelerdir.
+          Aşağıda yer alan projeler, Babil Yalıtım&apos;ın gerçekleştirdiği bazı
+          örnek çalışmaları göstermektedir. Her biri özenle tamamlanmış
+          projelerdir.
         </p>
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded mt-4"></div>
       </div>

@@ -1,19 +1,20 @@
+// backend/routes/visitRoutes.js
 const express = require("express");
+const router = express.Router();
+const verifyToken = require("../middleware/verifyToken");
 const {
   recordVisit,
   getAllVisits,
   getVisitCountByPath,
 } = require("../controller/visitController");
 
-const router = express.Router();
+// Yeni bir ziyaret kaydı (korumalı)
+router.post("/", verifyToken, recordVisit);
 
-// Yeni bir ziyaret kaydı
-router.post("/", recordVisit);
+// Tüm ziyaretleri al (korumalı)
+router.get("/", verifyToken, getAllVisits);
 
-// Tüm ziyaretleri al
-router.get("/", getAllVisits);
-
-// Belirli bir path için ziyaret sayısı
-router.get("/count/:path", getVisitCountByPath);
+// Belirli bir path için ziyaret sayısı (korumalı)
+router.get("/count/:path", verifyToken, getVisitCountByPath);
 
 module.exports = router;

@@ -1,5 +1,7 @@
-// admin/pages/Dashboard.jsx
-import { useEffect, useState } from "react";
+// src/admin/pages/Dashboard.jsx
+import { useEffect, useState, useCallback } from "react";
+import PropTypes from "prop-types";
+import api from "../../api.js";
 import {
   BarChart,
   Bar,
@@ -19,33 +21,32 @@ const Dashboard = () => {
     service: 0,
   });
 
-  const api = import.meta.env.VITE_API_BASE_URL;
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [total, blog, journal, project, service] = await Promise.all([
-          fetch(`${api}/api/visits`).then((res) => res.json()),
-          fetch(`${api}/api/visits/count/blog`).then((res) => res.json()),
-          fetch(`${api}/api/visits/count/journal`).then((res) => res.json()),
-          fetch(`${api}/api/visits/count/project`).then((res) => res.json()),
-          fetch(`${api}/api/visits/count/service`).then((res) => res.json()),
+  const fetchStats = useCallback(async () => {
+    try {
+      const [visitsRes, blogRes, journalRes, projectRes, serviceRes] =
+        await Promise.all([
+          api.get("/visits"),
+          api.get("/visits/count/blog"),
+          api.get("/visits/count/journal"),
+          api.get("/visits/count/project"),
+          api.get("/visits/count/service"),
         ]);
 
-        setStats({
-          total: total.length,
-          blog: blog.count || 0,
-          journal: journal.count || 0,
-          project: project.count || 0,
-          service: service.count || 0,
-        });
-      } catch (err) {
-        console.error("Ziyaret verileri alınamadı", err);
-      }
-    };
-
-    fetchStats();
+      setStats({
+        total: Array.isArray(visitsRes.data) ? visitsRes.data.length : 0,
+        blog: blogRes.data.count || 0,
+        journal: journalRes.data.count || 0,
+        project: projectRes.data.count || 0,
+        service: serviceRes.data.count || 0,
+      });
+    } catch (err) {
+      console.error("Ziyaret verileri alınamadı", err);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   const chartData = [
     { name: "Toplam", count: stats.total },
@@ -58,13 +59,31 @@ const Dashboard = () => {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
-      <p className="mb-6">Hoş geldiniz! Buradan blog, proje, hizmet ve haberleri yönetin.</p>
+      <p className="mb-6">
+        Hoş geldiniz! Buradan blog, proje, hizmet ve haberleri yönetin.
+      </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <StatCard title="Toplam Ziyaret" count={stats.total} color="bg-blue-100" />
-        <StatCard title="Blog Ziyareti" count={stats.blog} color="bg-green-100" />
-        <StatCard title="Journal Ziyareti" count={stats.journal} color="bg-yellow-100" />
-        <StatCard title="Proje Ziyareti" count={stats.project} color="bg-purple-100" />
+        <StatCard
+          title="Toplam Ziyaret"
+          count={stats.total}
+          color="bg-blue-100"
+        />
+        <StatCard
+          title="Blog Ziyareti"
+          count={stats.blog}
+          color="bg-green-100"
+        />
+        <StatCard
+          title="Journal Ziyareti"
+          count={stats.journal}
+          color="bg-yellow-100"
+        />
+        <StatCard
+          title="Proje Ziyareti"
+          count={stats.project}
+          color="bg-purple-100"
+        />
       </div>
 
       <h2 className="text-xl font-semibold mb-4">Ziyaret Dağılımı</h2>
@@ -75,7 +94,7 @@ const Dashboard = () => {
             <XAxis dataKey="name" />
             <YAxis allowDecimals={false} />
             <Tooltip />
-            <Bar dataKey="count" fill="#3B82F6" radius={[5, 5, 0, 0]} />
+            <Bar dataKey="count" radius={[5, 5, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -89,5 +108,11 @@ const StatCard = ({ title, count, color }) => (
     <p className="text-3xl font-bold">{count}</p>
   </div>
 );
+
+StatCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  count: PropTypes.number.isRequired,
+  color: PropTypes.string.isRequired,
+};
 
 export default Dashboard;

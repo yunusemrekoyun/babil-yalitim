@@ -1,4 +1,3 @@
-import React from "react";
 import { motion } from "framer-motion";
 import GlassSection from "../components/Layout/GlassSection";
 import ExplorePageComponent from "../components/Explore/ExplorePageComponent";

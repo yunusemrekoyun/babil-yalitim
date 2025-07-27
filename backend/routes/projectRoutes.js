@@ -1,5 +1,7 @@
+// backend/routes/projectRoutes.js
 const express = require("express");
 const router = express.Router();
+const verifyToken = require("../middleware/verifyToken");
 const {
   getProjects,
   getProjectById,
@@ -8,10 +10,13 @@ const {
   deleteProject,
 } = require("../controller/projectController");
 
+// herkese açık
 router.get("/", getProjects);
 router.get("/:id", getProjectById);
-router.post("/", createProject);
-router.put("/:id", updateProject);
-router.delete("/:id", deleteProject);
+
+// korumalı
+router.post("/", verifyToken, createProject);
+router.put("/:id", verifyToken, updateProject);
+router.delete("/:id", verifyToken, deleteProject);
 
 module.exports = router;

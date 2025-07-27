@@ -1,26 +1,22 @@
+// backend/routes/journalRoutes.js
 const express = require("express");
 const router = express.Router();
+const verifyToken = require("../middleware/verifyToken");
 const {
   getJournals,
   getJournalById,
   createJournal,
   updateJournal,
   deleteJournal,
-} = require("../controller/journalController"); // ✅ klasör ismi düzeltildi
+} = require("../controller/journalController");
 
-// Tüm journal'ları getir
+// herkese açık
 router.get("/", getJournals);
-
-// Tek journal'ı getir
 router.get("/:id", getJournalById);
 
-// Yeni journal oluştur
-router.post("/", createJournal);
-
-// Güncelle
-router.put("/:id", updateJournal);
-
-// Sil
-router.delete("/:id", deleteJournal);
+// korumalı
+router.post("/", verifyToken, createJournal);
+router.put("/:id", verifyToken, updateJournal);
+router.delete("/:id", verifyToken, deleteJournal);
 
 module.exports = router;

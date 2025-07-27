@@ -1,27 +1,20 @@
+// src/admin/pages/service/AddService.jsx
 import { useNavigate } from "react-router-dom";
 import { message } from "antd";
-import ServiceForm from "../../components/ServiceForm";
+import api from "../../../api.js";
+import ServiceForm from "../../components/ServiceForm.jsx";
 
 const AddService = () => {
   const navigate = useNavigate();
 
   const handleSubmit = async (formData) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/services`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!res.ok) throw new Error("Servis eklenemedi");
-
+      await api.post("/services", formData);
       message.success("Servis başarıyla eklendi!");
       navigate("/admin/services");
-    } catch (error) {
-      console.error(error);
-      message.error("Servis eklenirken bir hata oluştu.");
+    } catch (err) {
+      console.error("Servis eklenirken hata:", err);
+      message.error(err.response?.data?.message || "Servis eklenemedi");
     }
   };
 

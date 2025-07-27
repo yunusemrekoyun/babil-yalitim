@@ -1,45 +1,61 @@
-import JournalForm from "../../components/JournalForm";
-import { useParams, useNavigate } from "react-router-dom";
+// src/admin/pages/journal/EditJournal.jsx
 import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { message } from "antd";
+import JournalForm from "../../components/JournalForm.jsx";
+import api from "../../../api.js";
 
 const EditJournal = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [initialData, setInitialData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchJournal = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/journals/${id}`);
-        const data = await res.json();
-        setInitialData(data);
+        const { data } = await api.get(`/journals/${id}`);
+        setInitialData({
+          title: data.title,
+          summary: data.summary,
+          content: data.about || "",
+          image: data.image || "",
+          date: data.date ? data.date.slice(0, 10) : "",
+        });
       } catch (err) {
         console.error("Journal getirilirken hata:", err);
+        message.error(
+          err.response?.data?.message || "Journal bilgileri alınamadı."
+        );
+      } finally {
+        setLoading(false);
       }
     };
     fetchJournal();
   }, [id]);
 
-  const handleEdit = async (updatedData) => {
+  const handleEdit = async (data) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/journals/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updatedData),
+      await api.put(`/journals/${id}`, {
+        title: data.title,
+        summary: data.summary,
+        about: data.content,
+        image: data.image,
+        date: data.date,
       });
-
-      if (!res.ok) throw new Error("Güncelleme başarısız");
-
+      message.success("Journal başarıyla güncellendi");
       navigate("/admin/journals");
     } catch (err) {
       console.error("Güncelleme hatası:", err);
-      alert("Güncelleme yapılamadı");
+      message.error(
+        err.response?.data?.message || "Güncelleme sırasında hata oluştu."
+      );
     }
   };
 
-  if (!initialData) return <div className="p-6">Yükleniyor...</div>;
+  if (loading) return <div className="p-6">Yükleniyor...</div>;
+  if (!initialData)
+    return <div className="p-6 text-red-500">Journal bulunamadı.</div>;
 
   return (
     <div className="p-6">

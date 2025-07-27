@@ -1,20 +1,26 @@
+// src/admin/pages/Login.jsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
 
-  const handleLogin = (e) => {
+  const from = location.state?.from?.pathname || "/admin/dashboard";
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-
-    if (username === "admin" && password === "1234") {
-      localStorage.setItem("isAdmin", "true");
-      navigate("/admin/dashboard");
-    } else {
-      setError("Kullanıcı adı veya şifre hatalı");
+    setError("");
+    try {
+      await login(username, password);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message);
     }
   };
 

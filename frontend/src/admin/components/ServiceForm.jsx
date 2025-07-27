@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 
 const ServiceForm = ({ initialData = {}, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -7,10 +8,10 @@ const ServiceForm = ({ initialData = {}, onSubmit }) => {
   });
 
   useEffect(() => {
-  if (initialData && Object.keys(initialData).length > 0) {
-    setFormData((prev) => ({ ...prev, ...initialData }));
-  }
-}, [JSON.stringify(initialData)]);
+    if (initialData && Object.keys(initialData).length > 0) {
+      setFormData((prev) => ({ ...prev, ...initialData }));
+    }
+  }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,6 +50,14 @@ const ServiceForm = ({ initialData = {}, onSubmit }) => {
       </button>
     </form>
   );
+};
+
+ServiceForm.propTypes = {
+  initialData: PropTypes.shape({
+    title: PropTypes.string,
+    description: PropTypes.string,
+  }),
+  onSubmit: PropTypes.func.isRequired,
 };
 
 export default ServiceForm;

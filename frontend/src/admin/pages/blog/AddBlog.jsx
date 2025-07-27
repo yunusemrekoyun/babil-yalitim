@@ -1,34 +1,36 @@
+// src/admin/pages/blog/AddBlog.jsx
 import { useMemo } from "react";
-import BlogForm from "../../components/BlogForm";
 import { useNavigate } from "react-router-dom";
+import { message } from "antd";
+import BlogForm from "../../components/BlogForm.jsx";
+import api from "../../../api.js";
 
 const AddBlog = () => {
   const navigate = useNavigate();
 
-  const initialData = useMemo(() => ({
-    title: "",
-    summary: "",
-    about: "",
-    image: "",
-    date: "",
-  }), []); // 🔒 Sadece ilk render'da oluşur
+  // Formu temiz tutmak için başlangıç verisi
+  const initialData = useMemo(
+    () => ({
+      title: "",
+      summary: "",
+      about: "",
+      image: "",
+      date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD format
+    }),
+    []
+  );
 
   const handleAdd = async (data) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/blogs`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!res.ok) throw new Error("Ekleme başarısız");
-
+      await api.post("/blogs", data);
+      message.success("Blog başarıyla eklendi");
       navigate("/admin/blogs");
     } catch (err) {
       console.error("Blog eklenirken hata oluştu:", err);
-      alert("Blog eklenemedi");
+      const errMsg =
+        err.response?.data?.message ||
+        "Blog eklenemedi. Lütfen tekrar deneyin.";
+      message.error(errMsg);
     }
   };
 

@@ -1,20 +1,34 @@
-import BlogForm from "../../components/BlogForm";
-import { useParams, useNavigate } from "react-router-dom";
+// src/admin/pages/blog/EditBlog.jsx
 import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { message } from "antd";
+import BlogForm from "../../components/BlogForm.jsx";
+import api from "../../../api.js";
 
 const EditBlog = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [initialData, setInitialData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/blogs/${id}`);
-        const data = await res.json();
-        setInitialData(data);
+        const { data } = await api.get(`/blogs/${id}`);
+        setInitialData({
+          title: data.title,
+          summary: data.summary,
+          about: data.about,
+          image: data.image,
+          date: data.date.slice(0, 10), // yyyy-MM-dd format
+        });
       } catch (err) {
         console.error("Blog getirilirken hata:", err);
+        message.error(
+          err.response?.data?.message || "Blog bilgileri alınamadı."
+        );
+      } finally {
+        setLoading(false);
       }
     };
     fetchBlog();
@@ -22,24 +36,24 @@ const EditBlog = () => {
 
   const handleEdit = async (updatedData) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/blogs/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updatedData),
-      });
-
-      if (!res.ok) throw new Error("Güncelleme başarısız");
-
+      await api.put(`/blogs/${id}`, updatedData);
+      message.success("Blog başarıyla güncellendi");
       navigate("/admin/blogs");
     } catch (err) {
       console.error("Güncelleme hatası:", err);
-      alert("Güncelleme yapılamadı");
+      message.error(
+        err.response?.data?.message || "Güncelleme sırasında hata oluştu."
+      );
     }
   };
 
-  if (!initialData) return <div className="p-6">Yükleniyor...</div>;
+  if (loading) {
+    return <div className="p-6">Yükleniyor...</div>;
+  }
+
+  if (!initialData) {
+    return <div className="p-6 text-red-500">Blog bulunamadı.</div>;
+  }
 
   return (
     <div className="p-6">

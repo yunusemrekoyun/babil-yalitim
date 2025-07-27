@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 
 const BlogForm = ({ initialData = {}, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -10,14 +11,13 @@ const BlogForm = ({ initialData = {}, onSubmit }) => {
   });
 
   useEffect(() => {
-    const hasData = Object.keys(initialData).length > 0;
-    if (hasData) {
+    if (initialData && Object.keys(initialData).length > 0) {
       setFormData((prev) => ({
         ...prev,
         ...initialData,
       }));
     }
-  }, [JSON.stringify(initialData)]);
+  }, [initialData]); // ✅ eslint uyarısı çözüldü
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -80,6 +80,11 @@ const BlogForm = ({ initialData = {}, onSubmit }) => {
       </button>
     </form>
   );
+};
+
+BlogForm.propTypes = {
+  initialData: PropTypes.object,
+  onSubmit: PropTypes.func.isRequired,
 };
 
 export default BlogForm;

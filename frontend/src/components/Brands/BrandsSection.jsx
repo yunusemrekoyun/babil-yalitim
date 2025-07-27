@@ -1,4 +1,3 @@
-import React from "react";
 import BrandGrid from "./BrandGrid";
 
 const BrandsSection = () => {

@@ -1,14 +1,10 @@
-import React from "react";
 import { motion } from "framer-motion";
 import GlassSection from "../components/Layout/GlassSection";
-import { useNavigate } from "react-router-dom";
 import AboutPageComponent from "../components/About/AboutPageComponent";
 import Footer from "../components/Footer/Footer";
 import NavbarPage from "../components/Navbar/NavbarPage";
 
 const AboutPage = () => {
-  const navigate = useNavigate();
-
   return (
     <>
       <motion.div

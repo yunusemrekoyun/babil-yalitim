@@ -1,4 +1,4 @@
-import React from "react";
+
 import BrandItem from "./BrandItem";
 
 const brands = [

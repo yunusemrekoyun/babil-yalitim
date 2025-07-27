@@ -1,38 +1,46 @@
+// src/admin/pages/service/ServiceList.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { message } from "antd";
+import api from "../../../api.js";
 
 const ServiceList = () => {
   const [services, setServices] = useState([]);
-
-  const fetchServices = async () => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/services`);
-      const data = await res.json();
-      setServices(data);
-    } catch (err) {
-      console.error("Servisler alınamadı", err);
-      message.error("Servisler alınamadı");
-    }
-  };
-
-  const deleteService = async (id) => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/services/${id}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      message.success(data.message);
-      fetchServices();
-    } catch (err) {
-      console.error("Servis silinemedi", err);
-      message.error("Servis silinemedi");
-    }
-  };
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const { data } = await api.get("/services");
+        setServices(data);
+      } catch (err) {
+        console.error("Servisler alınamadı:", err);
+        const msg = err.response?.data?.message || "Servisler getirilemedi.";
+        setError(msg);
+        message.error(msg);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchServices();
   }, []);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Bu servisi silmek istediğinize emin misiniz?")) return;
+    try {
+      const { data } = await api.delete(`/services/${id}`);
+      message.success(data.message || "Servis silindi");
+      setServices((prev) => prev.filter((s) => s._id !== id));
+    } catch (err) {
+      console.error("Servis silinemedi:", err);
+      const msg = err.response?.data?.message || "Servis silinemedi.";
+      message.error(msg);
+    }
+  };
+
+  if (loading) return <p className="p-4">Yükleniyor...</p>;
+  if (error) return <p className="p-4 text-red-500">{error}</p>;
 
   return (
     <div className="p-4">
@@ -47,7 +55,10 @@ const ServiceList = () => {
       </div>
       <ul className="space-y-2">
         {services.map((service) => (
-          <li key={service._id} className="border p-4 rounded shadow">
+          <li
+            key={service._id}
+            className="border p-4 rounded shadow hover:bg-gray-50"
+          >
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium">{service.title}</h3>
               <div className="space-x-2">
@@ -58,7 +69,7 @@ const ServiceList = () => {
                   Düzenle
                 </Link>
                 <button
-                  onClick={() => deleteService(service._id)}
+                  onClick={() => handleDelete(service._id)}
                   className="text-red-600 hover:underline"
                 >
                   Sil

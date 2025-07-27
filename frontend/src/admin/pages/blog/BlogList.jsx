@@ -1,20 +1,24 @@
+// src/admin/pages/blog/BlogList.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../../../api.js";
 
 const BlogList = () => {
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const res = await fetch(`${apiUrl}/blogs`);
-        const data = await res.json();
+        const { data } = await api.get("/blogs");
         setBlogs(data);
-      } catch (error) {
-        console.error("Bloglar alınamadı", error);
+      } catch (err) {
+        console.error("Bloglar alınamadı", err);
+        setError(
+          err.response?.data?.message ||
+            "Bloglar getirilemedi. Lütfen tekrar deneyin."
+        );
       } finally {
         setLoading(false);
       }
@@ -24,22 +28,19 @@ const BlogList = () => {
   }, []);
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Bu blogu silmek istediğinize emin misiniz?");
-    if (!confirmDelete) return;
+    if (!window.confirm("Bu blogu silmek istediğinize emin misiniz?")) return;
 
     try {
-      const res = await fetch(`${apiUrl}/api/blogs/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setBlogs((prev) => prev.filter((b) => b._id !== id));
-      } else {
-        alert("Silme işlemi başarısız.");
-      }
-    } catch (error) {
-      console.error("Silme hatası", error);
+      await api.delete(`/blogs/${id}`);
+      setBlogs((prev) => prev.filter((b) => b._id !== id));
+    } catch (err) {
+      console.error("Silme işlemi başarısız", err);
+      alert(err.response?.data?.message || "Silme işlemi başarısız.");
     }
   };
 
   if (loading) return <p>Yükleniyor...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div className="p-6">

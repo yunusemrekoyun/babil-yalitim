@@ -1,5 +1,5 @@
 // admin/components/AdminLayout.jsx
-import React from "react";
+import PropTypes from "prop-types";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
@@ -15,12 +15,13 @@ const AdminLayout = ({ children }) => {
         <Topbar />
 
         {/* Sayfa içeriği */}
-        <main className="flex-1 p-6 overflow-y-auto">
-          {children}
-        </main>
+        <main className="flex-1 p-6 overflow-y-auto">{children}</main>
       </div>
     </div>
   );
+};
+AdminLayout.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export default AdminLayout;

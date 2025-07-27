@@ -1,4 +1,6 @@
+// src/components/JournalForm.jsx
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 
 const JournalForm = ({ initialData = {}, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -9,14 +11,16 @@ const JournalForm = ({ initialData = {}, onSubmit }) => {
   });
 
   useEffect(() => {
-    const hasData = Object.keys(initialData).length > 0;
-    if (hasData) {
-      setFormData((prev) => ({
-        ...prev,
-        ...initialData,
-      }));
+    if (initialData && Object.keys(initialData).length > 0) {
+      setFormData({
+        title: initialData.title || "",
+        summary: initialData.summary || "",
+        // map 'about' from backend to 'content' in form
+        content: initialData.content ?? initialData.about ?? "",
+        date: initialData.date ? initialData.date.slice(0, 10) : "",
+      });
     }
-  }, [JSON.stringify(initialData)]);
+  }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -71,6 +75,11 @@ const JournalForm = ({ initialData = {}, onSubmit }) => {
       </button>
     </form>
   );
+};
+
+JournalForm.propTypes = {
+  initialData: PropTypes.object,
+  onSubmit: PropTypes.func.isRequired,
 };
 
 export default JournalForm;

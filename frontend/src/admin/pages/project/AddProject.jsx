@@ -1,38 +1,50 @@
-import ProjectForm from "../../components/ProjectForm";
+// src/admin/pages/project/AddProject.jsx
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { message } from "antd";
+import ProjectForm from "../../components/ProjectForm.jsx";
+import api from "../../../api.js";
 
 const AddProject = () => {
   const navigate = useNavigate();
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
-  const handleAdd = async (newData) => {
+  // Form'un ilk değerleri
+  const initialData = useMemo(
+    () => ({
+      title: "",
+      description: "",
+      category: "",
+      image: "",
+      date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+    }),
+    []
+  );
+
+  const handleAdd = async (data) => {
     try {
-      const res = await fetch(`${apiUrl}/projects`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newData),
+      await api.post("/projects", {
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        image: data.image,
+        date: data.date,
       });
-
-      if (!res.ok) {
-        throw new Error("Kayıt başarısız.");
-      }
-
-      message.success("Yeni proje başarıyla eklendi!");
+      message.success("Proje başarıyla eklendi");
       navigate("/admin/projects");
-    } catch (error) {
-      console.error("Proje eklenemedi:", error);
-      message.error("Proje eklenemedi!");
+    } catch (err) {
+      console.error("Proje eklenirken hata oluştu:", err);
+      message.error(
+        err.response?.data?.message ||
+          "Proje eklenemedi. Lütfen tekrar deneyin."
+      );
     }
   };
 
   return (
-    <main className="p-4">
+    <div className="p-4">
       <h2 className="text-2xl font-semibold mb-4">Yeni Proje Ekle</h2>
-      <ProjectForm onSubmit={handleAdd} />
-    </main>
+      <ProjectForm initialData={initialData} onSubmit={handleAdd} />
+    </div>
   );
 };
 
