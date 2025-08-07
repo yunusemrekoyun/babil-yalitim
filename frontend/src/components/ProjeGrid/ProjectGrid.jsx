@@ -1,53 +1,25 @@
-import img1 from "../../assets/project1.jpg";
-import img2 from "../../assets/project2.jpg";
-import img3 from "../../assets/project3.jpg";
-import img4 from "../../assets/project4.jpg";
-import img5 from "../../assets/project5.jpg";
-import img6 from "../../assets/project6.jpg";
+// frontend/src/components/ProjeGrid/ProjectGrid.jsx
+import { useEffect, useState } from "react";
 import ProjectGridItem from "./ProjectGridItem";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 
-const projectData = [
-  {
-    title: "Çatı Yalıtımı",
-    image: img1,
-    description: "Yüksek dayanımlı çatı yalıtım malzemeleri ile uygulandı.",
-    size: "large",
-  },
-  {
-    title: "Zemin Kaplama",
-    image: img2,
-    description: "Kaymaz ve hijyenik epoksi kaplama sistemi kullanıldı.",
-    size: "small",
-  },
-  {
-    title: "Temel İzolasyon",
-    image: img3,
-    description: "Yeraltı su sızıntısına karşı yüksek izolasyon sağlandı.",
-    size: "small",
-  },
-  {
-    title: "Cephe Kaplama",
-    image: img4,
-    description: "Modern cephe panelleriyle dış görünüm yenilendi.",
-    size: "small",
-  },
-  {
-    title: "Endüstriyel Alan",
-    image: img5,
-    description: "Fabrika çatısı komple yalıtım altına alındı.",
-    size: "small",
-  },
-  {
-    title: "Saha Yalıtımı",
-    image: img6,
-    description: "Açık saha zemini sıvı geçirimsiz malzeme ile kaplandı.",
-    size: "small",
-  },
-];
-
 const ProjectGrid = () => {
+  const [projects, setProjects] = useState([]);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/projects")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setProjects(data);
+        } else {
+          console.warn("Beklenmeyen veri formatı:", data);
+        }
+      })
+      .catch((err) => console.error("Proje verileri alınamadı:", err));
+  }, []);
+
   return (
     <section className="relative w-full px-4 py-16">
       <div className="max-w-6xl mx-auto mb-10 text-center">
@@ -58,8 +30,8 @@ const ProjectGrid = () => {
       </div>
 
       <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-3 gap-4 auto-rows-[200px] md:auto-rows-[250px]">
-        {projectData.map((project, index) => (
-          <ProjectGridItem key={index} project={project} index={index} />
+        {projects.map((project, index) => (
+          <ProjectGridItem key={project._id || index} project={project} index={index} />
         ))}
       </div>
 
@@ -75,8 +47,8 @@ const ProjectGrid = () => {
         <a
           href="/projects"
           className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-      px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
-      transition-all duration-300"
+            px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
+            transition-all duration-300"
         >
           Tüm Projeleri Gör
           <ChevronRight size={16} />

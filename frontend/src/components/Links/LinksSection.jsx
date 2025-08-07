@@ -33,9 +33,8 @@ const LinksSection = () => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   return (
-    <div className="w-full flex justify-center mt-6">
-      <div className="flex gap-8 items-end h-[320px]">
-        {" "}
+    <div className="w-full flex justify-center mt-6 px-4">
+      <div className="flex flex-wrap justify-center gap-6 sm:gap-8 md:gap-10 items-end max-w-screen-xl">
         {links.map((link, idx) => (
           <LinkItem
             key={link.label}

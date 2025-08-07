@@ -17,21 +17,16 @@ app.use(
 );
 app.use(express.json());
 
-// 🔐 Auth routes
-const authRoutes = require("./routes/authRoutes");
-app.use("/api/auth", authRoutes);
+// 🔓 Herkese açık rotalar
+app.use("/api/projects", require("./routes/projectRoutes"));
+app.use("/api/blogs", require("./routes/blogRoutes"));
+app.use("/api/journals", require("./routes/journalRoutes"));
+app.use("/api/services", require("./routes/serviceRoutes"));
+app.use("/api/auth", require("./routes/authRoutes")); // login/register
 
-// 🛡️ Protect tüm API rotalarını JWT ile
-const verifyToken = require("./middleware/verifyToken");
-const mainRoutes = require("./routes/index");
-app.use("/api", verifyToken, mainRoutes);
+// 🛡️ Artık global verifyToken kaldırıldı
 
-// Eğer istersen sadece write işlemlerini korumak için şöyle ayırabilirsin:
-// app.use("/api/blogs", verifyToken, require("./routes/blogRoutes"));
-// app.use("/api/journals", verifyToken, require("./routes/journalRoutes"));
-// … vs.
-
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Sunucu ${PORT} portunda çalışıyor`);
 });

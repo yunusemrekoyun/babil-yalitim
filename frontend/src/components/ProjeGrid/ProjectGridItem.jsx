@@ -1,3 +1,4 @@
+// src/components/Projects/ProjectGridItem.jsx
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 import { useState } from "react";
@@ -7,10 +8,8 @@ const ProjectGridItem = ({ project, index }) => {
 
   return (
     <motion.div
-      className={`relative overflow-hidden rounded-xl bg-cover bg-center text-white 
-        ${project.size === "large" ? "col-span-2 row-span-2 md:row-span-2 md:col-span-2" : ""}
-      `}
-      style={{ backgroundImage: `url(${project.image})` }}
+      className="relative overflow-hidden rounded-xl bg-cover bg-center text-white cursor-pointer group"
+      style={{ backgroundImage: `url(${project.imageUrl})` }}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: false, amount: 0.3 }}
@@ -24,25 +23,27 @@ const ProjectGridItem = ({ project, index }) => {
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => (window.location.href = `/project-detail/${project._id}`)}
     >
-      {/* Karartma */}
       <div className="absolute inset-0 bg-black/40 z-10"></div>
 
-      {/* Başlık */}
       <div
-        className={`absolute bottom-4 left-4 z-20 text-xl font-semibold 
-          transition-transform duration-300 ${hovered ? "-translate-y-12" : ""}
+        className={`absolute bottom-4 left-4 z-20 text-xl font-semibold transition-transform duration-300 
+          ${hovered ? "translate-y-[-80px]" : "translate-y-0"}
         `}
       >
         {project.title}
       </div>
 
-      {/* Açıklama */}
       <div className="absolute bottom-0 left-0 w-full z-30 pointer-events-none">
         <div
-          className={`w-full bg-black/70 text-sm p-4
+          className={`w-full bg-black/70 text-sm p-4 leading-snug
             transition-all duration-300 ease-in-out
-            ${hovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full"}
+            ${
+              hovered
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-full"
+            }
           `}
         >
           {project.description}
@@ -54,8 +55,8 @@ const ProjectGridItem = ({ project, index }) => {
 
 ProjectGridItem.propTypes = {
   project: PropTypes.shape({
-    image: PropTypes.string,
-    size: PropTypes.string,
+    _id: PropTypes.string,
+    imageUrl: PropTypes.string,
     title: PropTypes.string,
     description: PropTypes.string,
   }).isRequired,

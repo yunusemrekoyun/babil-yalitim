@@ -14,3 +14,19 @@ body {
 html {
   scroll-behavior: smooth;
 }
+@layer utilities {
+  @keyframes scroll-loop {
+    0% {
+      transform: translateX(0%);
+    }
+    100% {
+      transform: translateX(-33.333%);
+    }
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: scroll-loop 20s linear infinite;
+  }
+}

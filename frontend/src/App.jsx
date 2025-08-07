@@ -5,12 +5,13 @@ import GuestRoute from "./context/GuestRoute.jsx";
 import PrivateRoute from "./context/PrivateRoute.jsx";
 import Login from "./admin/pages/Login";
 import AdminLayout from "./admin/components/AdminLayout";
-import * as PublicPages from "../src/pages/index.jsx"
-import * as AdminPages from "../src/admin/pages/index.jsx"
+import * as PublicPages from "../src/pages/index.jsx";
+import * as AdminPages from "../src/admin/pages/index.jsx";
 
 const publicRoutes = [
   { path: "/", element: <PublicPages.HomePage /> },
   { path: "/projects", element: <PublicPages.ProjectsPage /> },
+  { path: "/project-detail/:id", element: <PublicPages.ProjectDetailPage /> },
   { path: "/services", element: <PublicPages.ExplorePage /> },
   { path: "/journal", element: <PublicPages.JournalPage /> },
   { path: "/journal/:id", element: <PublicPages.JournalDetailPage /> },
@@ -18,6 +19,8 @@ const publicRoutes = [
   { path: "/about", element: <PublicPages.AboutPage /> },
   { path: "/blog", element: <PublicPages.BlogPage /> },
   { path: "/blog/:id", element: <PublicPages.BlogDetailPage /> },
+  { path: "/iletisim", element: <PublicPages.ContactPage /> }, // 📩 Yeni route eklendi
+  
 ];
 
 const adminRoutes = [

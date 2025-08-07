@@ -12,9 +12,10 @@ const LinkItem = ({
   onMouseLeave,
 }) => (
   <div
-    className={`bg-buzbeyazseffaf rounded-2xl  shadow-lg flex flex-col items-center transition-all duration-300 ease-in-out cursor-pointer relative w-60
-      ${isHovered ? "z-20 scale-110 shadow-2xl p-6 -mb-8" : "z-0 scale-100 p-4"}
-    `}
+    className={`bg-buzbeyazseffaf rounded-2xl shadow-lg flex flex-col items-center transition-all duration-300 ease-in-out cursor-pointer relative
+    w-full sm:w-60
+    ${isHovered ? "z-20 scale-110 shadow-2xl p-6 -mb-8" : "z-0 scale-100 p-4"}
+  `}
     onMouseEnter={onMouseEnter}
     onMouseLeave={onMouseLeave}
     style={{ minHeight: isHovered ? 320 : 220 }}

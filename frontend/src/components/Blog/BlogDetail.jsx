@@ -1,26 +1,43 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import PropTypes from "prop-types";
+// src/components/Blog/BlogDetail.jsx
 
-// Sahte yorum verisi
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import api from "../../api"; // api.js'den import
+
 const dummyComments = [
   { id: 1, name: "Ahmet", text: "Çok bilgilendirici bir yazı olmuş!" },
-  {
-    id: 2,
-    name: "Zeynep",
-    text: "Malzeme seçimi konusunda çok yardımcı oldu.",
-  },
-  {
-    id: 3,
-    name: "Mert",
-    text: "Bu konuyu daha önce hiç bu kadar net okumamıştım.",
-  },
+  { id: 2, name: "Zeynep", text: "Malzeme seçimi konusunda çok yardımcı oldu." },
+  { id: 3, name: "Mert", text: "Bu konuyu daha önce hiç bu kadar net okumamıştım." },
   { id: 4, name: "Elif", text: "Yazılarınızın devamını bekliyorum!" },
   { id: 5, name: "Kerem", text: "Harika anlatım, teşekkürler." },
 ];
 
-const BlogDetail = ({ blog }) => {
+const BlogDetail = () => {
+  const { id } = useParams();
+  const [blog, setBlog] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [visibleComments, setVisibleComments] = useState(3);
+
+  useEffect(() => {
+    api
+      .get(`/blogs/${id}`)
+      .then((res) => setBlog(res.data))
+      .catch((err) => console.error("Blog getirilemedi:", err))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return <div className="text-center py-20">Yükleniyor...</div>;
+  }
+
+  if (!blog) {
+    return (
+      <div className="text-center py-20 text-red-500 text-xl font-semibold">
+        Blog bulunamadı.
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -31,7 +48,6 @@ const BlogDetail = ({ blog }) => {
     >
       {/* Üst Görsel + Başlıklar */}
       <div className="flex flex-col md:flex-row md:gap-10">
-        {/* Sol: Görsel */}
         <div className="w-full md:w-1/2">
           <img
             src={blog.image}
@@ -39,8 +55,6 @@ const BlogDetail = ({ blog }) => {
             className="w-full h-[450px] object-cover rounded-xl"
           />
         </div>
-
-        {/* Sağ: Başlık + Özet */}
         <div className="w-full md:w-1/2 flex flex-col justify-center mt-6 md:mt-0 px-4 md:px-0">
           <p className="text-xs text-gray-600 uppercase mb-3">{blog.date}</p>
           <h2 className="text-3xl font-bold text-secondaryColor mb-5">
@@ -51,7 +65,8 @@ const BlogDetail = ({ blog }) => {
           </p>
         </div>
       </div>
-      {/* About - Ana İçerik */}
+
+      {/* Ana İçerik */}
       <div className="px-10 pt-6 text-gray-800 leading-relaxed text-lg">
         <h4 className="text-xl font-semibold text-secondaryColor mb-2">
           Detaylar
@@ -75,8 +90,6 @@ const BlogDetail = ({ blog }) => {
             </div>
           ))}
         </div>
-
-        {/* Daha fazla yorum göster */}
         {visibleComments < dummyComments.length && (
           <button
             onClick={() => setVisibleComments((prev) => prev + 2)}
@@ -88,15 +101,6 @@ const BlogDetail = ({ blog }) => {
       </div>
     </motion.div>
   );
-};
-BlogDetail.propTypes = {
-  blog: PropTypes.shape({
-    image: PropTypes.string.isRequired,
-    title: PropTypes.string.isRequired,
-    date: PropTypes.string.isRequired,
-    summary: PropTypes.string.isRequired,
-    about: PropTypes.string.isRequired,
-  }).isRequired,
 };
 
 export default BlogDetail;

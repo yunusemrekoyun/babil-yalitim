@@ -2,16 +2,6 @@ import { motion } from "framer-motion";
 import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
 import BlogDetail from "../components/Blog/BlogDetail";
-import Img1 from "../assets/banner.png"; // geçici
-
-const dummyData = {
-  id: 1,
-  title: "Dış Cephe Yalıtımında Yeni Nesil Malzemeler",
-  about:
-    "Yalıtım teknolojisinde son gelişmeleri ele alıyoruz. Yeni nesil malzemeler sayesinde enerji tasarrufu daha da kolaylaşıyor.",
-  date: "17 Temmuz 2025",
-  image: Img1,
-};
 
 const BlogDetailPage = () => {
   return (
@@ -26,7 +16,7 @@ const BlogDetailPage = () => {
 
       <section className="w-full flex flex-col items-center px-4 py-16">
         <div className="w-full max-w-6xl">
-          <BlogDetail blog={dummyData} />
+          <BlogDetail />
         </div>
       </section>
 

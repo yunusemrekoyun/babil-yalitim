@@ -8,3 +8,5 @@ export { default as WhyUsPage } from "./WhyUsPage.jsx";
 export { default as AboutPage } from "./AboutPage.jsx";
 export { default as BlogPage } from "./BlogPage.jsx";
 export { default as BlogDetailPage } from "./BlogDetailPage.jsx";
+export { default as ContactPage } from "./ContactPage";
+export { default as ProjectDetailPage } from "./ProjectDetailPage";

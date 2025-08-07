@@ -45,6 +45,8 @@ export default {
     },
   },
   plugins: [],
+
+  
 };
 
 // 1. renk koyu mavi : #01587a
