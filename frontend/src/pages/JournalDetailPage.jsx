@@ -1,38 +1,36 @@
 // src/pages/JournalDetailPage.jsx
 import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
 import GlassSection from "../components/Layout/GlassSection";
 import JournalDetail from "../components/Journal/JournalDetail";
-import Img1 from "../assets/banner.png";
-
-const dummyData = [
-  {
-    id: "1",
-    title: "Su Yalıtımında Doğru Malzeme Seçimi",
-    about:
-      "Su yalıtımı, yapıların ömrünü uzatmak için hayati öneme sahiptir. Bu yazımızda hangi yalıtım malzemesinin hangi yüzeylerde daha verimli olduğunu inceliyoruz.",
-    date: "14 Temmuz 2025",
-    image: Img1,
-  },
-  {
-    id: "2",
-    title: "Isı Yalıtımı ile Enerji Tasarrufu",
-    about:
-      "Doğru uygulanan ısı yalıtımı, hem konforunuzu artırır hem de enerji faturalarınızı azaltır. Bu blogda, farklı ısı yalıtım sistemlerini ve avantajlarını ele alıyoruz.",
-    date: "10 Temmuz 2025",
-    image: Img1,
-  },
-];
+import api from "../api"; // ← senin axios instance'ın
 
 const JournalDetailPage = () => {
   const { id } = useParams();
-  const journal = dummyData.find((item) => item.id === id);
+  const [journal, setJournal] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  if (!journal) {
-    return <div className="text-center py-20 text-xl">Haber bulunamadı.</div>;
-  }
+useEffect(() => {
+  if (!id) return;
+
+  api.get(`/journals/${id}`)
+    .then((res) => {
+      setJournal(res.data);
+      setNotFound(false);       // haber bulundu
+    })
+    .catch((err) => {
+      console.error("Journal bulunamadı:", err);
+      setJournal(null);
+      setNotFound(true);        // haber bulunamadı
+    })
+    .finally(() => {
+      setLoading(false);        // yükleme tamamlandı
+    });
+}, [id]);
 
   return (
     <>
@@ -47,7 +45,13 @@ const JournalDetailPage = () => {
 
         <div className="px-4 py-16 flex flex-col items-center justify-center space-y-8">
           <GlassSection>
-            <JournalDetail journal={journal} />
+            {loading ? (
+              <div className="text-center text-lg text-gray-700">Yükleniyor...</div>
+            ) : notFound ? (
+              <div className="text-center text-lg text-red-500">Haber bulunamadı.</div>
+            ) : (
+              <JournalDetail journal={journal} />
+            )}
           </GlassSection>
         </div>
       </motion.div>

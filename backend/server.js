@@ -18,6 +18,7 @@ app.use(
 app.use(express.json());
 
 // 🔓 Herkese açık rotalar
+app.use("/api/search", searchRoutes);
 app.use("/api/projects", require("./routes/projectRoutes"));
 app.use("/api/blogs", require("./routes/blogRoutes"));
 app.use("/api/journals", require("./routes/journalRoutes"));

@@ -14,7 +14,7 @@ const publicRoutes = [
   { path: "/project-detail/:id", element: <PublicPages.ProjectDetailPage /> },
   { path: "/services", element: <PublicPages.ExplorePage /> },
   { path: "/journal", element: <PublicPages.JournalPage /> },
-  { path: "/journal/:id", element: <PublicPages.JournalDetailPage /> },
+  { path: "/journals/:id", element: <PublicPages.JournalDetailPage /> },
   { path: "/whyus", element: <PublicPages.WhyUsPage /> },
   { path: "/about", element: <PublicPages.AboutPage /> },
   { path: "/blog", element: <PublicPages.BlogPage /> },

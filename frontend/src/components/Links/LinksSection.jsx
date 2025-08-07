@@ -11,21 +11,21 @@ const links = [
     img: img1,
     color: "text-secondaryColor",
     desc: "Hizmetlerimiz hakkında detaylı bilgiye ulaşmak için tıklayın.",
-    href: "#hizmetler",
+    href: "/services",
   },
   {
     label: "Projeler",
     img: img2,
     color: "text-quaternaryColor",
     desc: "Projelerimiz hakkında detaylı bilgiye ulaşmak için tıklayın.",
-    href: "#projeler",
+    href: "/projects",
   },
   {
     label: "Markalar",
     img: img3,
     color: "text-brandBlue",
     desc: "Çalıştığımız markaları görmek için tıklayın.",
-    href: "#markalar",
+    href: "#brands",
   },
 ];
 

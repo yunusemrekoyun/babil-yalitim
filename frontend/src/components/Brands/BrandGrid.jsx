@@ -43,7 +43,7 @@ const BrandGrid = () => {
   const fullList = [...brands, ...brands, ...brands]; // 3 tekrar
 
   return (
-    <div className="w-full overflow-hidden relative">
+    <div id="brands" className="w-full overflow-hidden relative mt-16">
       <div className="marquee-track">
         {fullList.map((brand, index) => (
           <BrandItem key={index} brand={brand} />

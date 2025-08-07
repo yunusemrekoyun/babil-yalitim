@@ -1,10 +1,13 @@
 // src/components/Journal/JournalDetail.jsx
-import PropTypes from "prop-types";
+
 
 const JournalDetail = ({ journal }) => {
+  if (!journal) {
+    return <p className="text-center py-10">Yükleniyor...</p>;
+  }
+
   return (
     <div className="w-full px-4 md:px-10 py-6 space-y-10">
-      {/* Üst kısım - görsel ve özet */}
       <div className="flex flex-col md:flex-row gap-8 items-start">
         <img
           src={journal.image}
@@ -15,23 +18,15 @@ const JournalDetail = ({ journal }) => {
           <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor">
             {journal.title}
           </h2>
-          <p className="text-sm text-gray-600 uppercase">{journal.date}</p>
+          <p className="text-sm text-gray-600 uppercase">
+            {new Date(journal.date).toLocaleDateString("tr-TR")}
+          </p>
         </div>
       </div>
 
-      {/* Alt kısım - içerik */}
       <div className="text-gray-800 leading-relaxed">{journal.about}</div>
     </div>
   );
-};
-
-JournalDetail.propTypes = {
-  journal: PropTypes.shape({
-    title: PropTypes.string,
-    date: PropTypes.string,
-    about: PropTypes.string,
-    image: PropTypes.string,
-  }).isRequired,
 };
 
 export default JournalDetail;

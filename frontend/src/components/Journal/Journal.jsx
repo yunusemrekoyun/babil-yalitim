@@ -1,36 +1,22 @@
-import Img1 from "../../assets/banner.png";
-import Img2 from "../../assets/banner.png";
+// src/components/Journal/Journal.jsx
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useNavigate } from "react-router-dom";
 import { FiArrowRight } from "react-icons/fi";
-
-const JournalData = [
-  {
-    id: 1,
-    title: "Su Yalıtımında Doğru Malzeme Seçimi",
-    about:
-      "Su yalıtımı, yapıların ömrünü uzatmak için hayati öneme sahiptir. Bu yazımızda hangi yalıtım malzemesinin hangi yüzeylerde daha verimli olduğunu inceliyoruz.",
-    date: "14 Temmuz 2025",
-    url: "#",
-    image: Img1,
-    delay: 0.2,
-  },
-  {
-    id: 2,
-    title: "Isı Yalıtımı ile Enerji Tasarrufu",
-    about:
-      "Doğru uygulanan ısı yalıtımı, hem konforunuzu artırır hem de enerji faturalarınızı azaltır. Bu blogda, farklı ısı yalıtım sistemlerini ve avantajlarını ele alıyoruz.",
-    date: "10 Temmuz 2025",
-    url: "#",
-    image: Img2,
-    delay: 0.4,
-  },
-];
+import api from "../../api";
 
 const Journal = () => {
   const { ref, inView } = useInView({ triggerOnce: false, threshold: 0.18 });
   const navigate = useNavigate();
+  const [journals, setJournals] = useState([]);
+
+  useEffect(() => {
+    api
+      .get("/journal")
+      .then(({ data }) => setJournals(data.slice(0, 2))) // sadece ilk 2 tanesi
+      .catch(console.error);
+  }, []);
 
   return (
     <section
@@ -53,21 +39,23 @@ const Journal = () => {
 
       {/* cards */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-14 place-items-center mt-20">
-        {JournalData.map((data) => (
+        {journals.map((data, index) => (
           <motion.div
             initial={{ x: 100, opacity: 0 }}
             animate={inView ? { x: 0, opacity: 1 } : { x: 100, opacity: 0 }}
-            transition={{ duration: 0.6, delay: data.delay }}
-            key={data.id}
+            transition={{ duration: 0.6, delay: index * 0.2 }}
+            key={data._id}
             className="bg-secondaryColor rounded-xl overflow-hidden shadow-md"
           >
             <img
               src={data.image}
-              alt=""
+              alt={data.title}
               className="w-full h-[350px] object-cover"
             />
             <div className="space-y-2 py-6 px-6 text-center">
-              <p className="uppercase text-sm text-green-300">{data.date}</p>
+              <p className="uppercase text-sm text-green-300">
+                {new Date(data.date).toLocaleDateString("tr-TR")}
+              </p>
               <p className="text-xl font-semibold">{data.title}</p>
               <p className="text-gray-300 mt-4">{data.about}</p>
             </div>
@@ -75,10 +63,9 @@ const Journal = () => {
         ))}
       </div>
 
-      {/* Sağ alt köşe linki */}
-      {/* Sağ alt köşe butonu */}
+      {/* sağ alt köşe buton */}
       <motion.div
-        key={inView ? "visible" : "hidden"} // Her girişte key değişir ve animasyon tetiklenir
+        key={inView ? "visible" : "hidden"}
         initial={{ x: 100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}

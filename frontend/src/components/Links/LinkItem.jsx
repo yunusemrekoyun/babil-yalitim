@@ -1,4 +1,3 @@
-// LinkItem.jsx
 import PropTypes from "prop-types";
 
 const LinkItem = ({
@@ -13,18 +12,23 @@ const LinkItem = ({
 }) => (
   <div
     className={`bg-buzbeyazseffaf rounded-2xl shadow-lg flex flex-col items-center transition-all duration-300 ease-in-out cursor-pointer relative
-    w-full sm:w-60
-    ${isHovered ? "z-20 scale-110 shadow-2xl p-6 -mb-8" : "z-0 scale-100 p-4"}
-  `}
+      w-full sm:w-60
+      ${isHovered ? "z-20 p-6" : "z-0 p-4"}
+    `}
     onMouseEnter={onMouseEnter}
     onMouseLeave={onMouseLeave}
-    style={{ minHeight: isHovered ? 320 : 220 }}
+    style={{
+      minHeight: isHovered ? 320 : 220,
+      transform: isHovered ? "translateY(0px)" : "translateY(0)",
+      transformOrigin: "top center",
+      willChange: "transform",
+    }}
   >
     <img
       src={img}
       alt={label}
       className={`object-cover rounded-xl mb-2 transition-all duration-300 shadow-lg
-        ${isHovered ? "w-32 h-32 -mt-12" : "w-full h-32 mt-0"}`}
+        ${isHovered ? "w-32 h-32 mt-0" : "w-full h-32 mt-0"}`}
     />
     <span
       className={`font-bold ${
@@ -39,6 +43,8 @@ const LinkItem = ({
     >
       {desc}
     </div>
+
+    {/* ✅ Doğru href'lerle bağlantı */}
     <a
       href={href}
       className={`transition-all duration-300 bg-quaternaryColor text-white px-6 py-2 rounded-full font-semibold shadow hover:bg-secondaryColor
@@ -59,7 +65,7 @@ LinkItem.propTypes = {
   img: PropTypes.string.isRequired,
   color: PropTypes.string,
   desc: PropTypes.string,
-  href: PropTypes.string,
+  href: PropTypes.string, // örnek: "/services", "/projects", "#brands"
   isHovered: PropTypes.bool.isRequired,
   onMouseEnter: PropTypes.func,
   onMouseLeave: PropTypes.func,
