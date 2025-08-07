@@ -8,6 +8,7 @@ const JournalForm = ({ initialData = {}, onSubmit }) => {
     summary: "",
     content: "",
     date: "",
+    image: "",
   });
 
   useEffect(() => {
@@ -15,6 +16,7 @@ const JournalForm = ({ initialData = {}, onSubmit }) => {
       setFormData({
         title: initialData.title || "",
         summary: initialData.summary || "",
+        image: initialData.image || "",
         // map 'about' from backend to 'content' in form
         content: initialData.content ?? initialData.about ?? "",
         date: initialData.date ? initialData.date.slice(0, 10) : "",
@@ -67,6 +69,23 @@ const JournalForm = ({ initialData = {}, onSubmit }) => {
         required
         className="w-full border p-2 rounded"
       />
+      <input
+        type="text"
+        name="image"
+        placeholder="Görsel URL"
+        value={formData.image}
+        onChange={handleChange}
+        className="w-full border p-2 rounded"
+      />
+
+      {/* Önizleme */}
+      {formData.image && (
+        <img
+          src={formData.image}
+          alt="Önizleme"
+          className="w-32 h-auto mt-2 rounded shadow"
+        />
+      )}
       <button
         type="submit"
         className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"

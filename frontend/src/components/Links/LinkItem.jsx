@@ -13,7 +13,7 @@ const LinkItem = ({
   <div
     className={`bg-buzbeyazseffaf rounded-2xl shadow-lg flex flex-col items-center transition-all duration-300 ease-in-out cursor-pointer relative
       w-full sm:w-60
-      ${isHovered ? "z-20 p-6" : "z-0 p-4"}
+      ${isHovered ? "z-10 p-6" : "z-0 p-4"}
     `}
     onMouseEnter={onMouseEnter}
     onMouseLeave={onMouseLeave}
@@ -38,7 +38,7 @@ const LinkItem = ({
       {label}
     </span>
     <div
-      className={`transition-all duration-300 text-gray-500 text-center text-sm mb-4 overflow-hidden
+      className={`transition-all duration-300 text-gray-500 text-center text-sm mb-4 overflow-visible
         ${isHovered ? "max-h-32 opacity-100 mt-2" : "max-h-0 opacity-0 m-0"}`}
     >
       {desc}

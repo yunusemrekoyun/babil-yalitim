@@ -9,4 +9,4 @@ const blogSchema = new mongoose.Schema({
   date: { type: String, required: true },        // Yayın tarihi (string olarak veriyoruz)
 }, { timestamps: true });
 
-module.exports = mongoose.model("Blog", blogSchema);
+module.exports = mongoose.models.Blog || mongoose.model("Blog", blogSchema);

@@ -20,17 +20,23 @@ const Dashboard = () => {
     project: 0,
     service: 0,
   });
-
   const fetchStats = useCallback(async () => {
     try {
       const [visitsRes, blogRes, journalRes, projectRes, serviceRes] =
         await Promise.all([
           api.get("/visits"),
-          api.get("/visits/count/blog"),
-          api.get("/visits/count/journal"),
-          api.get("/visits/count/project"),
-          api.get("/visits/count/service"),
+          api.get("/visits/count/blog"), // kontrol et: /blog mu /blogs mu?
+          api.get("/visits/count/journal"), // kontrol et: /journal mı?
+          api.get("/visits/count/projects"), // dikkat: s ile
+          api.get("/visits/count/services"), // dikkat: s ile
         ]);
+
+      console.log("Dashboard verileri:", {
+        blog: blogRes.data,
+        journal: journalRes.data,
+        project: projectRes.data,
+        service: serviceRes.data,
+      });
 
       setStats({
         total: Array.isArray(visitsRes.data) ? visitsRes.data.length : 0,
@@ -52,8 +58,8 @@ const Dashboard = () => {
     { name: "Toplam", count: stats.total },
     { name: "Blog", count: stats.blog },
     { name: "Journal", count: stats.journal },
-    { name: "Project", count: stats.project },
-    { name: "Service", count: stats.service },
+    { name: "Proje", count: stats.project },
+    { name: "Haberler", count: stats.service },
   ];
 
   return (
@@ -63,7 +69,7 @@ const Dashboard = () => {
         Hoş geldiniz! Buradan blog, proje, hizmet ve haberleri yönetin.
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
         <StatCard
           title="Toplam Ziyaret"
           count={stats.total}
@@ -84,6 +90,11 @@ const Dashboard = () => {
           count={stats.project}
           color="bg-purple-100"
         />
+        <StatCard
+          title="Haberler Ziyareti"
+          count={stats.service}
+          color="bg-red-100"
+        />
       </div>
 
       <h2 className="text-xl font-semibold mb-4">Ziyaret Dağılımı</h2>
@@ -94,7 +105,7 @@ const Dashboard = () => {
             <XAxis dataKey="name" />
             <YAxis allowDecimals={false} />
             <Tooltip />
-            <Bar dataKey="count" radius={[5, 5, 0, 0]} />
+            <Bar dataKey="count" fill="#3182CE" radius={[5, 5, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

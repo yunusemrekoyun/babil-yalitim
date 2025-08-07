@@ -1,5 +1,5 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import GuestRoute from "./context/GuestRoute.jsx";
 import PrivateRoute from "./context/PrivateRoute.jsx";
@@ -7,6 +7,8 @@ import Login from "./admin/pages/Login";
 import AdminLayout from "./admin/components/AdminLayout";
 import * as PublicPages from "../src/pages/index.jsx";
 import * as AdminPages from "../src/admin/pages/index.jsx";
+import { useEffect } from "react";
+import api from "./api"; // 🔍 ziyaret kaydı için
 
 const publicRoutes = [
   { path: "/", element: <PublicPages.HomePage /> },
@@ -19,8 +21,7 @@ const publicRoutes = [
   { path: "/about", element: <PublicPages.AboutPage /> },
   { path: "/blog", element: <PublicPages.BlogPage /> },
   { path: "/blog/:id", element: <PublicPages.BlogDetailPage /> },
-  { path: "/iletisim", element: <PublicPages.ContactPage /> }, // 📩 Yeni route eklendi
-  
+  { path: "/iletisim", element: <PublicPages.ContactPage /> },
 ];
 
 const adminRoutes = [
@@ -39,40 +40,49 @@ const adminRoutes = [
   { path: "services/edit/:id", element: <AdminPages.EditService /> },
 ];
 
-const AppRoutes = () => (
-  <AnimatePresence mode="wait">
-    <Routes>
-      {/* 🌐 Public Routes */}
-      {publicRoutes.map(({ path, element }) => (
-        <Route key={path} path={path} element={element} />
-      ))}
+const AppRoutes = () => {
+  const location = useLocation();
 
-      {/* 🔐 Login (Guest only) */}
-      <Route
-        path="/admin"
-        element={
-          <GuestRoute>
-            <Login />
-          </GuestRoute>
-        }
-      />
+  // 🔍 Her route değişiminde ziyaret kaydet
+useEffect(() => {
+  // Eğer admin paneldeysek loglama yapma
+  if (!location.pathname.startsWith("/admin")) {
+    console.log("Ziyaret gönderiliyor:", location.pathname);
+    api.post("/visits", { path: location.pathname }).catch(console.error);
+  }
+}, [location.pathname]);
 
-      {/* 🔒 Admin (Protected) */}
-      {adminRoutes.map(({ path, element }) => (
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        {publicRoutes.map(({ path, element }) => (
+          <Route key={path} path={path} element={element} />
+        ))}
         <Route
-          key={path}
-          path={`/admin/${path}`}
+          path="/admin"
           element={
-            <PrivateRoute>
-              <AdminLayout>{element}</AdminLayout>
-            </PrivateRoute>
+            <GuestRoute>
+              <Login />
+            </GuestRoute>
           }
         />
-      ))}
-    </Routes>
-  </AnimatePresence>
-);
+        {adminRoutes.map(({ path, element }) => (
+          <Route
+            key={path}
+            path={`/admin/${path}`}
+            element={
+              <PrivateRoute>
+                <AdminLayout>{element}</AdminLayout>
+              </PrivateRoute>
+            }
+          />
+        ))}
+      </Routes>
+    </AnimatePresence>
+  );
+};
 
+// 🔧 Burada Router sarmalayıcısını kullanman gerekiyor!
 export default function App() {
   return (
     <Router>

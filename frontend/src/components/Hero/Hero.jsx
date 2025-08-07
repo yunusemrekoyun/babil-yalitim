@@ -40,7 +40,7 @@ const Hero = () => {
       </div>
 
       {/* Linkler */}
-      <div className="w-full flex justify-center mt-10 sm:mt-16 px-4 z-20">
+      <div className="w-full flex justify-center mt-10 sm:mt-16 px-4 z-10">
         <LinksSection />
       </div>
 
