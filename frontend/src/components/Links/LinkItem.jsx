@@ -12,9 +12,9 @@ const LinkItem = ({
 }) => (
   <div
     className={`bg-buzbeyazseffaf rounded-2xl shadow-lg flex flex-col items-center transition-all duration-300 ease-in-out cursor-pointer relative
-      w-full sm:w-60
-      ${isHovered ? "z-10 p-6" : "z-0 p-4"}
-    `}
+  w-full sm:w-60
+  ${isHovered ? "z-10 pt-6 pb-4 px-6" : "z-0 pt-4 pb-[-2] px-4"}
+`}
     onMouseEnter={onMouseEnter}
     onMouseLeave={onMouseLeave}
     style={{

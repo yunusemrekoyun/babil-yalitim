@@ -46,6 +46,7 @@ const LinksSection = () => {
             isHovered={hoveredIndex === idx}
             onMouseEnter={() => setHoveredIndex(idx)}
             onMouseLeave={() => setHoveredIndex(null)}
+            
           />
         ))}
       </div>
