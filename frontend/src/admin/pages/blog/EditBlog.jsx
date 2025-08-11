@@ -1,9 +1,8 @@
-// src/admin/pages/blog/EditBlog.jsx
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { message } from "antd";
-import BlogForm from "../../components/BlogForm.jsx";
-import api from "../../../api.js";
+import BlogForm from "../../components/BlogForm";
+import api from "../../../api";
 
 const EditBlog = () => {
   const { id } = useParams();
@@ -12,53 +11,41 @@ const EditBlog = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBlog = async () => {
+    const run = async () => {
       try {
         const { data } = await api.get(`/blogs/${id}`);
-        setInitialData({
-          title: data.title,
-          summary: data.summary,
-          about: data.about,
-          image: data.image,
-          date: data.date.slice(0, 10), // yyyy-MM-dd format
-        });
-      } catch (err) {
-        console.error("Blog getirilirken hata:", err);
-        message.error(
-          err.response?.data?.message || "Blog bilgileri alınamadı."
-        );
+        setInitialData(data);
+      } catch (e) {
+
+        console.error("GET /blogs/:id error:", e?.response?.data || e);
+        message.error(e?.response?.data?.message || "Blog yüklenemedi.");
       } finally {
         setLoading(false);
       }
     };
-    fetchBlog();
+    run();
   }, [id]);
 
-  const handleEdit = async (updatedData) => {
+  const handleSubmit = async (fd) => {
     try {
-      await api.put(`/blogs/${id}`, updatedData);
-      message.success("Blog başarıyla güncellendi");
+      await api.put(`/blogs/${id}`, fd); // FormData
+      message.success("Blog güncellendi");
       navigate("/admin/blogs");
-    } catch (err) {
-      console.error("Güncelleme hatası:", err);
-      message.error(
-        err.response?.data?.message || "Güncelleme sırasında hata oluştu."
-      );
+    } catch (e) {
+
+      console.error("PUT /blogs/:id error:", e?.response?.data || e);
+      message.error(e?.response?.data?.message || "Güncelleme başarısız.");
     }
   };
 
-  if (loading) {
-    return <div className="p-6">Yükleniyor...</div>;
-  }
-
-  if (!initialData) {
-    return <div className="p-6 text-red-500">Blog bulunamadı.</div>;
-  }
+  if (loading) return <div className="p-6">Yükleniyor…</div>;
+  if (!initialData)
+    return <div className="p-6 text-red-600">Blog bulunamadı.</div>;
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Blog Düzenle</h2>
-      <BlogForm initialData={initialData} onSubmit={handleEdit} />
+    <div className="p-4 md:p-6">
+      <h2 className="mb-4 text-2xl font-semibold">Blogu Düzenle</h2>
+      <BlogForm initialData={initialData} onSubmit={handleSubmit} />
     </div>
   );
 };

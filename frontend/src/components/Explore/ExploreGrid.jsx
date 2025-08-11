@@ -1,59 +1,40 @@
-// src/components/Explore/ExploreGrid.jsx
-import { useState, useEffect, useRef } from "react";
-import api from "../../api";
+import PropTypes from "prop-types";
+import ServiceCard from "./ServiceCard";
 
-const ExploreGrid = () => {
-  const [services, setServices] = useState([]);
-  const videoRefs = useRef([]);
-
-  useEffect(() => {
-    api
-      .get("/services")
-      .then((res) => {
-        setServices(res.data);
-      })
-      .catch((err) => {
-        console.error("Hizmet verileri alınamadı:", err);
-      });
-  }, []);
-
-  const handleMouseEnter = (index) => {
-    const video = videoRefs.current[index];
-    if (video) video.play();
-  };
-
-  const handleMouseLeave = (index) => {
-    const video = videoRefs.current[index];
-    if (video) {
-      video.pause();
-      video.currentTime = 0;
-    }
-  };
+const ExploreGrid = ({ services }) => {
+  if (!services || services.length === 0) {
+    return (
+      <div className="rounded-2xl border border-white/60 bg-white/40 backdrop-blur-xl p-8 text-center text-gray-600">
+        Henüz hizmet eklenmemiş.
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 place-items-center">
-      {services.map((item, index) => (
-        <div
-          key={item._id || index}
-          className="relative group overflow-hidden rounded-xl shadow-lg transition-transform duration-300 hover:scale-[1.02] bg-black"
-          onMouseEnter={() => handleMouseEnter(index)}
-          onMouseLeave={() => handleMouseLeave(index)}
-        >
-          <video
-            ref={(el) => (videoRefs.current[index] = el)}
-            src={item.videoUrl}
-            muted
-            loop
-            playsInline
-            className="w-[200px] h-[290px] md:w-[280px] md:h-[420px] object-cover rounded-xl"
-          />
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-60 transition duration-300 flex items-end justify-center p-4">
-            <p className="text-white text-lg font-semibold">{item.title}</p>
-          </div>
-        </div>
+    <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      {services.map((s, i) => (
+        <ServiceCard key={s._id || i} service={s} index={i} />
       ))}
     </div>
   );
+};
+
+ExploreGrid.propTypes = {
+  services: PropTypes.arrayOf(
+    PropTypes.shape({
+      _id: PropTypes.string,
+      title: PropTypes.string,
+      description: PropTypes.string,
+      // medya:
+      imageDataUrl: PropTypes.string,
+      galleryDataUrls: PropTypes.array,
+      imageUrl: PropTypes.string,
+      videoUrl: PropTypes.string,
+      // opsiyonel kategoriler
+      category: PropTypes.string,
+      tags: PropTypes.arrayOf(PropTypes.string),
+    })
+  ),
 };
 
 export default ExploreGrid;

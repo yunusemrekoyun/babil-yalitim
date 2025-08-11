@@ -1,49 +1,30 @@
 // src/admin/pages/project/AddProject.jsx
-import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { message } from "antd";
-import ProjectForm from "../../components/ProjectForm.jsx";
-import api from "../../../api.js";
+import { useNavigate } from "react-router-dom";
+import ProjectForm from "../../components/ProjectForm";
+import api from "../../../api";
 
 const AddProject = () => {
   const navigate = useNavigate();
 
-  // Form'un ilk değerleri
-  const initialData = useMemo(
-    () => ({
-      title: "",
-      description: "",
-      category: "",
-      image: "",
-      date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
-    }),
-    []
-  );
-
-  const handleAdd = async (data) => {
+  const handleSubmit = async (formData) => {
     try {
-      await api.post("/projects", {
-        title: data.title,
-        description: data.description,
-        category: data.category,
-        image: data.image,
-        date: data.date,
-      });
-      message.success("Proje başarıyla eklendi");
+      // Content-Type başlığını ELLE SET ETME!
+      await api.post("/projects", formData);
+      message.success("Proje eklendi");
       navigate("/admin/projects");
     } catch (err) {
-      console.error("Proje eklenirken hata oluştu:", err);
-      message.error(
-        err.response?.data?.message ||
-          "Proje eklenemedi. Lütfen tekrar deneyin."
-      );
+      // Hata detayını konsola basmak yardımcı olur
+      // eslint-disable-next-line no-console
+      console.error("Create /projects error:", err.response?.data || err);
+      message.error(err.response?.data?.message || "Proje eklenemedi.");
     }
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-semibold mb-4">Yeni Proje Ekle</h2>
-      <ProjectForm initialData={initialData} onSubmit={handleAdd} />
+    <div className="p-4 md:p-6">
+      <h2 className="mb-4 text-2xl font-semibold">Yeni Proje</h2>
+      <ProjectForm onSubmit={handleSubmit} />
     </div>
   );
 };

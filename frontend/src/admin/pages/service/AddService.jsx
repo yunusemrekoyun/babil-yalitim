@@ -1,26 +1,27 @@
-// src/admin/pages/service/AddService.jsx
 import { useNavigate } from "react-router-dom";
 import { message } from "antd";
-import api from "../../../api.js";
-import ServiceForm from "../../components/ServiceForm.jsx";
+import api from "../../../api";
+import ServiceForm from "../../components/ServiceForm";
 
 const AddService = () => {
   const navigate = useNavigate();
 
   const handleSubmit = async (formData) => {
     try {
+      // Content-Type'ı elle set etme; interceptor halleder
       await api.post("/services", formData);
-      message.success("Servis başarıyla eklendi!");
+      message.success("Hizmet eklendi");
       navigate("/admin/services");
     } catch (err) {
-      console.error("Servis eklenirken hata:", err);
-      message.error(err.response?.data?.message || "Servis eklenemedi");
+      // eslint-disable-next-line no-console
+      console.error("POST /services error:", err?.response?.data || err);
+      message.error(err?.response?.data?.message || "Hizmet eklenemedi.");
     }
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-semibold mb-4">Yeni Servis Ekle</h2>
+    <div>
+      <h1 className="text-xl font-bold mb-6">Yeni Hizmet Ekle</h1>
       <ServiceForm onSubmit={handleSubmit} />
     </div>
   );

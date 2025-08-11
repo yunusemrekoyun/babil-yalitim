@@ -1,9 +1,9 @@
 // src/admin/pages/project/EditProject.jsx
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { message } from "antd";
-import ProjectForm from "../../components/ProjectForm.jsx";
-import api from "../../../api.js";
+import ProjectForm from "../../components/ProjectForm";
+import api from "../../../api";
 
 const EditProject = () => {
   const { id } = useParams();
@@ -12,55 +12,42 @@ const EditProject = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProject = async () => {
+    const run = async () => {
       try {
         const { data } = await api.get(`/projects/${id}`);
-        setInitialData({
-          title: data.title,
-          description: data.description,
-          category: data.category || "",
-          image: data.image || "",
-          date: data.date ? data.date.slice(0, 10) : "",
-        });
+        setInitialData(data);
       } catch (err) {
-        console.error("Proje getirilirken hata:", err);
-        message.error(
-          err.response?.data?.message || "Proje bilgileri alınamadı."
-        );
+        // eslint-disable-next-line no-console
+        console.error("GET /projects/:id error:", err.response?.data || err);
+        message.error(err.response?.data?.message || "Proje yüklenemedi.");
       } finally {
         setLoading(false);
       }
     };
-    fetchProject();
+    run();
   }, [id]);
 
-  const handleEdit = async (data) => {
+  const handleSubmit = async (formData) => {
     try {
-      await api.put(`/projects/${id}`, {
-        title: data.title,
-        description: data.description,
-        category: data.category,
-        image: data.image,
-        date: data.date,
-      });
-      message.success("Proje başarıyla güncellendi");
+      // Content-Type başlığını ELLE SET ETME!
+      await api.put(`/projects/${id}`, formData);
+      message.success("Proje güncellendi");
       navigate("/admin/projects");
     } catch (err) {
-      console.error("Güncelleme hatası:", err);
-      message.error(
-        err.response?.data?.message || "Güncelleme sırasında hata oluştu."
-      );
+      // eslint-disable-next-line no-console
+      console.error("PUT /projects/:id error:", err.response?.data || err);
+      message.error(err.response?.data?.message || "Güncellenemedi.");
     }
   };
 
-  if (loading) return <div className="p-4">Yükleniyor...</div>;
+  if (loading) return <div className="p-4">Yükleniyor…</div>;
   if (!initialData)
-    return <div className="p-4 text-red-500">Proje bulunamadı.</div>;
+    return <div className="p-4 text-red-600">Proje bulunamadı.</div>;
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-semibold mb-4">Projeyi Düzenle</h2>
-      <ProjectForm initialData={initialData} onSubmit={handleEdit} />
+    <div className="p-4 md:p-6">
+      <h2 className="mb-4 text-2xl font-semibold">Projeyi Düzenle</h2>
+      <ProjectForm initialData={initialData} onSubmit={handleSubmit} />
     </div>
   );
 };

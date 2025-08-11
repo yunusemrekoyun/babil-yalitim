@@ -1,43 +1,27 @@
-// src/admin/pages/blog/AddBlog.jsx
-import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { message } from "antd";
-import BlogForm from "../../components/BlogForm.jsx";
-import api from "../../../api.js";
+import BlogForm from "../../components/BlogForm";
+import api from "../../../api";
 
 const AddBlog = () => {
   const navigate = useNavigate();
 
-  // Formu temiz tutmak için başlangıç verisi
-  const initialData = useMemo(
-    () => ({
-      title: "",
-      summary: "",
-      about: "",
-      image: "",
-      date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD format
-    }),
-    []
-  );
-
-  const handleAdd = async (data) => {
+  const handleSubmit = async (fd) => {
     try {
-      await api.post("/blogs", data);
-      message.success("Blog başarıyla eklendi");
+      await api.post("/blogs", fd); // FormData — Content-Type elle set etme
+      message.success("Blog eklendi");
       navigate("/admin/blogs");
-    } catch (err) {
-      console.error("Blog eklenirken hata oluştu:", err);
-      const errMsg =
-        err.response?.data?.message ||
-        "Blog eklenemedi. Lütfen tekrar deneyin.";
-      message.error(errMsg);
+    } catch (e) {
+
+      console.error("POST /blogs error:", e?.response?.data || e);
+      message.error(e?.response?.data?.message || "Blog eklenemedi.");
     }
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Yeni Blog Ekle</h2>
-      <BlogForm initialData={initialData} onSubmit={handleAdd} />
+    <div className="p-4 md:p-6">
+      <h2 className="mb-4 text-2xl font-semibold">Yeni Blog</h2>
+      <BlogForm onSubmit={handleSubmit} />
     </div>
   );
 };

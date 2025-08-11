@@ -1,21 +1,18 @@
-// frontend/src/components/ProjeGrid/ProjectGrid.jsx
 import { useEffect, useState } from "react";
 import ProjectGridItem from "./ProjectGridItem";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
+import api from "../../api"; // <- sabit URL yerine
 
 const ProjectGrid = () => {
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/projects")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setProjects(data);
-        } else {
-          console.warn("Beklenmeyen veri formatı:", data);
-        }
+    api
+      .get("/projects")
+      .then(({ data }) => {
+        if (Array.isArray(data)) setProjects(data);
+        else console.warn("Beklenmeyen veri formatı:", data);
       })
       .catch((err) => console.error("Proje verileri alınamadı:", err));
   }, []);
@@ -31,7 +28,11 @@ const ProjectGrid = () => {
 
       <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-3 gap-4 auto-rows-[200px] md:auto-rows-[250px]">
         {projects.map((project, index) => (
-          <ProjectGridItem key={project._id || index} project={project} index={index} />
+          <ProjectGridItem
+            key={project._id || index}
+            project={project}
+            index={index}
+          />
         ))}
       </div>
 

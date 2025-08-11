@@ -1,97 +1,140 @@
-// src/admin/pages/journal/JournalList.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { message } from "antd";
 import api from "../../../api.js";
 
 const JournalList = () => {
   const [journals, setJournals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [q, setQ] = useState("");
+  const [err, setErr] = useState("");
 
-  useEffect(() => {
-    const fetchJournals = async () => {
-      try {
-        const { data } = await api.get("/journals");
-        setJournals(data);
-      } catch (err) {
-        console.error("Journaller alınamadı", err);
-        setError(
-          err.response?.data?.message ||
-            "Journaller getirilemedi. Lütfen tekrar deneyin."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchJournals();
-  }, []);
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bu journali silmek istediğinize emin misiniz?"))
-      return;
-
+  const fetchAll = async () => {
     try {
-      await api.delete(`/journals/${id}`);
-      setJournals((prev) => prev.filter((j) => j._id !== id));
-    } catch (err) {
-      console.error("Silme işlemi başarısız", err);
-      alert(err.response?.data?.message || "Silme sırasında hata oluştu");
+      setLoading(true);
+      const { data } = await api.get("/journals");
+      setJournals(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("GET /journals error:", e?.response?.data || e);
+      const msg = e?.response?.data?.message || "Haberler getirilemedi.";
+      setErr(msg);
+      message.error(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading) return <p>Yükleniyor...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return journals;
+    return journals.filter(
+      (x) =>
+        x.title?.toLowerCase().includes(s) ||
+        x.content?.toLowerCase().includes(s)
+    );
+  }, [journals, q]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Bu haberi silmek istiyor musunuz?")) return;
+    try {
+      await api.delete(`/journals/${id}`);
+      message.success("Haber silindi");
+      setJournals((prev) => prev.filter((j) => j._id !== id));
+    } catch (e) {
+      console.error("DELETE /journals/:id error:", e?.response?.data || e);
+      message.error(e?.response?.data?.message || "Silinemedi.");
+    }
+  };
+
+  if (loading) return <p className="p-4">Yükleniyor…</p>;
+  if (err) return <p className="p-4 text-red-600">{err}</p>;
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Journal Listesi</h2>
-        <Link
-          to="/admin/journals/add"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Yeni Journal Ekle
-        </Link>
+    <div className="p-4 md:p-6">
+      {/* başlık + aksiyonlar */}
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <h2 className="text-2xl font-semibold">Haberler</h2>
+        <div className="flex items-center gap-2">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Ara (başlık/içerik)"
+            className="w-60 rounded-md border px-3 py-2 text-sm"
+          />
+          <Link
+            to="/admin/journals/add"
+            className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-white text-sm hover:bg-indigo-700"
+          >
+            + Yeni Haber
+          </Link>
+        </div>
       </div>
 
-      {journals.length === 0 ? (
-        <p className="text-center text-gray-500 mt-8">
-          Henüz journal eklenmemiş.
-        </p>
+      {/* grid/table */}
+      {filtered.length === 0 ? (
+        <div className="rounded-md border p-6 text-center text-gray-500">
+          Kayıt bulunamadı.
+        </div>
       ) : (
-        <table className="min-w-full border border-gray-300">
+        <table className="w-full border-collapse overflow-hidden rounded-lg border border-gray-200 text-sm">
           <thead>
-            <tr className="bg-gray-100 text-left">
-              <th className="py-2 px-4 border-b">Başlık</th>
-              <th className="py-2 px-4 border-b">Tarih</th>
-              <th className="py-2 px-4 border-b">İşlemler</th>
+            <tr className="bg-gray-50 text-left">
+              <th className="border p-2">Kapak</th>
+              <th className="border p-2">Başlık</th>
+              <th className="border p-2">Tarih</th>
+              <th className="border p-2">Beğeni</th>
+              <th className="border p-2 w-40">İşlemler</th>
             </tr>
           </thead>
           <tbody>
-            {journals.map((journal) => (
-              <tr key={journal._id} className="hover:bg-gray-50">
-                <td className="py-2 px-4 border-b">{journal.title}</td>
-                <td className="py-2 px-4 border-b">
-                  {new Date(journal.date).toLocaleDateString("tr-TR", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
+            {filtered.map((j) => (
+              <tr key={j._id} className="align-top">
+                <td className="border p-2">
+                  {j.cover?.url ? (
+                    <img
+                      src={j.cover.url}
+                      alt={j.title}
+                      className="h-16 w-24 object-cover rounded-md"
+                    />
+                  ) : (
+                    "-"
+                  )}
                 </td>
-                <td className="py-2 px-4 border-b flex gap-2">
-                  <Link
-                    to={`/admin/journals/edit/${journal._id}`}
-                    className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-200"
-                  >
-                    Düzenle
-                  </Link>
-                  <button
-                    onClick={() => handleDelete(journal._id)}
-                    className="bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200"
-                  >
-                    Sil
-                  </button>
+                <td className="border p-2">
+                  <div className="font-medium">{j.title}</div>
+                  <div className="mt-1 line-clamp-2 text-gray-500 max-w-[40ch]">
+                    {j.content}
+                  </div>
+                </td>
+                <td className="border p-2">
+                  {j.createdAt
+                    ? new Date(j.createdAt).toLocaleDateString("tr-TR", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : "-"}
+                </td>
+                <td className="border p-2">{j.likesCount ?? 0}</td>
+                <td className="border p-2">
+                  <div className="flex gap-2">
+                    <Link
+                      to={`/admin/journals/edit/${j._id}`}
+                      className="inline-flex items-center rounded-md bg-yellow-500 px-3 py-1.5 text-white hover:bg-yellow-600"
+                    >
+                      Düzenle
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(j._id)}
+                      className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
+                    >
+                      Sil
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

@@ -7,13 +7,25 @@ const ContactPage = () => {
   return (
     <>
       <motion.div
-        className="min-h-screen bg-gradient-to-br from-orange-500 via-gray-100 to-orange-300 p-6 md:p-12"
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        transition={{ duration: 0.5 }}
+        className="min-h-screen bg-gradient-to-br from-white via-gray-100 to-orange-100"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 24 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <NavbarPage />
+
+        {/* üst şerit / breadcrumb */}
+        <section className="max-w-7xl mx-auto px-4 md:px-8 pt-8">
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <a href="/" className="hover:text-secondaryColor transition">
+              Anasayfa
+            </a>
+            <span>•</span>
+            <span>İletişim</span>
+          </div>
+        </section>
+
         <Contact />
       </motion.div>
 

@@ -1,14 +1,14 @@
+// pages/AboutPage.jsx
 import { motion } from "framer-motion";
-import GlassSection from "../components/Layout/GlassSection";
-import AboutPageComponent from "../components/About/AboutPageComponent";
-import Footer from "../components/Footer/Footer";
 import NavbarPage from "../components/Navbar/NavbarPage";
+import Footer from "../components/Footer/Footer";
+import AboutPageComponent from "../components/About/AboutPageComponent";
 
 const AboutPage = () => {
   return (
     <>
       <motion.div
-        className="min-h-screen bg-gradient-to-br from-orange-500 via-gray-100 to-orange-300 p-12"
+        className="min-h-screen bg-gradient-to-br from-orange-200 via-white to-orange-100 p-6 md:p-12"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
@@ -16,14 +16,11 @@ const AboutPage = () => {
       >
         <NavbarPage />
 
-        <div className="px-4 py-16 flex flex-col items-center justify-center space-y-8">
-          <GlassSection>
-            <AboutPageComponent />
-          </GlassSection>
+        <div className="px-4 py-12 flex flex-col items-center justify-center space-y-8">
+          <AboutPageComponent />
         </div>
       </motion.div>
 
-      {/* Footer artık dışarıda ve tam genişlikte */}
       <Footer />
     </>
   );

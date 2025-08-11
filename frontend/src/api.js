@@ -1,24 +1,43 @@
+// src/api.js
 import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  headers: { "Content-Type": "application/json" },
   withCredentials: true,
 });
 
-// İstek interceptor: localStorage'dan token ekle
+// GLOBALDE sabit application/json koyma!
+// FormData ise Content-Type'ı kaldır, değilse JSON ayarla.
 api.interceptors.request.use(
   (config) => {
+    // Auth header
     const token = localStorage.getItem("token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
+
+    // FormData kontrolü
+    const isFormData =
+      typeof FormData !== "undefined" && config.data instanceof FormData;
+
+    if (isFormData) {
+      // Tarayıcının boundary eklemesi için Content-Type'ı elle set ETME
+      if (config.headers && config.headers["Content-Type"]) {
+        delete config.headers["Content-Type"];
+      }
+    } else {
+      // JSON isteklerde header'ı ekle
+      if (config.headers) {
+        config.headers["Content-Type"] = "application/json";
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Yanıt interceptor: 401 veya 403 gelirse logout + login sayfasına yönlendir
+// 401/403 yakala
 api.interceptors.response.use(
-  (response) => response,
+  (res) => res,
   (error) => {
     const status = error.response?.status;
     if (status === 401 || status === 403) {
@@ -29,12 +48,11 @@ api.interceptors.response.use(
   }
 );
 
-// Manuel header güncellemek isterseniz
 export const setAuthToken = (token) => {
   if (token) {
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    api.defaults.headers.common.Authorization = `Bearer ${token}`;
   } else {
-    delete api.defaults.headers.common["Authorization"];
+    delete api.defaults.headers.common.Authorization;
   }
 };
 

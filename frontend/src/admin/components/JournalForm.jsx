@@ -1,104 +1,261 @@
-// src/components/JournalForm.jsx
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 
-const JournalForm = ({ initialData = {}, onSubmit }) => {
-  const [formData, setFormData] = useState({
-    title: "",
-    summary: "",
-    content: "",
-    date: "",
-    image: "",
-  });
+/* Küçük yardımcı */
+const MediaThumb = ({ src, type = "image", className = "" }) => {
+  if (!src) return null;
+  if (type === "video") {
+    return (
+      <video
+        src={src}
+        className={className}
+        controls
+        playsInline
+        preload="metadata"
+      />
+    );
+  }
+  return <img src={src} alt="" className={className} />;
+};
+
+MediaThumb.propTypes = {
+  src: PropTypes.string,
+  type: PropTypes.oneOf(["image", "video"]),
+  className: PropTypes.string,
+};
+
+const JournalForm = ({ initialData, onSubmit, onRemoveAsset }) => {
+  const isEdit = Boolean(initialData?._id);
+
+  // metin alanları
+  const [title, setTitle] = useState(initialData?.title || "");
+  const [content, setContent] = useState(initialData?.content || "");
+
+  // mevcut medya (sadece gösterim)
+  const existingCover = useMemo(
+    () => initialData?.cover || null,
+    [initialData?.cover]
+  );
+  const existingAssets = useMemo(
+    () => initialData?.assets || [],
+    [initialData?.assets]
+  );
+
+  // yeni seçilen dosyalar
+  const [coverFile, setCoverFile] = useState(null);
+  const [assetsFiles, setAssetsFiles] = useState([]);
+
+  // önizlemeler
+  const [coverPreview, setCoverPreview] = useState(null);
+  const [assetsPreviews, setAssetsPreviews] = useState([]);
+  const revokers = useRef([]);
 
   useEffect(() => {
-    if (initialData && Object.keys(initialData).length > 0) {
-      setFormData({
-        title: initialData.title || "",
-        summary: initialData.summary || "",
-        image: initialData.image || "",
-        // map 'about' from backend to 'content' in form
-        content: initialData.content ?? initialData.about ?? "",
-        date: initialData.date ? initialData.date.slice(0, 10) : "",
+    return () => {
+      revokers.current.forEach((u) => {
+        if (u && u.startsWith("blob:")) URL.revokeObjectURL(u);
       });
-    }
-  }, [initialData]);
+      revokers.current = [];
+    };
+  }, []);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const blobify = (file, setter) => {
+    if (!file) return setter(null);
+    const u = URL.createObjectURL(file);
+    revokers.current.push(u);
+    setter(u);
   };
 
-  const handleSubmit = (e) => {
+  const handleCoverChange = (e) => {
+    const f = e.target.files?.[0] || null;
+    setCoverFile(f);
+    blobify(f, setCoverPreview);
+  };
+
+  const handleAssetsChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    setAssetsFiles(files);
+    // eski blobları bırak
+    assetsPreviews.forEach(
+      (u) => u?.startsWith("blob:") && URL.revokeObjectURL(u)
+    );
+    const urls = files.map((f) => {
+      const u = URL.createObjectURL(f);
+      revokers.current.push(u);
+      return u;
+    });
+    setAssetsPreviews(urls);
+  };
+
+  const submit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    if (!isEdit && !coverFile) {
+      alert("Kapak görseli zorunludur.");
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append("title", title);
+    fd.append("content", content);
+    if (coverFile) fd.append("cover", coverFile);
+    assetsFiles.forEach((f) => fd.append("assets", f));
+
+    onSubmit(fd);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-xl mx-auto">
-      <input
-        type="text"
-        name="title"
-        placeholder="Başlık"
-        value={formData.title}
-        onChange={handleChange}
-        required
-        className="w-full border p-2 rounded"
-      />
-      <input
-        type="text"
-        name="summary"
-        placeholder="Özet"
-        value={formData.summary}
-        onChange={handleChange}
-        className="w-full border p-2 rounded"
-      />
-      <textarea
-        name="content"
-        placeholder="İçerik"
-        value={formData.content}
-        onChange={handleChange}
-        rows={6}
-        className="w-full border p-2 rounded"
-      />
-      <input
-        type="date"
-        name="date"
-        value={formData.date}
-        onChange={handleChange}
-        required
-        className="w-full border p-2 rounded"
-      />
-      <input
-        type="text"
-        name="image"
-        placeholder="Görsel URL"
-        value={formData.image}
-        onChange={handleChange}
-        className="w-full border p-2 rounded"
-      />
+    <form
+      onSubmit={submit}
+      className="grid grid-cols-1 gap-6 lg:grid-cols-5"
+      noValidate
+    >
+      {/* Sol: metin alanları */}
+      <div className="lg:col-span-3 space-y-5">
+        <div>
+          <label className="block text-sm font-medium">Başlık *</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            className="mt-1 w-full rounded-md border px-3 py-2"
+            placeholder="Örn: X firması ile anlaşma"
+          />
+        </div>
 
-      {/* Önizleme */}
-      {formData.image && (
-        <img
-          src={formData.image}
-          alt="Önizleme"
-          className="w-32 h-auto mt-2 rounded shadow"
-        />
-      )}
-      <button
-        type="submit"
-        className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
-      >
-        Kaydet
-      </button>
+        <div>
+          <label className="block text-sm font-medium">İçerik *</label>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            rows={8}
+            required
+            className="mt-1 w-full rounded-md border px-3 py-2 leading-relaxed"
+            placeholder="Habere dair detaylar…"
+          />
+        </div>
+
+        <div className="pt-1">
+          <button
+            type="submit"
+            className="inline-flex items-center rounded-md bg-indigo-600 px-5 py-2 text-white hover:bg-indigo-700"
+          >
+            Kaydet
+          </button>
+        </div>
+      </div>
+
+      {/* Sağ: medya alanları */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Kapak */}
+        <div>
+          <label className="block text-sm font-semibold">
+            Kapak Görseli {isEdit ? "(mevcut varsa opsiyonel)" : "(zorunlu)"}
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleCoverChange}
+            className="mt-2 w-full"
+          />
+          <div className="mt-2 overflow-hidden rounded-lg border bg-gray-50">
+            {coverPreview ? (
+              <MediaThumb src={coverPreview} className="w-full" />
+            ) : existingCover?.url ? (
+              <MediaThumb src={existingCover.url} className="w-full" />
+            ) : (
+              <div className="aspect-video grid place-items-center text-xs text-gray-400">
+                Önizleme
+              </div>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Kapak için PNG/JPEG/WEBP önerilir.
+          </p>
+        </div>
+
+        {/* Alt medya (image/video çoklu) */}
+        <div>
+          <label className="block text-sm font-semibold">
+            Alt Medya (opsiyonel, çoklu — resim ya da video)
+          </label>
+          <input
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            onChange={handleAssetsChange}
+            className="mt-2 w-full"
+          />
+
+          {!!existingAssets.length && (
+            <>
+              <p className="mt-2 text-xs text-gray-500">Mevcut medya</p>
+              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {existingAssets.map((m) => (
+                  <div
+                    key={m.publicId}
+                    className="relative rounded border overflow-hidden"
+                  >
+                    <MediaThumb
+                      src={m.url}
+                      type={m.resourceType === "video" ? "video" : "image"}
+                      className="h-28 w-full object-cover"
+                    />
+                    {onRemoveAsset && (
+                      <button
+                        type="button"
+                        onClick={() => onRemoveAsset(m.publicId)}
+                        className="absolute right-1 top-1 rounded bg-red-600/90 px-2 py-0.5 text-xs text-white hover:bg-red-700"
+                        aria-label="Medyayı sil"
+                        title="Medyayı sil"
+                      >
+                        Sil
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {!!assetsPreviews.length && (
+            <>
+              <p className="mt-3 text-xs text-gray-500">Yeni eklenecekler</p>
+              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {assetsPreviews.map((u, i) => (
+                  <MediaThumb
+                    key={i}
+                    src={u}
+                    className="h-28 w-full object-cover rounded border"
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </form>
   );
 };
 
 JournalForm.propTypes = {
-  initialData: PropTypes.object,
+  initialData: PropTypes.shape({
+    _id: PropTypes.string,
+    title: PropTypes.string,
+    content: PropTypes.string,
+    cover: PropTypes.shape({
+      url: PropTypes.string,
+    }),
+    assets: PropTypes.arrayOf(
+      PropTypes.shape({
+        url: PropTypes.string,
+        publicId: PropTypes.string,
+        resourceType: PropTypes.string,
+      })
+    ),
+  }),
   onSubmit: PropTypes.func.isRequired,
+  onRemoveAsset: PropTypes.func, // sadece edit ekranında kullanılıyor
 };
 
 export default JournalForm;

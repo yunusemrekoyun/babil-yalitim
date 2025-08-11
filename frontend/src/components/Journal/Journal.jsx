@@ -30,11 +30,6 @@ const Journal = () => {
           Haberler
         </h2>
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded mb-6"></div>
-        <p className="text-gray-300 max-w-2xl mx-auto">
-          We are all explorers, driven by curiosity and the desire to discover
-          new horizons. Join us on a journey to uncover the wonders of our
-          planet.
-        </p>
       </div>
 
       {/* cards */}

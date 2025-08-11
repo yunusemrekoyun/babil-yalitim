@@ -1,28 +1,64 @@
-// backend/routes/blogRoutes.js
 const express = require("express");
 const router = express.Router();
-const verifyToken = require("../middleware/verifyToken"); // ← ekledik
+const verifyToken = require("../middleware/verifyToken");
+const upload = require("../middleware/uploadMedia"); // disk tmp, image+video kabul eder
+
 const {
-  getAllBlogs,
+  getBlogs,
   getBlogById,
   createBlog,
   updateBlog,
   deleteBlog,
+  deleteAsset,
+  // comments
+  getApprovedComments,
+  createComment,
+  getAllComments,
+  setCommentApproval,
+  deleteComment,
 } = require("../controller/blogController");
 
-// GET tüm bloglar (herkese açık)
-router.get("/", getAllBlogs);
-
-// GET tek blog (herkese açık)
+/* -------- public -------- */
+router.get("/", getBlogs);
 router.get("/:id", getBlogById);
 
-// POST yeni blog (korumalı)
-router.post("/", verifyToken, createBlog);
+// public comments
+router.get("/:id/comments", getApprovedComments);
+router.post("/:id/comments", createComment);
 
-// PUT blog güncelle (korumalı)
-router.put("/:id", verifyToken, updateBlog);
+/* -------- protected (admin) -------- */
+router.post(
+  "/",
+  verifyToken,
+  upload.fields([
+    { name: "cover", maxCount: 1 }, // zorunlu (image)
+    { name: "assets", maxCount: 30 }, // opsiyonel (image|video karışık)
+  ]),
+  createBlog
+);
 
-// DELETE blog sil (korumalı)
+router.put(
+  "/:id",
+  verifyToken,
+  upload.fields([
+    { name: "cover", maxCount: 1 },
+    { name: "assets", maxCount: 30 },
+  ]),
+  updateBlog
+);
+
 router.delete("/:id", verifyToken, deleteBlog);
+
+// tek asset silme (publicId ile)
+router.delete("/:id/assets/:publicId", verifyToken, deleteAsset);
+
+// admin: comment moderation
+router.get("/:id/comments/all", verifyToken, getAllComments);
+router.patch(
+  "/:id/comments/:commentId/approve",
+  verifyToken,
+  setCommentApproval
+);
+router.delete("/:id/comments/:commentId", verifyToken, deleteComment);
 
 module.exports = router;

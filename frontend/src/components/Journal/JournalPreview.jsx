@@ -1,44 +1,64 @@
-// src/components/Journal/JournalPreview.jsx
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import PropTypes from "prop-types";
+import JournalCard from "./JournalCard";
 
-const JournalPreview = ({ data }) => {
-  const navigate = useNavigate();
+const Skeleton = () => (
+  <div className="rounded-2xl overflow-hidden border border-white/40 bg-white/30 backdrop-blur-md shadow-md">
+    <div className="w-full h-56 bg-gray-200/60 animate-pulse" />
+    <div className="p-5">
+      <div className="h-4 w-32 bg-gray-200/70 rounded mb-3 animate-pulse" />
+      <div className="h-5 w-3/4 bg-gray-200/70 rounded mb-2 animate-pulse" />
+      <div className="h-4 w-full bg-gray-200/70 rounded mb-2 animate-pulse" />
+      <div className="h-4 w-2/3 bg-gray-200/70 rounded animate-pulse" />
+    </div>
+  </div>
+);
+
+const EmptyState = () => (
+  <div className="text-center py-16 bg-white/40 backdrop-blur-xl rounded-2xl border border-white/30">
+    <p className="text-secondaryColor font-semibold text-lg">
+      Henüz haber eklenmemiş.
+    </p>
+    <p className="text-gray-600 mt-1">Yakında yeni içeriklerle buradayız.</p>
+  </div>
+);
+
+const JournalPreview = ({ data = [], loading = false }) => {
+  if (loading) {
+    return (
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} />
+        ))}
+      </div>
+    );
+  }
+
+  if (!data.length) return <EmptyState />;
 
   return (
-    <div className="space-y-8 px-2 md:px-6 pb-6">
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {data.map((item, index) => (
-        <motion.div
-          key={item._id}
-          className="relative flex flex-col md:flex-row bg-white/10 backdrop-blur-md rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
-          onClick={() => navigate(`/journals/${item._id}`)}
-        >
-          <img
-            src={item.image}
-            alt={item.title}
-            className="w-full md:w-60 h-60 object-cover"
-          />
-          <div className="flex flex-col p-6 text-black relative w-full">
-            <p className="absolute top-4 right-6 text-xs text-gray-600 uppercase">
-              {new Date(item.date).toLocaleDateString("tr-TR")}
-            </p>
-            <h3 className="text-xl font-semibold text-secondaryColor mb-2">
-              {item.title}
-            </h3>
-            <p className="text-gray-700 line-clamp-3">{item.about}</p>
-          </div>
-        </motion.div>
+        <JournalCard key={item._id || index} item={item} index={index} />
       ))}
     </div>
   );
 };
 
 JournalPreview.propTypes = {
-  data: PropTypes.array.isRequired,
+  data: PropTypes.arrayOf(
+    PropTypes.shape({
+      _id: PropTypes.string,
+      title: PropTypes.string,
+      about: PropTypes.string,
+      image: PropTypes.string, // URL ya da dataURL
+      date: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.number,
+        PropTypes.instanceOf(Date),
+      ]),
+    })
+  ),
+  loading: PropTypes.bool,
 };
 
 export default JournalPreview;

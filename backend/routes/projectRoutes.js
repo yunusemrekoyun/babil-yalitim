@@ -1,7 +1,7 @@
-// backend/routes/projectRoutes.js
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../middleware/verifyToken");
+const upload = require("../middleware/uploadMedia");
 const {
   getProjects,
   getProjectById,
@@ -10,13 +10,33 @@ const {
   deleteProject,
 } = require("../controller/projectController");
 
-// herkese açık
+// public
 router.get("/", getProjects);
 router.get("/:id", getProjectById);
 
-// korumalı
-router.post("/", verifyToken, createProject);
-router.put("/:id", verifyToken, updateProject);
+// protected (multipart)
+router.post(
+  "/",
+  verifyToken,
+  upload.fields([
+    { name: "cover", maxCount: 1 }, // zorunlu
+    { name: "video", maxCount: 1 }, // opsiyonel
+    { name: "images", maxCount: 4 }, // opsiyonel
+  ]),
+  createProject
+);
+
+router.put(
+  "/:id",
+  verifyToken,
+  upload.fields([
+    { name: "cover", maxCount: 1 },
+    { name: "video", maxCount: 1 },
+    { name: "images", maxCount: 4 },
+  ]),
+  updateProject
+);
+
 router.delete("/:id", verifyToken, deleteProject);
 
 module.exports = router;

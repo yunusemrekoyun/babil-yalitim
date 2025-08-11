@@ -1,23 +1,29 @@
-// src/admin/pages/service/ServiceList.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { message } from "antd";
-import api from "../../../api.js";
+import api from "../../../api";
+
+// geleni güvenli diziye çevir
+const toArray = (data) => (Array.isArray(data) ? data : []);
 
 const ServiceList = () => {
-  const [services, setServices] = useState([]);
+  const [services, setServices] = useState([]); // her zaman dizi
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState("all");
+  const [err, setErr] = useState("");
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
+        setLoading(true);
         const { data } = await api.get("/services");
-        setServices(data);
-      } catch (err) {
-        console.error("Servisler alınamadı:", err);
-        const msg = err.response?.data?.message || "Servisler getirilemedi.";
-        setError(msg);
+        setServices(toArray(data));
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("GET /services error:", e?.response?.data || e);
+        const msg = e?.response?.data?.message || "Servisler getirilemedi.";
+        setErr(msg);
         message.error(msg);
       } finally {
         setLoading(false);
@@ -26,60 +32,148 @@ const ServiceList = () => {
     fetchServices();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bu servisi silmek istediğinize emin misiniz?")) return;
+  const cats = useMemo(() => {
+    const s = new Set();
+    services.forEach((x) => x.category && s.add(x.category));
+    return ["all", ...Array.from(s)];
+  }, [services]);
+
+  const filtered = useMemo(() => {
+    let arr = [...services];
+    const s = q.trim().toLowerCase();
+    if (s) {
+      arr = arr.filter(
+        (x) =>
+          x.title?.toLowerCase().includes(s) ||
+          x.description?.toLowerCase().includes(s) ||
+          x.type?.toLowerCase().includes(s)
+      );
+    }
+    if (cat !== "all") arr = arr.filter((x) => x.category === cat);
+    return arr;
+  }, [services, q, cat]);
+
+  const deleteService = async (id) => {
+    if (!window.confirm("Bu hizmeti silmek istediğinize emin misiniz?")) return;
     try {
-      const { data } = await api.delete(`/services/${id}`);
-      message.success(data.message || "Servis silindi");
+      await api.delete(`/services/${id}`);
       setServices((prev) => prev.filter((s) => s._id !== id));
-    } catch (err) {
-      console.error("Servis silinemedi:", err);
-      const msg = err.response?.data?.message || "Servis silinemedi.";
-      message.error(msg);
+      message.success("Servis silindi");
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error("DELETE /services/:id error:", e?.response?.data || e);
+      message.error(e?.response?.data?.message || "Servis silinemedi.");
     }
   };
 
-  if (loading) return <p className="p-4">Yükleniyor...</p>;
-  if (error) return <p className="p-4 text-red-500">{error}</p>;
+  if (loading) return <p className="p-4">Yükleniyor…</p>;
+  if (err) return <p className="p-4 text-red-600">{err}</p>;
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between mb-4">
-        <h2 className="text-2xl font-semibold">Tüm Servisler</h2>
-        <Link
-          to="/admin/services/add"
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          Yeni Servis Ekle
-        </Link>
-      </div>
-      <ul className="space-y-2">
-        {services.map((service) => (
-          <li
-            key={service._id}
-            className="border p-4 rounded shadow hover:bg-gray-50"
+    <div className="p-4 md:p-6">
+      {/* üst bar */}
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <h1 className="text-2xl font-semibold">Hizmetler</h1>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Ara (başlık/tür/açıklama)"
+            className="w-full sm:w-64 rounded-md border px-3 py-2 text-sm"
+          />
+          <select
+            value={cat}
+            onChange={(e) => setCat(e.target.value)}
+            className="rounded-md border px-3 py-2 text-sm"
           >
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">{service.title}</h3>
-              <div className="space-x-2">
-                <Link
-                  to={`/admin/services/edit/${service._id}`}
-                  className="text-blue-600 hover:underline"
-                >
-                  Düzenle
-                </Link>
-                <button
-                  onClick={() => handleDelete(service._id)}
-                  className="text-red-600 hover:underline"
-                >
-                  Sil
-                </button>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-          </li>
-        ))}
-      </ul>
+            {cats.map((c) => (
+              <option key={c} value={c}>
+                {c === "all" ? "Tüm Kategoriler" : c}
+              </option>
+            ))}
+          </select>
+          <Link
+            to="/admin/services/add"
+            className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-white text-sm hover:bg-indigo-700"
+          >
+            + Yeni Hizmet
+          </Link>
+        </div>
+      </div>
+
+      {/* liste */}
+      {filtered.length === 0 ? (
+        <div className="rounded-md border p-6 text-center text-gray-500">
+          Kayıt bulunamadı.
+        </div>
+      ) : (
+        <table className="w-full border-collapse overflow-hidden rounded-lg border border-gray-200 text-sm">
+          <thead>
+            <tr className="bg-gray-50 text-left">
+              <th className="border p-2">Kapak</th>
+              <th className="border p-2">Başlık</th>
+              <th className="border p-2">Tür</th>
+              <th className="border p-2">Kategori</th>
+              <th className="border p-2 w-40">İşlemler</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((s) => (
+              <tr key={s._id} className="align-top">
+                <td className="border p-2">
+                  {s.cover?.url ? (
+                    <img
+                      src={s.cover.url}
+                      alt={s.title}
+                      className="h-16 w-24 object-cover rounded-md"
+                    />
+                  ) : (
+                    "-"
+                  )}
+                </td>
+                <td className="border p-2">
+                  <div className="font-medium">{s.title}</div>
+                  {Array.isArray(s.usageAreas) && s.usageAreas.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {s.usageAreas.slice(0, 3).map((u) => (
+                        <span
+                          key={u}
+                          className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600"
+                        >
+                          {u}
+                        </span>
+                      ))}
+                      {s.usageAreas.length > 3 && (
+                        <span className="text-[11px] text-gray-400">
+                          +{s.usageAreas.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </td>
+                <td className="border p-2">{s.type || "-"}</td>
+                <td className="border p-2">{s.category || "-"}</td>
+                <td className="border p-2">
+                  <div className="flex gap-2">
+                    <Link
+                      to={`/admin/services/edit/${s._id}`}
+                      className="inline-flex items-center rounded-md bg-yellow-500 px-3 py-1.5 text-white hover:bg-yellow-600"
+                    >
+                      Düzenle
+                    </Link>
+                    <button
+                      onClick={() => deleteService(s._id)}
+                      className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
+                    >
+                      Sil
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };

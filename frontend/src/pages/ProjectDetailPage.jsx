@@ -1,15 +1,15 @@
 import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
-import JournalDetail from "../components/Journal/JournalDetail";
+import ProjectDetail from "../components/ProjeGrid/ProjectDetail";
 
-const JournalDetailPage = () => {
+const ProjectDetailPage = () => {
   return (
     <>
       <NavbarPage />
-      <JournalDetail />
+      <ProjectDetail />
       <Footer />
     </>
   );
 };
 
-export default JournalDetailPage;
+export default ProjectDetailPage;

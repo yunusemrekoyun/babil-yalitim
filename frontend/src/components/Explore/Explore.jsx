@@ -1,18 +1,18 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import api from "../../api"; // axios instance
 
 const Explore = () => {
-  const [videoData, setVideoData] = useState([]);
+  const [items, setItems] = useState([]); // services
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasMounted, setHasMounted] = useState(false);
-  const videoRefs = useRef([]);
+
+  // Sadece videolar için ref tutuyoruz (img’ler için gerek yok)
+  const videoRefs = useRef({}); // { [index]: HTMLVideoElement }
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setHasMounted(true);
-    }, 50);
+    const timeout = setTimeout(() => setHasMounted(true), 50);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -20,23 +20,36 @@ const Explore = () => {
     api
       .get("/services")
       .then((res) => {
-        setVideoData(res.data);
+        // Backend’den: title, description, imageDataUrl, galleryDataUrls
+        const data = Array.isArray(res.data) ? res.data : [];
+        // videoUrl var ise koru (eski içerik için), yoksa image göster
+        setItems(data);
       })
       .catch((err) => {
         console.error("Hizmet verileri alınamadı:", err);
       });
   }, []);
 
-  const getIndex = (offset) =>
-    (currentIndex + offset + videoData.length) % videoData.length;
+  const len = items.length;
 
-  const visibleSlots = [
-    { slot: "prev2", index: getIndex(-2) },
-    { slot: "prev1", index: getIndex(-1) },
-    { slot: "center", index: getIndex(0) },
-    { slot: "next1", index: getIndex(1) },
-    { slot: "next2", index: getIndex(2) },
-  ];
+  const getIndex = (offset) => {
+    if (!len) return 0;
+    return (currentIndex + offset + len) % len;
+  };
+
+  const visibleSlots = useMemo(
+    () =>
+      len === 0
+        ? []
+        : [
+            { slot: "prev2", index: getIndex(-2) },
+            { slot: "prev1", index: getIndex(-1) },
+            { slot: "center", index: getIndex(0) },
+            { slot: "next1", index: getIndex(1) },
+            { slot: "next2", index: getIndex(2) },
+          ],
+    [currentIndex, len]
+  );
 
   const slotClassMap = {
     prev2: "hidden md:block scale-75 blur-sm -translate-x-56 z-0 opacity-40",
@@ -50,31 +63,44 @@ const Explore = () => {
     hasMounted ? slotClassMap[slot] : "opacity-0 scale-95";
 
   const stopAllVideosExcept = (indexToPlay) => {
-    videoRefs.current.forEach((video, idx) => {
-      if (video) {
+    // Sadece videoları kontrol et
+    Object.entries(videoRefs.current).forEach(([idxStr, vid]) => {
+      const idx = Number(idxStr);
+      if (!vid) return;
+      try {
         if (idx === indexToPlay) {
-          video.play();
+          vid.play().catch(() => {}); // autoplay engelinde hata yeme
         } else {
-          video.pause();
-          video.currentTime = 0;
+          vid.pause();
+          vid.currentTime = 0;
         }
-      }
+      } catch {console.error("Video play/pause hatası")}
+      finally {
+        vid.onended = () => {
+          vid.currentTime = 0;
+          vid.pause();
+        };
+      };
+      
     });
   };
 
   useEffect(() => {
     stopAllVideosExcept(getIndex(0));
-  }, [currentIndex, videoData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, len]);
 
   const next = () => {
-    setCurrentIndex((prev) => (prev + 1) % videoData.length);
+    if (!len) return;
+    setCurrentIndex((prev) => (prev + 1) % len);
   };
 
   const prev = () => {
-    setCurrentIndex((prev) => (prev - 1 + videoData.length) % videoData.length);
+    if (!len) return;
+    setCurrentIndex((prev) => (prev - 1 + len) % len);
   };
 
-  if (videoData.length === 0) return null; // yüklenene kadar render etme
+  if (len === 0) return null; // yüklenene kadar render etme
 
   return (
     <section className="relative text-white py-20 px-6 overflow-hidden">
@@ -89,41 +115,76 @@ const Explore = () => {
         <button
           onClick={prev}
           className="text-white bg-black/40 p-2 rounded-full hover:bg-white/20 z-30"
+          aria-label="Önceki"
         >
           <ChevronLeft size={28} />
         </button>
 
         <div className="relative flex items-center justify-center w-full max-w-full md:max-w-7xl h-[500px]">
-          {visibleSlots.map(({ slot, index }) => (
-            <motion.div
-              key={`${slot}-${index}`}
-              className={`absolute transition-all duration-500 ease-in-out rounded-xl overflow-hidden ${getSlotClass(
-                slot
-              )}`}
-            >
-              <video
-                ref={(el) => (videoRefs.current[index] = el)}
-                src={videoData[index].videoUrl}
-                muted
-                loop
-                playsInline
-                className="w-[220px] h-[330px] md:w-[320px] md:h-[480px] object-cover rounded-xl"
-              />
+          {visibleSlots.map(({ slot, index }) => {
+            const it = items[index];
+            const hasVideo = Boolean(it?.videoUrl); // eski veri desteği
+            const coverSrc = hasVideo ? it.videoUrl : it?.imageDataUrl || "";
+            return (
+              <motion.div
+                key={`${slot}-${index}`}
+                className={`absolute transition-all duration-500 ease-in-out rounded-xl overflow-hidden ${getSlotClass(
+                  slot
+                )}`}
+              >
+                {hasVideo ? (
+                  <video
+                    ref={(el) => {
+                      if (el) videoRefs.current[index] = el;
+                      else delete videoRefs.current[index];
+                    }}
+                    src={coverSrc}
+                    muted
+                    loop
+                    playsInline
+                    className="w-[220px] h-[330px] md:w-[320px] md:h-[480px] object-cover rounded-xl"
+                  />
+                ) : (
+                  <img
+                    src={coverSrc}
+                    alt={it?.title || "service"}
+                    className="w-[220px] h-[330px] md:w-[320px] md:h-[480px] object-cover rounded-xl"
+                    loading="lazy"
+                  />
+                )}
 
-              {slot === "center" && (
-                <div className="absolute inset-0 bg-black/40 flex items-end justify-center p-4">
-                  <p className="text-white text-lg font-semibold">
-                    {videoData[index].title}
-                  </p>
-                </div>
-              )}
-            </motion.div>
-          ))}
+                {/* Orta kart overlay: başlık + (varsa) galeri thumbs */}
+                {slot === "center" && (
+                  <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-4">
+                    <p className="text-white text-lg font-semibold mb-3 text-center md:text-left">
+                      {it?.title}
+                    </p>
+
+                    {Array.isArray(it?.galleryDataUrls) &&
+                      it.galleryDataUrls.length > 0 && (
+                        <div className="flex gap-2 overflow-x-auto pb-2">
+                          {it.galleryDataUrls.map((imgUrl, i) => (
+                            <img
+                              key={i}
+                              src={imgUrl}
+                              alt={`gallery-${i}`}
+                              className="w-16 h-16 object-cover rounded-lg border border-white/20 flex-shrink-0"
+                              loading="lazy"
+                            />
+                          ))}
+                        </div>
+                      )}
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
 
         <button
           onClick={next}
           className="text-white bg-black/40 p-2 rounded-full hover:bg-white/20 z-30"
+          aria-label="Sonraki"
         >
           <ChevronRight size={28} />
         </button>
@@ -138,10 +199,10 @@ const Explore = () => {
         className="absolute bottom-6 right-6 z-40"
       >
         <a
-          href="/explore"
+          href="/services"
           className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-      px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
-      transition-all duration-300"
+            px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
+            transition-all duration-300"
         >
           Hizmetlerin detayları için...
           <ChevronRight size={16} />

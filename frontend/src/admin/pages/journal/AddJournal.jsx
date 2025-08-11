@@ -1,5 +1,3 @@
-// src/admin/pages/journal/AddJournal.jsx
-import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { message } from "antd";
 import JournalForm from "../../components/JournalForm.jsx";
@@ -8,42 +6,22 @@ import api from "../../../api.js";
 const AddJournal = () => {
   const navigate = useNavigate();
 
-  // Form’un initialData’sı
-  const initialData = useMemo(
-    () => ({
-      title: "",
-      summary: "",
-      content: "",
-      image: "",
-      date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
-    }),
-    []
-  );
-
-  const handleAdd = async (data) => {
+  const handleSubmit = async (fd) => {
     try {
-      await api.post("/journals", {
-        title: data.title,
-        summary: data.summary,
-        about: data.content,
-        image: data.image,
-        date: data.date,
-      });
-      message.success("Journal başarıyla eklendi");
+      // FormData: Content-Type set etme!
+      await api.post("/journals", fd);
+      message.success("Haber eklendi");
       navigate("/admin/journals");
     } catch (err) {
-      console.error("Journal eklenirken hata oluştu:", err);
-      message.error(
-        err.response?.data?.message ||
-          "Journal eklenemedi. Lütfen tekrar deneyin."
-      );
+      console.error("POST /journals error:", err?.response?.data || err);
+      message.error(err?.response?.data?.message || "Haber eklenemedi.");
     }
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Yeni Journal Ekle</h2>
-      <JournalForm initialData={initialData} onSubmit={handleAdd} />
+    <div className="p-4 md:p-6">
+      <h2 className="mb-4 text-2xl font-semibold">Yeni Haber</h2>
+      <JournalForm onSubmit={handleSubmit} />
     </div>
   );
 };
