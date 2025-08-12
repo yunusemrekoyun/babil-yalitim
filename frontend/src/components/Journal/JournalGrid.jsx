@@ -1,81 +1,113 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useInView } from "react-intersection-observer";
 import { useNavigate } from "react-router-dom";
-import { FiArrowRight } from "react-icons/fi";
 import api from "../../api";
 import JournalGridItem from "./JournalGridItem";
 
+const Skeleton = () => (
+  <div className="rounded-2xl overflow-hidden border border-white/40 bg-white/30 backdrop-blur-md shadow-md">
+    <div className="w-full h-56 md:h-60 bg-gray-200/60 animate-pulse" />
+    <div className="p-6">
+      <div className="h-4 w-28 bg-gray-200/70 rounded mb-3 animate-pulse" />
+      <div className="h-5 w-3/4 bg-gray-200/70 rounded mb-2 animate-pulse" />
+      <div className="h-4 w-full bg-gray-200/70 rounded mb-2 animate-pulse" />
+      <div className="h-4 w-2/3 bg-gray-200/70 rounded animate-pulse" />
+    </div>
+  </div>
+);
+
 const JournalGrid = () => {
-  const { ref, inView } = useInView({ triggerOnce: false, threshold: 0.18 });
-  const navigate = useNavigate();
   const [journals, setJournals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    api
-      .get("/journals")
-      .then(({ data }) => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const { data } = await api.get("/journals");
         const list = Array.isArray(data) ? data : [];
-        // sadece ilk 2 kart
-        setJournals(
-          list.slice(0, 2).map((j) => ({
-            _id: j._id,
-            title: j.title,
-            // backend: cover.url
-            coverUrl: j?.cover?.url || "",
-            // içerik (kısa gösterim için)
-            content: j?.content || "",
-            // tarih (createdAt öncelikli)
-            date: j?.createdAt || j?.updatedAt || null,
-          }))
-        );
-      })
-      .catch(console.error);
+        if (!cancelled) {
+          setJournals(
+            list.slice(0, 2).map((j) => ({
+              _id: j._id,
+              title: j.title,
+              coverUrl: j?.cover?.url || "",
+              content: j?.content || "",
+              date: j?.createdAt || j?.updatedAt || null,
+            }))
+          );
+        }
+      } catch (e) {
+        console.error("GET /journals failed:", e?.response?.data || e);
+        if (!cancelled) setJournals([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
     <section
-      className="w-full text-white py-20 px-6 relative"
+      className="relative w-full px-3 sm:px-4 md:px-6 py-10 md:py-12"
       id="journal"
-      ref={ref}
     >
-      {/* header */}
-      <div className="max-w-6xl mx-auto mb-10 text-center">
+      {/* Başlık */}
+      <div className="max-w-6xl mx-auto text-center mb-8 md:mb-10">
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
           Haberler
         </h2>
-        <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded mb-6"></div>
+        <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded" />
       </div>
 
-      {/* cards */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-14 place-items-center mt-20">
-        {journals.map((item, index) => (
-          <JournalGridItem
-            key={item._id}
-            item={item}
-            index={index}
-            inView={inView}
-          />
-        ))}
-      </div>
+      {/* Grid */}
+      <div className="max-w-6xl mx-auto">
+        {loading ? (
+          <div className="grid gap-8 md:grid-cols-2">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} />
+            ))}
+          </div>
+        ) : journals.length === 0 ? (
+          <div className="text-center py-14 bg-white/40 backdrop-blur-xl rounded-2xl border border-white/30">
+            <p className="text-secondaryColor font-semibold text-lg">
+              Henüz haber eklenmemiş.
+            </p>
+            <p className="text-gray-600 mt-1">
+              Yakında yeni içeriklerle buradayız.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-8 md:grid-cols-2">
+            {journals.map((item, index) => (
+              <JournalGridItem key={item._id} item={item} index={index} />
+            ))}
+          </div>
+        )}
 
-      {/* sağ alt köşe buton */}
-      <motion.div
-        key={inView ? "visible" : "hidden"}
-        initial={{ x: 100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="absolute bottom-6 right-6 z-20"
-      >
-        <button
-          onClick={() => navigate("/journal")}
-          className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-            px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 transition-all duration-300"
-        >
-          Journal&apos;ın devamı için...
-          <FiArrowRight className="text-lg" />
-        </button>
-      </motion.div>
+        {/* CTA */}
+        {!loading && journals.length > 0 && (
+          <div className="flex justify-center md:justify-end mt-8">
+            <motion.button
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              onClick={() => navigate("/journal")}
+              className="inline-flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+                         px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg 
+                         hover:bg-white/20 transition-all duration-300"
+            >
+              Tüm haberler
+              <span aria-hidden>→</span>
+            </motion.button>
+          </div>
+        )}
+      </div>
     </section>
   );
 };

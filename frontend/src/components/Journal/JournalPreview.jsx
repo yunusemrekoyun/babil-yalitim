@@ -1,4 +1,5 @@
 import PropTypes from "prop-types";
+import { useMemo, useState } from "react";
 import JournalCard from "./JournalCard";
 
 const Skeleton = () => (
@@ -29,10 +30,27 @@ const normalize = (j) => ({
   coverUrl: j?.cover?.url || "",
   excerpt: j?.content || "",
   date: j?.createdAt || j?.updatedAt || null,
+  tags: Array.isArray(j?.tags) ? j.tags : [], // varsa
   likesCount: j?.likesCount ?? 0,
 });
 
-const JournalPreview = ({ data = [], loading = false }) => {
+const JournalPreview = ({ data = [], loading = false, error = "" }) => {
+  const items = useMemo(() => data.map(normalize), [data]);
+
+  // 🔎 Arama (başlık + içerik + etiket)
+  const [q, setQ] = useState("");
+
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return items;
+    return items.filter((it) => {
+      const haystack = `${it.title} ${it.excerpt} ${(it.tags || []).join(
+        " "
+      )}`.toLowerCase();
+      return haystack.includes(s);
+    });
+  }, [items, q]);
+
   if (loading) {
     return (
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -43,22 +61,53 @@ const JournalPreview = ({ data = [], loading = false }) => {
     );
   }
 
-  if (!data.length) return <EmptyState />;
+  if (error) {
+    return (
+      <div className="text-center text-red-600 bg-white/40 border border-white/30 rounded-2xl py-10">
+        {error}
+      </div>
+    );
+  }
 
-  const items = data.map(normalize);
+  if (!items.length) return <EmptyState />;
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((item, index) => (
-        <JournalCard key={item._id || index} item={item} index={index} />
-      ))}
-    </div>
+    <>
+      {/* Toolbar — diğer sayfalarla aynı */}
+      <div className="mb-6 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+        <div className="flex-1">
+          <label htmlFor="jrnl-search" className="sr-only">
+            Haberlerde ara
+          </label>
+          <input
+            id="jrnl-search"
+            type="text"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Haberlerde ara…"
+            className="w-full rounded-xl border border-white/40 bg-white/60 backdrop-blur px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition shadow-sm"
+          />
+        </div>
+      </div>
+
+      {/* sayaç */}
+      <p className="text-xs text-gray-500 mb-4">
+        Toplam: {items.length} • Filtrelenmiş: {filtered.length}
+      </p>
+
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {filtered.map((item, index) => (
+          <JournalCard key={item._id || index} item={item} index={index} />
+        ))}
+      </div>
+    </>
   );
 };
 
 JournalPreview.propTypes = {
   data: PropTypes.arrayOf(PropTypes.object),
   loading: PropTypes.bool,
+  error: PropTypes.string,
 };
 
 export default JournalPreview;

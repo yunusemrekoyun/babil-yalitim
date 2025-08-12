@@ -40,13 +40,16 @@ const brands = [
 ];
 
 const BrandGrid = () => {
-  const fullList = [...brands, ...brands, ...brands]; // 3 tekrar
+  // Sonsuz kayma için listeyi 2 defa çoğaltıyoruz
+  const fullList = [...brands, ...brands];
 
   return (
-    <div id="brands" className="w-full overflow-hidden relative mt-16">
-      <div className="marquee-track">
+    <div id="brands" className="w-full overflow-hidden relative mt-10">
+      <div className="flex animate-marquee whitespace-nowrap">
         {fullList.map((brand, index) => (
-          <BrandItem key={index} brand={brand} />
+          <div key={index} className="mx-8">
+            <BrandItem brand={brand} />
+          </div>
         ))}
       </div>
     </div>

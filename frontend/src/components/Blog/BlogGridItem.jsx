@@ -1,4 +1,3 @@
-// src/components/Blog/BlogGridItem.jsx
 import PropTypes from "prop-types";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -27,12 +26,10 @@ const BlogGridItem = ({ item, index }) => {
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 26 }}
+      initial={{ opacity: 0, y: 22 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.4, ease: "easeOut" }}
-      className="group rounded-2xl overflow-hidden border border-white/30 bg-white/50 
-                 backdrop-blur-xl shadow-lg hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)]
-                 transition-all cursor-pointer"
+      className="group rounded-2xl overflow-hidden border border-white/40 bg-white/60 backdrop-blur-xl shadow-lg hover:shadow-[0_18px_50px_rgba(0,0,0,0.16)] hover:-translate-y-0.5 transition-all cursor-pointer"
       onClick={() => navigate(`/blog/${item._id}`)}
       role="button"
       tabIndex={0}
@@ -40,23 +37,23 @@ const BlogGridItem = ({ item, index }) => {
       aria-label={`${item?.title || "Blog"} detayına git`}
     >
       {/* Kapak */}
-      <div className="relative w-full h-56 md:h-64 overflow-hidden">
+      <div className="relative w-full h-44 md:h-56 overflow-hidden">
         <img
           src={coverUrl}
           alt={item?.title || "blog kapak"}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
         {createdText && (
-          <span className="absolute top-3 right-3 text-[11px] tracking-wide uppercase bg-white/90 text-gray-700 px-2 py-1 rounded-full shadow-md">
+          <span className="absolute top-3 right-3 text-[11px] tracking-wide uppercase bg-white/90 text-gray-700 px-2 py-1 rounded-full shadow">
             {createdText}
           </span>
         )}
       </div>
 
       {/* İçerik */}
-      <div className="p-6">
+      <div className="p-5">
         <h3 className="text-lg md:text-xl font-semibold text-secondaryColor line-clamp-2">
           {item?.title || "Başlık"}
         </h3>

@@ -2,12 +2,20 @@ import BrandGrid from "./BrandGrid";
 
 const BrandsSection = () => {
   return (
-    <div className="w-full py-10 bg-white/10 backdrop-blur-sm">
-      <h3 className="text-center text-xl font-semibold text-white mb-4 underline">
-        İş Birliği Yaptığımız Markalar
-      </h3>
-      <BrandGrid />
-    </div>
+    <section className="w-full px-4 sm:px-6 md:px-8 py-14" id="brands">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h3 className="text-2xl md:text-3xl font-extrabold text-white drop-shadow-sm">
+            İş Birliği Yaptığımız Markalar
+          </h3>
+          <div className="h-1 w-20 bg-quaternaryColor/90 mx-auto mt-4 rounded-full" />
+        </div>
+
+        <div className="rounded-3xl border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_8px_40px_rgba(0,0,0,0.15)] p-4 sm:p-6">
+          <BrandGrid />
+        </div>
+      </div>
+    </section>
   );
 };
 

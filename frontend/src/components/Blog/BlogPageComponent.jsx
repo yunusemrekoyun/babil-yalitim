@@ -1,6 +1,5 @@
-// src/components/Blog/BlogPageComponent.jsx
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../../api";
 import BlogItem from "./BlogItem";
 
@@ -29,6 +28,10 @@ const BlogPageComponent = () => {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
+  // 🔎 arama & etiket filtresi
+  const [q, setQ] = useState("");
+  const [tag, setTag] = useState("Tümü");
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -48,6 +51,24 @@ const BlogPageComponent = () => {
       cancelled = true;
     };
   }, []);
+
+  const tags = useMemo(() => {
+    const s = new Set();
+    blogs.forEach((b) => (b.tags || []).forEach((t) => t && s.add(String(t))));
+    return ["Tümü", ...Array.from(s)];
+  }, [blogs]);
+
+  const filtered = useMemo(() => {
+    const text = q.trim().toLowerCase();
+    return blogs.filter((b) => {
+      const okTag = tag === "Tümü" || (b.tags || []).map(String).includes(tag);
+      if (!text) return okTag;
+      const haystack = `${b.title || ""} ${b.content || ""} ${(
+        b.tags || []
+      ).join(" ")}`.toLowerCase();
+      return okTag && haystack.includes(text);
+    });
+  }, [blogs, q, tag]);
 
   if (loading) {
     return (
@@ -70,15 +91,56 @@ const BlogPageComponent = () => {
   if (!blogs.length) return <EmptyState />;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
-    >
-      {blogs.map((b, i) => (
-        <BlogItem key={b._id || i} item={b} index={i} />
-      ))}
-    </motion.div>
+    <>
+      {/* Toolbar — diğer sayfalarla aynı dil */}
+      <div className="mb-8 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+        <div className="flex-1">
+          <label htmlFor="blog-search" className="sr-only">
+            Bloglarda ara
+          </label>
+          <input
+            id="blog-search"
+            type="text"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Bloglarda ara…"
+            className="w-full rounded-xl border border-white/40 bg-white/60 backdrop-blur px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition shadow-sm"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {tags.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTag(t)}
+              className={`px-4 py-2 rounded-full text-sm border transition ${
+                tag === t
+                  ? "bg-quaternaryColor text-white border-quaternaryColor"
+                  : "bg-white/60 text-gray-700 border-white/40 hover:bg-white"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* sayaç */}
+      <p className="text-xs text-gray-500 mb-4">
+        Toplam: {blogs.length} • Filtrelenmiş: {filtered.length}
+      </p>
+
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        {filtered.map((b, i) => (
+          <BlogItem key={b._id || i} item={b} index={i} />
+        ))}
+      </motion.div>
+    </>
   );
 };
 

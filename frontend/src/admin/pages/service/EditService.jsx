@@ -16,7 +16,6 @@ const EditService = () => {
         const { data } = await api.get(`/services/${id}`);
         setServiceData(data);
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.error("GET /services/:id error:", err?.response?.data || err);
         message.error(err?.response?.data?.message || "Hizmet yüklenemedi.");
       } finally {
@@ -32,7 +31,6 @@ const EditService = () => {
       message.success("Hizmet güncellendi");
       navigate("/admin/services");
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error("PUT /services/:id error:", err?.response?.data || err);
       message.error(err?.response?.data?.message || "Güncelleme başarısız.");
     }

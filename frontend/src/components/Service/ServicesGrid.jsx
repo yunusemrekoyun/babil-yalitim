@@ -1,3 +1,4 @@
+// src/components/Service/ServiceGrid.jsx
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -5,12 +6,12 @@ import api from "../../api";
 import ServiceGridItem from "./ServiceGridItem";
 
 const ServiceGrid = () => {
-  const [items, setItems] = useState([]); // services
+  const [items, setItems] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasMounted, setHasMounted] = useState(false);
 
-  // Sadece video kartlarını kontrol etmek için (varsa)
-  const videoRefs = useRef({}); // { [index]: HTMLVideoElement }
+  // Sadece video kartlarını kontrol etmek için
+  const videoRefs = useRef({}); // { [globalIndex]: HTMLVideoElement }
 
   useEffect(() => {
     const t = setTimeout(() => setHasMounted(true), 50);
@@ -48,20 +49,22 @@ const ServiceGrid = () => {
   const slotClassMap = {
     prev2: "hidden md:block scale-75 blur-sm -translate-x-56 z-0 opacity-40",
     prev1: "scale-90 blur-sm -translate-x-28 z-10 opacity-70",
-    center: "scale-100 blur-0 translate-x-0 z-20 opacity-100",
+    center:
+      "scale-100 blur-0 translate-x-0 z-20 opacity-100 drop-shadow-[0_18px_32px_rgba(0,0,0,0.25)]",
     next1: "scale-90 blur-sm translate-x-28 z-10 opacity-70",
     next2: "hidden md:block scale-75 blur-sm translate-x-56 z-0 opacity-40",
   };
   const getSlotClass = (slot) =>
     hasMounted ? slotClassMap[slot] : "opacity-0 scale-95";
 
-  // Ortadaki karttaki video oynasın, diğerleri dursun (varsa)
+  // Ortadaki karttaki video oynasın, diğerleri dursun
   const stopAllVideosExcept = (indexToPlay) => {
     Object.entries(videoRefs.current).forEach(([idxStr, vid]) => {
       const idx = Number(idxStr);
       if (!vid) return;
       try {
         if (idx === indexToPlay) {
+          // güvene almak için başa sar + play
           vid.currentTime = 0;
           vid.play().catch(() => {});
         } else {
@@ -69,7 +72,7 @@ const ServiceGrid = () => {
           vid.currentTime = 0;
         }
       } catch {
-        console.error("Video oynatılamadı:", idx);
+        // sessiz
       } finally {
         vid.onended = () => {
           vid.currentTime = 0;
@@ -79,8 +82,11 @@ const ServiceGrid = () => {
     });
   };
 
+  // index değişince merkezdekini oynat
   useEffect(() => {
-    stopAllVideosExcept(getIndex(0));
+    // refs mount’u kaçırmamak için microtask
+    const id = setTimeout(() => stopAllVideosExcept(getIndex(0)), 0);
+    return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, len]);
 
@@ -133,6 +139,7 @@ const ServiceGrid = () => {
         </button>
       </div>
 
+      {/* sağ-alt CTA */}
       <motion.div
         initial={{ x: 100, opacity: 0 }}
         whileInView={{ x: 0, opacity: 1 }}

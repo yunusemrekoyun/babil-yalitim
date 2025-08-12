@@ -3,11 +3,30 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 
 /* ------- Küçük yardımcı bileşenler ------- */
-const MediaPreview = ({ src, className = "" }) => {
+const ImagePreview = ({ src, className = "" }) => {
   if (!src) return null;
   return <img src={src} className={className} alt="" />;
 };
-MediaPreview.propTypes = {
+ImagePreview.propTypes = {
+  src: PropTypes.string,
+  className: PropTypes.string,
+};
+
+const VideoPreview = ({ src, className = "" }) => {
+  if (!src) return null;
+  return (
+    <video
+      src={src}
+      className={className}
+      muted
+      loop
+      controls
+      playsInline
+      preload="metadata"
+    />
+  );
+};
+VideoPreview.propTypes = {
   src: PropTypes.string,
   className: PropTypes.string,
 };
@@ -50,11 +69,75 @@ const normalizeAreas = (val) => {
   return [];
 };
 
+// Front tarafta min oran (backend default: 1.5). İstersen .env ile eşitle.
+const FRONT_VERTICAL_MIN_RATIO = 1.5;
+
+/** Seçilen dosyanın dikey olup olmadığını kontrol eder. (image|video) */
+const checkPortrait = (file, minRatio = FRONT_VERTICAL_MIN_RATIO) =>
+  new Promise((resolve, reject) => {
+    if (!file) return resolve(true);
+
+    const type = file.type || "";
+    const url = URL.createObjectURL(file);
+
+    // Temizlik
+    const done = (ok, metaMsg = "") => {
+      URL.revokeObjectURL(url);
+      ok ? resolve(true) : reject(new Error(metaMsg));
+    };
+
+    // Video
+    if (type.startsWith("video/")) {
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.src = url;
+      v.onloadedmetadata = () => {
+        const w = v.videoWidth || 0;
+        const h = v.videoHeight || 0;
+        const ratio = h / w;
+        if (!w || !h) return done(false, "Video boyutları okunamadı.");
+        if (h < w || ratio < minRatio) {
+          return done(
+            false,
+            `Lütfen dikey bir video seçin. (min oran: ${minRatio}:1)`
+          );
+        }
+        done(true);
+      };
+      v.onerror = () => done(false, "Video okunamadı.");
+      return;
+    }
+
+    // Görsel
+    if (type.startsWith("image/")) {
+      const img = new Image();
+      img.src = url;
+      img.onload = () => {
+        const w = img.naturalWidth || 0;
+        const h = img.naturalHeight || 0;
+        const ratio = h / w;
+        if (!w || !h) return done(false, "Görsel boyutları okunamadı.");
+        if (h < w || ratio < minRatio) {
+          return done(
+            false,
+            `Lütfen dikey bir görsel seçin. (min oran: ${minRatio}:1)`
+          );
+        }
+        done(true);
+      };
+      img.onerror = () => done(false, "Görsel okunamadı.");
+      return;
+    }
+
+    // Diğer türler
+    return done(false, "Desteklenmeyen dosya türü.");
+  });
+
 /* ------------- Ana Form ------------- */
 const ServiceForm = ({ initialData, onSubmit }) => {
   const isEdit = Boolean(initialData?._id);
 
-  // Mevcut medya (yalnızca görüntüleme için)
+  // Mevcut medya (görüntüleme)
   const existingCover = useMemo(
     () => initialData?.cover || null,
     [initialData?.cover]
@@ -64,7 +147,7 @@ const ServiceForm = ({ initialData, onSubmit }) => {
     [initialData?.images]
   );
 
-  // Metin alanları (initialData değişirse güncelle)
+  // Metin alanları
   const [title, setTitle] = useState(initialData?.title || "");
   const [type, setType] = useState(initialData?.type || "");
   const [category, setCategory] = useState(initialData?.category || "");
@@ -82,7 +165,7 @@ const ServiceForm = ({ initialData, onSubmit }) => {
     setDescription(initialData?.description || "");
     setUsageAreas(normalizeAreas(initialData?.usageAreas));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialData?._id]); // farklı kayıt yüklendiğinde tazele
+  }, [initialData?._id]);
 
   const [usageInput, setUsageInput] = useState("");
 
@@ -94,6 +177,9 @@ const ServiceForm = ({ initialData, onSubmit }) => {
   const [coverPreview, setCoverPreview] = useState(null);
   const [imagesPreviews, setImagesPreviews] = useState([]);
   const revokers = useRef([]);
+
+  // Hata mesajı
+  const [mediaError, setMediaError] = useState("");
 
   // Cleanup — blob URL’leri serbest bırak
   useEffect(() => {
@@ -132,14 +218,54 @@ const ServiceForm = ({ initialData, onSubmit }) => {
     setUsageAreas((arr) => arr.filter((x) => x !== value));
   };
 
-  const handleCoverChange = (e) => {
+  const handleCoverChange = async (e) => {
+    setMediaError("");
     const f = e.target.files?.[0] || null;
-    setCoverFile(f);
-    blobify(f, setCoverPreview);
+    if (!f) {
+      setCoverFile(null);
+      setCoverPreview(null);
+      return;
+    }
+    try {
+      await checkPortrait(f);
+      setCoverFile(f);
+      blobify(f, setCoverPreview);
+    } catch (err) {
+      setMediaError(err.message || "Kapak dosyası kabul edilmedi.");
+      // input’u temizle
+      e.target.value = "";
+      setCoverFile(null);
+      setCoverPreview(null);
+    }
   };
 
-  const handleImagesChange = (e) => {
+  const handleImagesChange = async (e) => {
+    setMediaError("");
     const files = Array.from(e.target.files || []);
+    if (!files.length) {
+      setImagesFiles([]);
+      setImagesPreviews([]);
+      return;
+    }
+
+    // İstersen tüm galeriye de dikey zorunluluk uygula:
+    // Aşağıdaki blok açık; dikey olmayanı reddediyoruz.
+    for (const f of files) {
+      try {
+        await checkPortrait(f);
+      } catch (err) {
+        setMediaError(
+          err.message ||
+            "Galeri dosyalarından biri dikey değil. Lütfen kontrol edin."
+        );
+        // input’u temizle
+        e.target.value = "";
+        setImagesFiles([]);
+        setImagesPreviews([]);
+        return;
+      }
+    }
+
     setImagesFiles(files);
     // Eski blobları temizle
     imagesPreviews.forEach((u) => {
@@ -157,8 +283,7 @@ const ServiceForm = ({ initialData, onSubmit }) => {
     e.preventDefault();
 
     if (!isEdit && !coverFile) {
-      // eslint-disable-next-line no-alert
-      alert("Kapak görseli zorunludur.");
+      alert("Kapak (dikey image/video) zorunludur.");
       return;
     }
 
@@ -174,6 +299,16 @@ const ServiceForm = ({ initialData, onSubmit }) => {
 
     onSubmit(fd);
   };
+
+  // Mevcut kapak türü
+  const existingCoverIsVideo =
+    existingCover?.resourceType === "video" ||
+    (existingCover?.url || "").includes(".mp4");
+
+  const coverPreviewIsVideo =
+    coverPreview && coverFile?.type?.startsWith("video/");
+  const coverPreviewIsImage =
+    coverPreview && coverFile?.type?.startsWith("image/");
 
   return (
     <form
@@ -257,6 +392,12 @@ const ServiceForm = ({ initialData, onSubmit }) => {
           />
         </div>
 
+        {!!mediaError && (
+          <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+            {mediaError}
+          </div>
+        )}
+
         <div className="pt-1">
           <button
             type="submit"
@@ -269,38 +410,68 @@ const ServiceForm = ({ initialData, onSubmit }) => {
 
       {/* Sağ kolon: medya alanları */}
       <div className="lg:col-span-2 space-y-6">
-        {/* Kapak görseli */}
+        {/* Kapak (image | video) */}
         <div>
           <label className="block text-sm font-semibold">
-            Kapak Görseli {isEdit ? "(mevcut varsa opsiyonel)" : "(zorunlu)"}
+            Kapak (Dikey image veya video)
+            {isEdit ? " — mevcut varsa opsiyonel" : " — zorunlu"}
           </label>
           <input
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             onChange={handleCoverChange}
             className="mt-2 w-full"
           />
+          <p className="mt-1 text-xs text-gray-500">
+            Öneri: 9:16 (ör. 1080×1920). Minimum en-boy oranı{" "}
+            {FRONT_VERTICAL_MIN_RATIO}:1.
+          </p>
           <div className="mt-2 overflow-hidden rounded-lg border bg-gray-50">
+            {/* Yeni seçildiyse onu göster */}
             {coverPreview ? (
-              <MediaPreview src={coverPreview} className="w-full" />
+              coverPreviewIsVideo ? (
+                <VideoPreview
+                  src={coverPreview}
+                  className="w-full aspect-[9/16] object-cover"
+                />
+              ) : coverPreviewIsImage ? (
+                <ImagePreview
+                  src={coverPreview}
+                  className="w-full aspect-[9/16] object-cover"
+                />
+              ) : (
+                <div className="aspect-[9/16] grid place-items-center text-xs text-gray-400">
+                  Önizleme
+                </div>
+              )
             ) : existingCover?.url ? (
-              <MediaPreview src={existingCover.url} className="w-full" />
+              existingCoverIsVideo ? (
+                <VideoPreview
+                  src={existingCover.url}
+                  className="w-full aspect-[9/16] object-cover"
+                />
+              ) : (
+                <ImagePreview
+                  src={existingCover.url}
+                  className="w-full aspect-[9/16] object-cover"
+                />
+              )
             ) : (
-              <div className="aspect-video grid place-items-center text-xs text-gray-400">
+              <div className="aspect-[9/16] grid place-items-center text-xs text-gray-400">
                 Önizleme
               </div>
             )}
           </div>
         </div>
 
-        {/* Alt görseller (çoklu) */}
+        {/* Alt medya (çoklu image | video) */}
         <div>
           <label className="block text-sm font-semibold">
-            Alt Görseller (opsiyonel, çoklu)
+            Alt Medya (opsiyonel, çoklu — image/video)
           </label>
           <input
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             multiple
             onChange={handleImagesChange}
             className="mt-2 w-full"
@@ -309,17 +480,27 @@ const ServiceForm = ({ initialData, onSubmit }) => {
           {!!existingImages.length && (
             <>
               <p className="mt-2 text-xs text-gray-500">
-                Mevcut görseller (silme bu ekranda yok; yeniler **eklenir**)
+                Mevcut medya (silme bu ekranda yok; yeniler **eklenir**)
               </p>
               <div className="mt-2 grid grid-cols-4 gap-2">
-                {existingImages.map((img, i) => (
-                  <img
-                    key={i}
-                    src={img.url}
-                    className="h-20 w-full rounded-md object-cover border"
-                    alt=""
-                  />
-                ))}
+                {existingImages.map((m, i) =>
+                  m.resourceType === "video" ? (
+                    <video
+                      key={i}
+                      src={m.url}
+                      className="h-20 w-full rounded-md object-cover border"
+                      muted
+                      playsInline
+                    />
+                  ) : (
+                    <img
+                      key={i}
+                      src={m.url}
+                      className="h-20 w-full rounded-md object-cover border"
+                      alt=""
+                    />
+                  )
+                )}
               </div>
             </>
           )}
@@ -328,14 +509,27 @@ const ServiceForm = ({ initialData, onSubmit }) => {
             <>
               <p className="mt-3 text-xs text-gray-500">Yeni eklenecekler</p>
               <div className="mt-2 grid grid-cols-4 gap-2">
-                {imagesPreviews.map((u, i) => (
-                  <img
-                    key={i}
-                    src={u}
-                    className="h-20 w-full rounded-md object-cover border"
-                    alt=""
-                  />
-                ))}
+                {imagesPreviews.map((u, i) => {
+                  const isVid = (imagesFiles[i]?.type || "").startsWith(
+                    "video/"
+                  );
+                  return isVid ? (
+                    <video
+                      key={i}
+                      src={u}
+                      className="h-20 w-full rounded-md object-cover border"
+                      muted
+                      playsInline
+                    />
+                  ) : (
+                    <img
+                      key={i}
+                      src={u}
+                      className="h-20 w-full rounded-md object-cover border"
+                      alt=""
+                    />
+                  );
+                })}
               </div>
             </>
           )}
@@ -353,11 +547,19 @@ ServiceForm.propTypes = {
     category: PropTypes.string,
     usageAreas: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.string),
-      PropTypes.string, // defansif: DB'den string geldiyse uyarı olmasın
+      PropTypes.string,
     ]),
     description: PropTypes.string,
-    cover: PropTypes.shape({ url: PropTypes.string }),
-    images: PropTypes.arrayOf(PropTypes.shape({ url: PropTypes.string })),
+    cover: PropTypes.shape({
+      url: PropTypes.string,
+      resourceType: PropTypes.string,
+    }),
+    images: PropTypes.arrayOf(
+      PropTypes.shape({
+        url: PropTypes.string,
+        resourceType: PropTypes.string,
+      })
+    ),
   }),
   onSubmit: PropTypes.func.isRequired,
 };

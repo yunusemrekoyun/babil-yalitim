@@ -14,6 +14,7 @@ import * as PublicPages from "../src/pages/index.jsx";
 import * as AdminPages from "../src/admin/pages/index.jsx";
 import { useEffect } from "react";
 import api from "./api"; // 🔍 ziyaret kaydı için
+import ScrollToTop from "./components/Common/ScrollToTop.jsx";
 
 const publicRoutes = [
   { path: "/", element: <PublicPages.HomePage /> },
@@ -92,6 +93,7 @@ const AppRoutes = () => {
 export default function App() {
   return (
     <Router>
+      <ScrollToTop />
       <AppRoutes />
     </Router>
   );

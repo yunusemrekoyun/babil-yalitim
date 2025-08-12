@@ -23,7 +23,7 @@ const HomePage = () => {
           muted
           playsInline
           onLoadedMetadata={(e) => {
-            e.target.playbackRate = 0.5;
+            e.target.playbackRate = 1;
           }}
         />
       </div>

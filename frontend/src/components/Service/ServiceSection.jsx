@@ -1,6 +1,6 @@
 import ServiceGrid from "./ServicesGrid";
-const ExploreSection = () => {
+const ServiceSection = () => {
   return <ServiceGrid />;
 };
 
-export default ExploreSection;
+export default ServiceSection;

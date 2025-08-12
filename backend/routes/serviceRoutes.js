@@ -2,7 +2,9 @@
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../middleware/verifyToken");
-const upload = require("../middleware/upload"); // memoryStorage + image filter
+// const upload = require("../middleware/upload"); // eski (sadece image)
+// ⇩ yeni: image+video kabul eder (disk veya memory çalışır)
+const upload = require("../middleware/uploadMedia");
 
 const {
   getServices,
@@ -16,13 +18,13 @@ const {
 router.get("/", getServices);
 router.get("/:id", getServiceById);
 
-// protected + multipart
+// protected + multipart (image | video)
 router.post(
   "/",
   verifyToken,
   upload.fields([
-    { name: "cover", maxCount: 1 },
-    { name: "images", maxCount: 20 },
+    { name: "cover", maxCount: 1 }, // zorunlu, image | video
+    { name: "images", maxCount: 20 }, // opsiyonel, image | video
   ]),
   createService
 );

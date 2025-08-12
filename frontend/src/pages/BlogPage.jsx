@@ -1,4 +1,3 @@
-// src/pages/BlogPage.jsx
 import { motion } from "framer-motion";
 import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";

@@ -1,7 +1,9 @@
+// src/components/Service/ServiceGridItem.jsx
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 
 const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
+  // Olası video kaynağı (backend artık video da dönebiliyor)
   const videoFromImages = (item?.images || []).find(
     (m) => m?.resourceType === "video" && m?.url
   )?.url;
@@ -14,13 +16,6 @@ const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
     item?.images?.[0]?.url ||
     "";
 
-  const galleryUrls =
-    (item?.images || [])
-      .filter((m) => m?.resourceType !== "video" && m?.url)
-      .map((m) => m.url) ||
-    item?.galleryDataUrls ||
-    [];
-
   const mediaEl = videoUrl ? (
     <video
       ref={registerVideoRef}
@@ -28,6 +23,10 @@ const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
       muted
       loop
       playsInline
+      // poster ile ilk frame yerine cover gösterimi daha temiz
+      poster={coverUrl || undefined}
+      // merkezdeyken autoplay, diğerlerinde programatik olarak zaten pauselayacağız
+      autoPlay={isCenter}
       className="w-[220px] h-[330px] md:w-[320px] md:h-[480px] object-cover rounded-xl"
     />
   ) : (
@@ -47,24 +46,16 @@ const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
     >
       {mediaEl}
 
+      {/* Sadece başlık overlay; küçük galeri/thumb’lar kaldırıldı */}
       {isCenter && (
         <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-4">
-          <p className="text-white text-lg font-semibold mb-3 text-center md:text-left">
+          <p className="text-white text-lg font-semibold mb-1 text-center md:text-left">
             {item?.title}
           </p>
-
-          {Array.isArray(galleryUrls) && galleryUrls.length > 0 && (
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {galleryUrls.map((u, i) => (
-                <img
-                  key={i}
-                  src={u}
-                  alt={`gallery-${i}`}
-                  className="w-16 h-16 object-cover rounded-lg border border-white/20 flex-shrink-0 pointer-events-none"
-                  loading="lazy"
-                />
-              ))}
-            </div>
+          {item?.type && (
+            <span className="self-center md:self-start inline-block text-[11px] px-2 py-1 rounded-full bg-white/20 border border-white/30 backdrop-blur">
+              {item.type}
+            </span>
           )}
         </div>
       )}
@@ -77,6 +68,7 @@ ServiceGridItem.propTypes = {
     _id: PropTypes.string,
     title: PropTypes.string,
     description: PropTypes.string,
+    type: PropTypes.string,
     cover: PropTypes.shape({
       url: PropTypes.string,
       publicId: PropTypes.string,
@@ -86,9 +78,10 @@ ServiceGridItem.propTypes = {
       PropTypes.shape({
         url: PropTypes.string,
         publicId: PropTypes.string,
-        resourceType: PropTypes.string,
+        resourceType: PropTypes.string, // image | video
       })
     ),
+    // legacy alanlar:
     imageDataUrl: PropTypes.string,
     imageUrl: PropTypes.string,
     galleryDataUrls: PropTypes.arrayOf(PropTypes.string),

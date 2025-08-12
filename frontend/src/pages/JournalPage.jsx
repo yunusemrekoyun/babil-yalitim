@@ -8,19 +8,33 @@ import api from "../api";
 const JournalPage = () => {
   const [journalData, setJournalData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
   useEffect(() => {
-    api
-      .get("/journals")
-      .then((res) => setJournalData(Array.isArray(res.data) ? res.data : []))
-      .catch((err) => console.error("Journal verisi alınamadı:", err))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await api.get("/journals");
+        if (!cancelled) {
+          setJournalData(Array.isArray(res.data) ? res.data : []);
+        }
+      } catch (e) {
+        console.error("Journal verisi alınamadı:", e?.response?.data || e);
+        if (!cancelled) setErr("Haberler getirilemedi.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
     <>
       <motion.div
-        className="min-h-screen bg-gradient-to-br from-white via-gray-100 to-orange-100"
+        className="min-h-screen bg-gradient-to-br from-white via-gray-100 to-orange-50"
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 24 }}
@@ -28,10 +42,9 @@ const JournalPage = () => {
       >
         <NavbarPage />
 
-        {/* Hero şerit */}
+        {/* Hero */}
         <section className="relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none opacity-10 bg-[radial-gradient(ellipse_at_top,rgba(25,89,115,0.35),transparent_60%)]" />
-          <div className="max-w-7xl mx-auto px-4 md:px-8 pt-14 md:pt-20 pb-10">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 pt-14 md:pt-20 pb-8">
             <motion.h1
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -58,9 +71,9 @@ const JournalPage = () => {
           </div>
         </section>
 
-        {/* İçerik */}
+        {/* İçerik + Arama */}
         <div className="max-w-7xl mx-auto px-4 md:px-8 pb-20">
-          <JournalPreview data={journalData} loading={loading} />
+          <JournalPreview data={journalData} loading={loading} error={err} />
         </div>
       </motion.div>
 

@@ -20,7 +20,6 @@ const ServiceList = () => {
         const { data } = await api.get("/services");
         setServices(toArray(data));
       } catch (e) {
-        // eslint-disable-next-line no-console
         console.error("GET /services error:", e?.response?.data || e);
         const msg = e?.response?.data?.message || "Servisler getirilemedi.";
         setErr(msg);
@@ -60,7 +59,6 @@ const ServiceList = () => {
       setServices((prev) => prev.filter((s) => s._id !== id));
       message.success("Servis silindi");
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error("DELETE /services/:id error:", e?.response?.data || e);
       message.error(e?.response?.data?.message || "Servis silinemedi.");
     }
@@ -122,11 +120,27 @@ const ServiceList = () => {
               <tr key={s._id} className="align-top">
                 <td className="border p-2">
                   {s.cover?.url ? (
-                    <img
-                      src={s.cover.url}
-                      alt={s.title}
-                      className="h-16 w-24 object-cover rounded-md"
-                    />
+                    <div className="relative">
+                      {s.cover.resourceType === "video" ? (
+                        <>
+                          <video
+                            src={s.cover.url}
+                            className="h-16 w-24 object-cover rounded-md"
+                            muted
+                            playsInline
+                          />
+                          <span className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 rounded bg-black/70 text-white">
+                            video
+                          </span>
+                        </>
+                      ) : (
+                        <img
+                          src={s.cover.url}
+                          alt={s.title}
+                          className="h-16 w-24 object-cover rounded-md"
+                        />
+                      )}
+                    </div>
                   ) : (
                     "-"
                   )}

@@ -7,7 +7,7 @@ const ProjectsPage = () => {
   return (
     <>
       <motion.div
-        className="min-h-screen bg-gradient-to-br from-white via-orange-100 to-white"
+        className="min-h-screen bg-gradient-to-br from-white via-gray-100 to-orange-50"
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 24 }}
@@ -15,27 +15,21 @@ const ProjectsPage = () => {
       >
         <NavbarPage />
 
-        {/* Hero Header */}
-        <header className="relative overflow-hidden">
-          <div className="pointer-events-none absolute -top-24 -right-16 w-[420px] h-[420px] rounded-full bg-quaternaryColor/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-16 -left-10 w-[320px] h-[320px] rounded-full bg-secondaryColor/10 blur-3xl" />
-
-          <div className="max-w-7xl mx-auto px-6 md:px-10 pt-14 md:pt-18">
-            <h1 className="text-3xl md:text-5xl font-extrabold text-secondaryColor tracking-tight">
+        {/* BlogPage ile aynı header yapısı */}
+        <section className="px-4 md:px-8 lg:px-10 py-14 md:py-16 max-w-7xl mx-auto">
+          <div className="text-center mb-10 md:mb-12">
+            <h1 className="text-3xl md:text-5xl font-bold text-secondaryColor">
               Projelerimiz
             </h1>
-            <div className="h-1 w-24 bg-quaternaryColor rounded-full mt-4" />
-            <p className="mt-6 text-gray-700 max-w-2xl">
+            <div className="h-1 w-24 bg-quaternaryColor/90 mx-auto mt-4 rounded-full" />
+            <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
               Gerçekleştirdiğimiz çalışmalardan seçkiler. Kalite, süreklilik ve
               estetikten ödün vermeden ürettiğimiz çözümler.
             </p>
           </div>
-        </header>
 
-        {/* Content */}
-        <main className="max-w-7xl mx-auto px-6 md:px-10 pb-20 pt-10">
           <ProjectsPageComponent />
-        </main>
+        </section>
       </motion.div>
 
       <Footer />

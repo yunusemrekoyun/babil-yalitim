@@ -13,7 +13,6 @@ const AddService = () => {
       message.success("Hizmet eklendi");
       navigate("/admin/services");
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error("POST /services error:", err?.response?.data || err);
       message.error(err?.response?.data?.message || "Hizmet eklenemedi.");
     }

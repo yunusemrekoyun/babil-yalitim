@@ -3,15 +3,14 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft, CalendarDays, Tag, Images, Layers } from "lucide-react";
 import api from "../../api";
+import OtherServices from "./OtherServices";
 
-// Basit tarih yazımı
 const fmt = (v) => {
   if (!v) return null;
   const d = new Date(v);
   return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("tr-TR");
 };
 
-// Küçük animasyon presetleri
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
@@ -23,14 +22,10 @@ const ServiceDetails = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // galeri kontrolü
   const [activeIdx, setActiveIdx] = useState(0);
-
-  // benzerler
   const [related, setRelated] = useState([]);
   const [loadingRelated, setLoadingRelated] = useState(true);
 
-  // Fetch service
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
@@ -55,18 +50,41 @@ const ServiceDetails = () => {
     };
   }, [id]);
 
-  // Build media list: cover + images[]
+  // --- MEDYA: {url, type} olarak kur (video için gerekli) ---
   const media = useMemo(() => {
     if (!svc) return [];
-    const cover = svc?.cover?.url || svc?.imageDataUrl || svc?.imageUrl || "";
-    const gallery = Array.isArray(svc?.images)
-      ? svc.images.map((m) => m?.url).filter(Boolean)
-      : [];
-    const legacyGal = Array.isArray(svc?.galleryDataUrls)
-      ? svc.galleryDataUrls.filter(Boolean)
-      : [];
-    const all = [cover, ...gallery, ...legacyGal].filter(Boolean);
-    return Array.from(new Set(all)); // dup temizle
+    const list = [];
+
+    if (svc.cover?.url) {
+      list.push({
+        url: svc.cover.url,
+        type: svc.cover.resourceType || "image",
+      });
+    } else if (svc.imageUrl) {
+      list.push({ url: svc.imageUrl, type: "image" });
+    } else if (svc.imageDataUrl) {
+      list.push({ url: svc.imageDataUrl, type: "image" });
+    }
+
+    if (Array.isArray(svc.images)) {
+      svc.images.forEach((m) => {
+        if (m?.url) list.push({ url: m.url, type: m.resourceType || "image" });
+      });
+    }
+    if (Array.isArray(svc.galleryDataUrls)) {
+      svc.galleryDataUrls.forEach((u) => list.push({ url: u, type: "image" }));
+    }
+
+    // aynı url'leri temizle
+    const unique = [];
+    const seen = new Set();
+    for (const m of list) {
+      if (!seen.has(m.url)) {
+        seen.add(m.url);
+        unique.push(m);
+      }
+    }
+    return unique;
   }, [svc]);
 
   // Related
@@ -78,14 +96,12 @@ const ServiceDetails = () => {
         setLoadingRelated(true);
         const { data } = await api.get("/services");
         const list = Array.isArray(data) ? data : [];
-        // aynı kategori → kendisi hariç
         let rel = list.filter(
           (x) =>
             x._id !== svc._id &&
             (x.category || "").trim() === (svc.category || "").trim()
         );
         if (rel.length < 4) {
-          // kategori az ise kalanları başka kategorilerden tamamla
           const rest = list.filter(
             (x) => x._id !== svc._id && !rel.some((r) => r._id === x._id)
           );
@@ -105,7 +121,7 @@ const ServiceDetails = () => {
     };
   }, [svc]);
 
-  const activeCover = media[activeIdx];
+  const active = media[activeIdx];
 
   if (loading) {
     return (
@@ -135,148 +151,160 @@ const ServiceDetails = () => {
   }
 
   return (
-    <section className="relative">
-      {/* Header / Breadcrumb */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-8 md:pt-12">
-        <div className="flex items-center justify-between gap-4">
-          <Link
-            to="/services"
-            className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-white border hover:bg-gray-50"
-            aria-label="Hizmetlere dön"
-          >
-            <ChevronLeft size={16} />
-            Geri
-          </Link>
-          <div className="text-xs text-gray-500">
-            {fmt(svc?.createdAt) || ""}
-          </div>
-        </div>
+    <section className="relative max-w-7xl mx-auto px-4 md:px-8 pt-8 md:pt-12">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 mb-8">
+        <Link
+          to="/services"
+          className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-white border hover:bg-gray-50"
+          aria-label="Hizmetlere dön"
+        >
+          <ChevronLeft size={16} />
+          Geri
+        </Link>
+        <div className="text-xs text-gray-500">{fmt(svc?.createdAt) || ""}</div>
       </div>
 
-      {/* Hero / 9:16 media + info */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 mt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Media (dikey) */}
-          <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            animate="show"
-            className="lg:col-span-1"
-          >
-            <div className="relative rounded-3xl overflow-hidden border bg-white">
-              <div className="relative aspect-[9/16]">
-                {activeCover ? (
+      {/* Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* SOL */}
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          animate="show"
+          className="lg:col-span-2"
+        >
+          {/* Media */}
+          <div className="rounded-3xl overflow-hidden border bg-white shadow-sm">
+            <div className="relative aspect-[9/16]">
+              {active ? (
+                active.type === "video" ? (
+                  <video
+                    key={active.url}
+                    src={active.url}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    autoPlay
+                    muted
+                    playsInline
+                    loop
+                    controls
+                  />
+                ) : (
                   <motion.img
-                    key={activeCover}
-                    src={activeCover}
+                    key={active.url}
+                    src={active.url}
                     alt={svc.title}
                     className="absolute inset-0 w-full h-full object-cover"
                     initial={{ opacity: 0.2, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5 }}
                   />
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-b from-gray-200 to-gray-300" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
-              </div>
+                )
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-b from-gray-200 to-gray-300" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent pointer-events-none" />
+            </div>
 
-              {/* Thumbs */}
-              {media.length > 1 && (
-                <div className="p-3">
-                  <div className="flex gap-2 overflow-x-auto">
-                    {media.map((m, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setActiveIdx(i)}
-                        className={`relative h-16 w-12 rounded-lg overflow-hidden border transition ${
-                          i === activeIdx
-                            ? "ring-2 ring-brandBlue border-transparent"
-                            : "border-gray-200"
-                        }`}
-                        title={`Görsel ${i + 1}`}
-                      >
+            {media.length > 1 && (
+              <div className="p-3">
+                <div className="flex gap-2 overflow-x-auto">
+                  {media.map((m, i) => (
+                    <button
+                      key={`${m.url}-${i}`}
+                      type="button"
+                      onClick={() => setActiveIdx(i)}
+                      className={`relative h-16 w-12 rounded-lg overflow-hidden border transition ${
+                        i === activeIdx
+                          ? "ring-2 ring-brandBlue border-transparent"
+                          : "border-gray-200"
+                      }`}
+                      title={`Görsel ${i + 1}`}
+                    >
+                      {m.type === "video" ? (
+                        <video
+                          src={m.url}
+                          muted
+                          playsInline
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
                         <img
-                          src={m}
+                          src={m.url}
                           alt={`thumb-${i}`}
                           className="h-full w-full object-cover"
                           loading="lazy"
                         />
-                      </button>
-                    ))}
-                  </div>
+                      )}
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
-          </motion.div>
+              </div>
+            )}
+          </div>
 
           {/* Info */}
-          <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            animate="show"
-            className="lg:col-span-2"
-          >
-            <div className="rounded-3xl bg-white/80 backdrop-blur border shadow-sm p-6">
-              <h1 className="text-2xl md:text-4xl font-extrabold text-brandBlue tracking-tight">
-                {svc.title}
-              </h1>
+          <div className="mt-6 rounded-3xl bg-white/80 backdrop-blur border shadow-sm p-6">
+            <h1 className="text-2xl md:text-4xl font-extrabold text-brandBlue tracking-tight">
+              {svc.title}
+            </h1>
 
-              <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-quaternaryColor/10 text-quaternaryColor border border-quaternaryColor/30">
-                  <Tag size={16} />
-                  {svc.category || "Kategori yok"}
-                </span>
-                {svc.type && (
-                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border">
-                    <Layers size={16} />
-                    {svc.type}
-                  </span>
-                )}
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-quaternaryColor/10 text-quaternaryColor border border-quaternaryColor/30">
+                <Tag size={16} />
+                {svc.category || "Kategori yok"}
+              </span>
+              {svc.type && (
                 <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border">
-                  <CalendarDays size={16} />
-                  {fmt(svc.createdAt) || "—"}
+                  <Layers size={16} />
+                  {svc.type}
                 </span>
-                {Array.isArray(svc.images) && svc.images.length > 0 && (
-                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border">
-                    <Images size={16} />+{svc.images.length} görsel
-                  </span>
-                )}
-              </div>
-
-              {/* Description */}
-              {svc.description && (
-                <div className="mt-6 leading-relaxed text-gray-700 whitespace-pre-wrap">
-                  {svc.description}
-                </div>
               )}
-
-              {/* Usage Chips */}
-              {Array.isArray(svc.usageAreas) && svc.usageAreas.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-sm font-semibold text-brandBlue mb-3">
-                    Kullanım Alanları
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {svc.usageAreas.map((u) => (
-                      <span
-                        key={u}
-                        className="text-xs px-3 py-1 rounded-full bg-white border text-gray-700"
-                      >
-                        {u}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border">
+                <CalendarDays size={16} />
+                {fmt(svc.createdAt) || "—"}
+              </span>
+              {Array.isArray(svc.images) && svc.images.length > 0 && (
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border">
+                  <Images size={16} />+{svc.images.length} görsel
+                </span>
               )}
             </div>
-          </motion.div>
+
+            {svc.description && (
+              <div className="mt-6 leading-relaxed text-gray-700 whitespace-pre-wrap break-words">
+                {svc.description}
+              </div>
+            )}
+
+            {Array.isArray(svc.usageAreas) && svc.usageAreas.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-brandBlue mb-3">
+                  Kullanım Alanları
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {svc.usageAreas.map((u) => (
+                    <span
+                      key={u}
+                      className="text-xs px-3 py-1 rounded-full bg-white border text-gray-700"
+                    >
+                      {u}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* SAĞ */}
+        <div className="lg:col-span-1">
+          <OtherServices currentId={svc._id} />
         </div>
       </div>
 
-      {/* Related */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 mt-10 md:mt-14 mb-16">
+      {/* Benzerler */}
+      <div className="mt-10 md:mt-14 mb-16">
         <motion.h2
           variants={fadeUp}
           initial="hidden"
@@ -292,39 +320,41 @@ const ServiceDetails = () => {
           <div className="text-sm text-gray-500">Henüz başka hizmet yok.</div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {related.map((it) => (
-              <Link
-                key={it._id}
-                to={`/service/${it._id}`}
-                className="group rounded-2xl overflow-hidden border bg-white hover:shadow-md transition"
-              >
-                <div className="relative aspect-[9/16]">
-                  <img
-                    src={
-                      it?.cover?.url ||
-                      it?.imageDataUrl ||
-                      it?.imageUrl ||
-                      it?.images?.[0]?.url ||
-                      ""
-                    }
-                    alt={it.title}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                    <div className="text-sm font-semibold line-clamp-2">
-                      {it.title}
-                    </div>
-                    {it.category && (
-                      <div className="mt-1 text-[11px] px-2 py-0.5 inline-block rounded-full bg-white/20 border border-white/30 backdrop-blur">
-                        {it.category}
+            {related.map((it) => {
+              const cover =
+                it?.cover?.url ||
+                it?.imageDataUrl ||
+                it?.imageUrl ||
+                it?.images?.find((m) => m?.url)?.url ||
+                "";
+              return (
+                <Link
+                  key={it._id}
+                  to={`/services/${it._id}`}
+                  className="group rounded-2xl overflow-hidden border bg-white hover:shadow-md transition"
+                >
+                  <div className="relative aspect-[9/16]">
+                    <img
+                      src={cover}
+                      alt={it.title}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                      <div className="text-sm font-semibold line-clamp-2">
+                        {it.title}
                       </div>
-                    )}
+                      {it.category && (
+                        <div className="mt-1 text-[11px] px-2 py-0.5 inline-block rounded-full bg-white/20 border border-white/30 backdrop-blur">
+                          {it.category}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

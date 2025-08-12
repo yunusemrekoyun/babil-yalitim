@@ -3,15 +3,22 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
-        animation: {
-    'scroll-x': 'scrollX 25s linear infinite',
-  },
-   keyframes: {
-    scrollX: {
-      '0%': { transform: 'translateX(0)' },
-      '100%': { transform: 'translateX(-50%)' },
-    },
-  },
+      // 👇 animasyonlar
+      animation: {
+        "scroll-x": "scrollX 25s linear infinite", // sende vardı
+        marquee: "marquee 28s linear infinite", // eklendi
+      },
+      keyframes: {
+        scrollX: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+      },
+
       colors: {
         brandDark: "#0b0b0d",
         brandBlue: "#125795",
@@ -24,8 +31,7 @@ export default {
         koyumavi: "#01587a",
         açıkmavi: "#5cb3c1",
         buzbeyaz: "#98d8dd",
-        // buzbeyazseffaf:"#98d8dd8b",
-        buzbeyazseffaf:"#FFFFFF",
+        buzbeyazseffaf: "#FFFFFF",
         gri: "#e1e8eb",
       },
       fontFamily: {
@@ -45,11 +51,4 @@ export default {
     },
   },
   plugins: [],
-
-  
 };
-
-// 1. renk koyu mavi : #01587a
-// 2. renk açık mavi : #5cb3c1
-// 3. renk buz beyaz : #98d8dd
-// 4. renk gri : #e1e8eb

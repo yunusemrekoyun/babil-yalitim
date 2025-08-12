@@ -15,10 +15,6 @@ const ProjectsPageComponent = () => {
       try {
         setLoading(true);
         const res = await api.get("/projects");
-        // 🔎 Teşhis:
-
-        console.log("[ProjectsPage] /projects status:", res.status, res.data);
-
         const list = Array.isArray(res.data) ? res.data : [];
         if (!cancelled) setProjects(list);
       } catch (e) {
@@ -61,22 +57,15 @@ const ProjectsPageComponent = () => {
         Yükleniyor…
       </section>
     );
+
   if (err)
     return (
       <section className="w-full py-16 text-center text-red-600">{err}</section>
     );
 
-  // 🔎 Teşhis göstergeleri:
-
-  console.log(
-    "[ProjectsPage] counts => raw:",
-    projects.length,
-    " filtered:",
-    filtered.length
-  );
-
   return (
     <section className="w-full">
+      {/* BlogPage ile aynı toolbar hissiyatı */}
       <div className="mb-8 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
         <div className="flex-1">
           <label className="sr-only" htmlFor="project-search">
@@ -88,7 +77,7 @@ const ProjectsPageComponent = () => {
             placeholder="Projelerde ara…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-white/60 backdrop-blur px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition"
+            className="w-full rounded-xl border border-white/40 bg-white/60 backdrop-blur px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition shadow-sm"
           />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -100,7 +89,7 @@ const ProjectsPageComponent = () => {
               className={`px-4 py-2 rounded-full text-sm border transition ${
                 cat === c
                   ? "bg-quaternaryColor text-white border-quaternaryColor"
-                  : "bg-white/60 text-gray-700 border-gray-200 hover:bg-white"
+                  : "bg-white/60 text-gray-700 border-white/40 hover:bg-white"
               }`}
             >
               {c}
@@ -109,13 +98,12 @@ const ProjectsPageComponent = () => {
         </div>
       </div>
 
-      {/* 🔎 Ham veri sayacı */}
       <p className="text-xs text-gray-500 mb-2">
         Toplam: {projects.length} • Filtrelenmiş: {filtered.length}
       </p>
 
       {filtered.length === 0 ? (
-        <div className="text-center text-gray-500 border border-dashed rounded-2xl py-16">
+        <div className="text-center text-gray-600 bg-white/50 backdrop-blur-xl border border-white/30 rounded-2xl py-16">
           Aramanızla eşleşen proje bulunamadı.
         </div>
       ) : (

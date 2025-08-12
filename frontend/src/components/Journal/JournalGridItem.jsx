@@ -1,54 +1,72 @@
 import PropTypes from "prop-types";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
-const twoLineClamp = {
-  display: "-webkit-box",
-  WebkitLineClamp: 2,
-  WebkitBoxOrient: "vertical",
-  overflow: "hidden",
+const excerpt = (htmlOrText, max = 150) => {
+  if (!htmlOrText) return "";
+  const txt = String(htmlOrText)
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return txt.length <= max ? txt : txt.slice(0, max - 1) + "…";
 };
 
-const JournalGridItem = ({ item, index, inView }) => {
+const JournalGridItem = ({ item, index }) => {
+  const navigate = useNavigate();
   const prettyDate = item?.date
     ? new Date(item.date).toLocaleDateString("tr-TR")
     : "";
+  const cover =
+    item?.coverUrl ||
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nNjQwJyBoZWlnaHQ9JzM2MCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJz48cmVjdCBmaWxsPSIjZWVlIiB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJy8+PC9zdmc+";
 
   return (
-    <motion.div
-      initial={{ x: 100, opacity: 0 }}
-      animate={inView ? { x: 0, opacity: 1 } : { x: 100, opacity: 0 }}
-      transition={{ duration: 0.6, delay: index * 0.2 }}
-      className="bg-secondaryColor rounded-xl overflow-hidden shadow-md w-full"
+    <motion.article
+      initial={{ opacity: 0, y: 26 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.06, duration: 0.4, ease: "easeOut" }}
+      className="group rounded-2xl overflow-hidden border border-white/30 bg-white/50 
+                 backdrop-blur-xl shadow-lg hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)]
+                 transition-all cursor-pointer"
+      onClick={() => navigate(`/journals/${item._id}`)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && navigate(`/journals/${item._id}`)}
+      aria-label={`${item?.title || "Haber"} detayına git`}
     >
-      {item?.coverUrl ? (
+      {/* Kapak */}
+      <div className="relative w-full h-56 md:h-60 overflow-hidden">
         <img
-          src={item.coverUrl}
-          alt={item?.title || "Haber"}
-          className="w-full h-[350px] object-cover"
+          src={cover}
+          alt={item?.title || "haber görseli"}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           loading="lazy"
         />
-      ) : (
-        <div className="w-full h-[350px] bg-gray-300" />
-      )}
-
-      <div className="space-y-2 py-6 px-6 text-center">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/25 to-transparent opacity-95" />
         {prettyDate && (
-          <p className="uppercase text-sm text-green-300">{prettyDate}</p>
-        )}
-        <p className="text-xl font-semibold">{item?.title}</p>
-
-        {/* içerikten kısa özet; eski tasarımda about kullanılıyordu */}
-        {item?.content && (
-          <p
-            className="text-gray-200 mt-4"
-            style={twoLineClamp}
-            title={item.content}
-          >
-            {item.content}
-          </p>
+          <span className="absolute top-3 right-3 text-[11px] tracking-wide uppercase bg-white/90 text-gray-700 px-2 py-1 rounded-full shadow-md">
+            {prettyDate}
+          </span>
         )}
       </div>
-    </motion.div>
+
+      {/* İçerik */}
+      <div className="p-6">
+        <h3 className="text-lg md:text-xl font-semibold text-secondaryColor line-clamp-2">
+          {item?.title || "Başlık"}
+        </h3>
+        {item?.content && (
+          <p
+            className="mt-3 text-sm text-gray-700 line-clamp-3"
+            title={excerpt(item.content)}
+          >
+            {excerpt(item.content)}
+          </p>
+        )}
+
+        <div className="mt-5 h-[2px] w-0 group-hover:w-1/2 bg-quaternaryColor/90 transition-all duration-500" />
+      </div>
+    </motion.article>
   );
 };
 
@@ -61,7 +79,6 @@ JournalGridItem.propTypes = {
     date: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
   }).isRequired,
   index: PropTypes.number.isRequired,
-  inView: PropTypes.bool,
 };
 
 export default JournalGridItem;

@@ -22,7 +22,6 @@ const ProjectDetail = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // medya state
   const [activeIdx, setActiveIdx] = useState(0);
   const [imgOk, setImgOk] = useState(true);
   const videoRef = useRef(null);
@@ -42,7 +41,6 @@ const ProjectDetail = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
-  // Görsel listesi (öncelik: cover → images[])
   const images = useMemo(() => {
     if (!project) return [];
     const arr = [];
@@ -57,7 +55,6 @@ const ProjectDetail = () => {
   const hasAnyImage = images.length > 0;
   const hasVideo = Boolean(project?.video?.url);
 
-  // keyboard nav (← / →)
   useEffect(() => {
     const onKey = (e) => {
       if (!hasAnyImage) return;
@@ -113,23 +110,57 @@ const ProjectDetail = () => {
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300" />
         )}
-        <div className="absolute inset-0 bg-black/40" />
+
+        {/* üst katmanlar */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/15 to-transparent" />
         <motion.div
           variants={fadeUp}
           initial="hidden"
           animate="show"
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-6xl px-4"
+          className="absolute left-1/2 -translate-x-1/2 w-full max-w-6xl px-4 bottom-28 md:bottom-32"
         >
           <h1 className="text-white text-3xl md:text-5xl font-extrabold drop-shadow">
             {project.title}
           </h1>
         </motion.div>
+
+        {/* 👇 yeni: thumbnail şeridi (hero içinde) */}
+        {images.length > 1 && (
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-4 w-full max-w-6xl px-4">
+            <div className="rounded-xl bg-black/35 backdrop-blur-md border border-white/20 px-3 py-2">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                {images.map((src, i) => (
+                  <button
+                    key={src + i}
+                    type="button"
+                    onClick={() => setActiveIdx(i)}
+                    className={`relative flex-shrink-0 h-16 w-24 md:h-20 md:w-28 rounded-lg overflow-hidden border transition 
+                      ${
+                        i === activeIdx
+                          ? "ring-2 ring-brandBlue border-transparent"
+                          : "border-white/30 hover:border-white/60"
+                      }`}
+                    title={`Görsel ${i + 1}`}
+                    aria-label={`Görsel ${i + 1}`}
+                  >
+                    <img
+                      src={src}
+                      alt={`thumb-${i}`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* CONTENT */}
-      <div className="max-w-6xl mx-auto px-4 md:px-6 relative z-10 mt-10 md:mt-14">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 relative z-10 mt-8 md:mt-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Sol kolon: açıklama + küçük galeri */}
+          {/* Sol kolon: açıklama */}
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -142,38 +173,9 @@ const ProjectDetail = () => {
             <p className="text-gray-700 leading-relaxed break-words whitespace-pre-wrap">
               {project.description || "Açıklama mevcut değil."}
             </p>
-
-            {/* Görsel thumbnails */}
-            {images.length > 1 && (
-              <div className="mt-6">
-                <div className="flex gap-3 overflow-x-auto pb-1">
-                  {images.map((src, i) => (
-                    <button
-                      key={src + i}
-                      type="button"
-                      onClick={() => setActiveIdx(i)}
-                      className={`relative flex-shrink-0 h-20 w-28 rounded-lg overflow-hidden border transition 
-                        ${
-                          i === activeIdx
-                            ? "ring-2 ring-brandBlue border-transparent"
-                            : "border-gray-200 hover:border-brandBlue/50"
-                        }`}
-                      title={`Görsel ${i + 1}`}
-                    >
-                      <img
-                        src={src}
-                        alt={`thumb-${i}`}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </motion.div>
 
-          {/* Sağ kolon: bilgiler + video kartı */}
+          {/* Sağ kolon: bilgiler + video kartı + mini görsel */}
           <motion.aside
             variants={fadeUp}
             initial="hidden"
@@ -181,7 +183,6 @@ const ProjectDetail = () => {
             transition={{ delay: 0.05 }}
             className="space-y-6"
           >
-            {/* Bilgi kartı */}
             <div className="bg-white/80 backdrop-blur rounded-2xl shadow p-6">
               <h3 className="text-base font-semibold text-brandBlue mb-4">
                 Proje Bilgileri
@@ -239,7 +240,6 @@ const ProjectDetail = () => {
               </ul>
             </div>
 
-            {/* Video kartı (varsa) */}
             {hasVideo && (
               <div className="bg-white/80 backdrop-blur rounded-2xl shadow p-4">
                 <div className="flex items-center gap-2 mb-3 text-brandBlue">
@@ -257,7 +257,6 @@ const ProjectDetail = () => {
               </div>
             )}
 
-            {/* Küçük kapak/aktif görsel */}
             <div className="bg-white/80 backdrop-blur rounded-2xl shadow p-3">
               <div className="aspect-video w-full overflow-hidden rounded-lg">
                 {hasAnyImage ? (
@@ -285,38 +284,8 @@ const ProjectDetail = () => {
             </div>
           </motion.aside>
         </div>
-
-        {/* Alt galeri: mobilde ayrı (lg:hidden) */}
-        {images.length > 1 && (
-          <div className="lg:hidden mt-6">
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {images.map((src, i) => (
-                <button
-                  key={`m-${src}-${i}`}
-                  type="button"
-                  onClick={() => setActiveIdx(i)}
-                  className={`relative flex-shrink-0 h-20 w-28 rounded-lg overflow-hidden border transition 
-                    ${
-                      i === activeIdx
-                        ? "ring-2 ring-brandBlue border-transparent"
-                        : "border-gray-200 hover:border-brandBlue/50"
-                    }`}
-                  title={`Görsel ${i + 1}`}
-                >
-                  <img
-                    src={src}
-                    alt={`m-thumb-${i}`}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Arka plan dolgu */}
       <div className="mt-12 pb-16 bg-gray-50" />
     </section>
   );

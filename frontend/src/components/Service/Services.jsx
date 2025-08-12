@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import api from "../../api";
 import ServiceItem from "./ServiceItem";
+
 const Services = () => {
   const [services, setServices] = useState([]);
   const [q, setQ] = useState("");
@@ -54,8 +55,8 @@ const Services = () => {
 
   return (
     <section className="w-full">
-      {/* Toolbar */}
-      <div className="mb-6 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+      {/* Toolbar (BlogPage ile aynı hissiyat) */}
+      <div className="mb-8 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
         <div className="flex-1">
           <label htmlFor="svc-search" className="sr-only">
             Hizmetlerde ara
@@ -66,7 +67,7 @@ const Services = () => {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Hizmetlerde ara…"
-            className="w-full rounded-xl border border-gray-200 bg-white/70 backdrop-blur px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition"
+            className="w-full rounded-xl border border-white/40 bg-white/60 backdrop-blur px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition shadow-sm"
           />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -78,7 +79,7 @@ const Services = () => {
               className={`px-4 py-2 rounded-full text-sm border transition ${
                 cat === c
                   ? "bg-quaternaryColor text-white border-quaternaryColor"
-                  : "bg-white/70 text-gray-700 border-gray-200 hover:bg-white"
+                  : "bg-white/60 text-gray-700 border-white/40 hover:bg-white"
               }`}
             >
               {c}
@@ -92,9 +93,9 @@ const Services = () => {
         Toplam: {services.length} • Filtrelenmiş: {filtered.length}
       </p>
 
-      {/* Grid (dikey kartlar için geniş aralıklarla) */}
+      {/* Dikey kart grid’i */}
       {filtered.length === 0 ? (
-        <div className="text-center text-gray-500 border border-dashed rounded-2xl py-16">
+        <div className="text-center text-gray-600 bg-white/50 backdrop-blur-xl border border-white/30 rounded-2xl py-16">
           Sonuç bulunamadı.
         </div>
       ) : (
@@ -116,5 +117,3 @@ const Services = () => {
 };
 
 export default Services;
-
-

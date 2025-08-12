@@ -9,63 +9,78 @@ const LinkItem = ({
   isHovered,
   onMouseEnter,
   onMouseLeave,
-}) => (
-  <div
-    className={`bg-buzbeyazseffaf rounded-2xl shadow-lg flex flex-col items-center transition-all duration-300 ease-in-out cursor-pointer relative
-  w-full sm:w-60
-  ${isHovered ? "z-10 pt-6 pb-4 px-6" : "z-0 pt-4 pb-[-2] px-4"}
-`}
-    onMouseEnter={onMouseEnter}
-    onMouseLeave={onMouseLeave}
-    style={{
-      minHeight: isHovered ? 320 : 220,
-      transform: isHovered ? "translateY(0px)" : "translateY(0)",
-      transformOrigin: "top center",
-      willChange: "transform",
-    }}
-  >
-    <img
-      src={img}
-      alt={label}
-      className={`object-cover rounded-xl mb-2 transition-all duration-300 shadow-lg
-        ${isHovered ? "w-32 h-32 mt-0" : "w-full h-32 mt-0"}`}
-    />
-    <span
-      className={`font-bold ${
-        isHovered ? "text-xl mb-2 mt-2" : "text-lg mt-2"
-      } ${color}`}
-    >
-      {label}
-    </span>
+}) => {
+  return (
     <div
-      className={`transition-all duration-300 text-gray-500 text-center text-sm mb-4 overflow-visible
-        ${isHovered ? "max-h-32 opacity-100 mt-2" : "max-h-0 opacity-0 m-0"}`}
-    >
-      {desc}
-    </div>
-
-    {/* ✅ Doğru href'lerle bağlantı */}
-    <a
-      href={href}
-      className={`transition-all duration-300 bg-quaternaryColor text-white px-6 py-2 rounded-full font-semibold shadow hover:bg-secondaryColor
-        ${
-          isHovered
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-        }
+      className={`
+        group relative w-full sm:w-60 h-[260px]
+        rounded-2xl shadow-lg bg-white/10 backdrop-blur
+        transition-transform duration-300 ease-out
+        ${isHovered ? "scale-[1.04] z-10" : "scale-100 z-0"}
       `}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      style={{ transformOrigin: "center" }}
     >
-      Detay
-    </a>
-  </div>
-);
+      {/* Üst görsel */}
+      <img
+        src={img}
+        alt={label}
+        className="absolute inset-0 h-full w-full object-cover rounded-2xl"
+      />
+
+      {/* Üstten gradient – görseli yumuşatır */}
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-black/10 via-black/0 to-black/30 pointer-events-none" />
+
+      {/* Alt panel: hover yokken h-14, hover’da h-36  */}
+      <div
+        className={`
+          absolute left-2 right-2 bottom-2
+          rounded-xl border border-white/40 bg-white/80 backdrop-blur-xl shadow-md
+          overflow-hidden transition-all duration-300
+          ${isHovered ? "h-36" : "h-14"}
+        `}
+      >
+        {/* Başlık satırı */}
+        <div className="h-14 px-4 flex items-center">
+          <span
+            className={`font-semibold ${color} text-base line-clamp-1`}
+            title={label}
+          >
+            {label}
+          </span>
+        </div>
+
+        {/* İçerik: sadece hover’da görünür */}
+        <div
+          className={`
+            px-4 pb-3 space-y-3 transition-opacity duration-300
+            ${isHovered ? "opacity-100" : "opacity-0 pointer-events-none"}
+          `}
+        >
+          {desc ? (
+            <p className="text-xs text-gray-600 line-clamp-2">{desc}</p>
+          ) : null}
+
+          <a
+            href={href}
+            className="inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-semibold
+                       bg-quaternaryColor text-white hover:bg-secondaryColor transition-colors"
+          >
+            Detay
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 LinkItem.propTypes = {
   label: PropTypes.string.isRequired,
   img: PropTypes.string.isRequired,
   color: PropTypes.string,
   desc: PropTypes.string,
-  href: PropTypes.string, // örnek: "/services", "/projects", "#brands"
+  href: PropTypes.string,
   isHovered: PropTypes.bool.isRequired,
   onMouseEnter: PropTypes.func,
   onMouseLeave: PropTypes.func,
