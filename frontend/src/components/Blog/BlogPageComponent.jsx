@@ -1,54 +1,84 @@
+// src/components/Blog/BlogPageComponent.jsx
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../../api";
+import BlogItem from "./BlogItem";
+
+const Skeleton = () => (
+  <div className="rounded-2xl overflow-hidden border border-white/40 bg-white/40 backdrop-blur-md shadow-md">
+    <div className="w-full h-56 md:h-60 bg-gray-200/60 animate-pulse" />
+    <div className="p-6">
+      <div className="h-5 w-3/4 bg-gray-200/70 rounded mb-3 animate-pulse" />
+      <div className="h-4 w-full bg-gray-200/70 rounded mb-2 animate-pulse" />
+      <div className="h-4 w-2/3 bg-gray-200/70 rounded animate-pulse" />
+    </div>
+  </div>
+);
+
+const EmptyState = () => (
+  <div className="text-center py-16 bg-white/50 backdrop-blur-xl rounded-2xl border border-white/30">
+    <p className="text-secondaryColor font-semibold text-lg">
+      Henüz blog eklenmemiş.
+    </p>
+    <p className="text-gray-600 mt-1">Yakında yeni yazılarla buradayız.</p>
+  </div>
+);
 
 const BlogPageComponent = () => {
   const [blogs, setBlogs] = useState([]);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
   useEffect(() => {
-    api
-      .get("/blogs")
-      .then((res) => setBlogs(res.data))
-      .catch((err) => console.error("Bloglar alınamadı:", err));
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await api.get("/blogs");
+        const list = Array.isArray(res.data) ? res.data : [];
+        if (!cancelled) setBlogs(list);
+      } catch (e) {
+        console.error("Bloglar alınamadı:", e?.response?.data || e);
+        if (!cancelled) setErr("Bloglar getirilemedi.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 w-full">
-      {blogs.map((item, index) => (
-        <motion.div
-          key={item._id}
-          onClick={() => navigate(`/blog/${item._id}`)}
-          className="group bg-white/60 backdrop-blur-xl rounded-2xl shadow-md overflow-hidden hover:shadow-2xl transition-all cursor-pointer flex flex-col duration-300 border border-white/30 hover:scale-[1.02]"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
-        >
-          {/* Görsel */}
-          <div className="overflow-hidden">
-            <img
-              src={item.imageUrl}
-              alt={item.title}
-              className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-110"
-            />
-          </div>
+  if (loading) {
+    return (
+      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} />
+        ))}
+      </div>
+    );
+  }
 
-          {/* İçerik */}
-          <div className="p-5 flex flex-col h-full">
-            <h3 className="text-lg font-semibold text-secondaryColor mb-2 line-clamp-2">
-              {item.title}
-            </h3>
-            <p className="text-sm text-gray-700 line-clamp-3 flex-grow">
-              {item.about}
-            </p>
-            <p className="text-xs text-right text-gray-500 mt-4">
-              {new Date(item.createdAt).toLocaleDateString("tr-TR")}
-            </p>
-          </div>
-        </motion.div>
+  if (err) {
+    return (
+      <div className="text-center text-red-600 bg-white/40 border border-white/30 rounded-2xl py-10">
+        {err}
+      </div>
+    );
+  }
+
+  if (!blogs.length) return <EmptyState />;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
+    >
+      {blogs.map((b, i) => (
+        <BlogItem key={b._id || i} item={b} index={i} />
       ))}
-    </div>
+    </motion.div>
   );
 };
 

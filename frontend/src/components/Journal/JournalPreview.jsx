@@ -22,6 +22,16 @@ const EmptyState = () => (
   </div>
 );
 
+// Backend -> UI normalize
+const normalize = (j) => ({
+  _id: j?._id,
+  title: j?.title || "",
+  coverUrl: j?.cover?.url || "",
+  excerpt: j?.content || "",
+  date: j?.createdAt || j?.updatedAt || null,
+  likesCount: j?.likesCount ?? 0,
+});
+
 const JournalPreview = ({ data = [], loading = false }) => {
   if (loading) {
     return (
@@ -35,9 +45,11 @@ const JournalPreview = ({ data = [], loading = false }) => {
 
   if (!data.length) return <EmptyState />;
 
+  const items = data.map(normalize);
+
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {data.map((item, index) => (
+      {items.map((item, index) => (
         <JournalCard key={item._id || index} item={item} index={index} />
       ))}
     </div>
@@ -45,19 +57,7 @@ const JournalPreview = ({ data = [], loading = false }) => {
 };
 
 JournalPreview.propTypes = {
-  data: PropTypes.arrayOf(
-    PropTypes.shape({
-      _id: PropTypes.string,
-      title: PropTypes.string,
-      about: PropTypes.string,
-      image: PropTypes.string, // URL ya da dataURL
-      date: PropTypes.oneOfType([
-        PropTypes.string,
-        PropTypes.number,
-        PropTypes.instanceOf(Date),
-      ]),
-    })
-  ),
+  data: PropTypes.arrayOf(PropTypes.object),
   loading: PropTypes.bool,
 };
 

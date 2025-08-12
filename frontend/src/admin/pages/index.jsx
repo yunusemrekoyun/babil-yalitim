@@ -6,7 +6,7 @@ export { default as Dashboard } from "./Dashboard.jsx";
 export { default as BlogList } from "./blog/BlogList.jsx";
 export { default as AddBlog } from "./blog/AddBlog.jsx";
 export { default as EditBlog } from "./blog/EditBlog.jsx";
-
+export { default as BlogComments } from "./blog/BlogComments.jsx";
 // Journal Admin
 export { default as JournalList } from "./journal/JournalList.jsx";
 export { default as AddJournal } from "./journal/AddJournal.jsx";

@@ -1,3 +1,4 @@
+// src/pages/BlogDetailPage.jsx
 import { motion } from "framer-motion";
 import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
@@ -15,19 +16,18 @@ const BlogDetailPage = () => {
       >
         <NavbarPage />
 
-        {/* Hero başlık şeridi (BlogDetail kendi kapak görselini de render ediyor) */}
-        <section className="max-w-7xl mx-auto px-4 md:px-8 pt-10 md:pt-14">
-          <div className="flex items-center gap-2 text-xs text-gray-600">
+        {/* Breadcrumb */}
+        <section className="max-w-7xl mx-auto px-4 md:px-8 pt-8">
+          <nav className="flex items-center gap-2 text-xs text-gray-600">
             <a href="/blog" className="hover:text-secondaryColor transition">
               Blog
             </a>
             <span>•</span>
             <span>Detay</span>
-          </div>
+          </nav>
         </section>
 
-        {/* İçerik */}
-        <section className="w-full flex flex-col items-center px-4 md:px-8 py-10 md:py-14">
+        <section className="w-full flex flex-col items-center px-4 md:px-8 py-8 md:py-12">
           <div className="w-full max-w-7xl">
             <BlogDetail />
           </div>

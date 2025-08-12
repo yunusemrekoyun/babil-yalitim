@@ -1,15 +1,15 @@
 import Navbar from "../components/Navbar/Navbar";
 import Hero from "../components/Hero/Hero";
-import Journal from "../components/Journal/Journal";
+import Journal from "../components/Journal/JournalGrid";
 import Footer from "../components/Footer/Footer";
 import ProjectsSection from "../components/ProjeGrid/ProjectsSection";
 import WhyUs from "../components/WhyUs/WhyUs";
 import heroVideo from "../assets/hero.mp4";
-import ExploreSection from "../components/Explore/ExploreSection";
+import ServiceSection from "../components/Service/ServiceSection";
 import AboutSection from "../components/About/AboutSection";
 import GlassSection from "../components/Layout/GlassSection";
 import BrandsSection from "../components/Brands/BrandsSection";
-
+import BlogGrid from "../components/Blog/BlogGrid";
 const HomePage = () => {
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -39,13 +39,16 @@ const HomePage = () => {
             <ProjectsSection />
           </GlassSection>
           <GlassSection>
-            <ExploreSection />
+            <ServiceSection />
           </GlassSection>
           <GlassSection>
             <Journal />
           </GlassSection>
           <GlassSection>
             <WhyUs />
+          </GlassSection>
+          <GlassSection>
+            <BlogGrid />
           </GlassSection>
           <GlassSection>
             <AboutSection />

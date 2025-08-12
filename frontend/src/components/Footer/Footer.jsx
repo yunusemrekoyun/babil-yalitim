@@ -18,7 +18,7 @@ const Footer = () => {
           <h4 className="text-lg font-semibold mb-4 text-quaternaryColor">Site Haritası</h4>
           <ul className="space-y-2">
             <li><a href="#about" className="text-secondaryColor hover:text-quaternaryColor transition">Hakkımızda</a></li>
-            <li><a href="#explore" className="text-secondaryColor hover:text-quaternaryColor transition">Projeler</a></li>
+            <li><a href="#Service" className="text-secondaryColor hover:text-quaternaryColor transition">Projeler</a></li>
             <li><a href="#journal" className="text-secondaryColor hover:text-quaternaryColor transition">Blog</a></li>
             <li><a href="#search" className="text-secondaryColor hover:text-quaternaryColor transition">Arama</a></li>
           </ul>

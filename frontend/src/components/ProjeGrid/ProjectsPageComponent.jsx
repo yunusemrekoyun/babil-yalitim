@@ -6,20 +6,39 @@ const ProjectsPageComponent = () => {
   const [projects, setProjects] = useState([]);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Tümü");
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
   useEffect(() => {
-    api
-      .get("/projects")
-      .then((res) => setProjects(Array.isArray(res.data) ? res.data : []))
-      .catch((err) => console.error("Proje verisi alınamadı:", err));
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await api.get("/projects");
+        // 🔎 Teşhis:
+
+        console.log("[ProjectsPage] /projects status:", res.status, res.data);
+
+        const list = Array.isArray(res.data) ? res.data : [];
+        if (!cancelled) setProjects(list);
+      } catch (e) {
+        console.error(
+          "[ProjectsPage] GET /projects failed:",
+          e?.response?.data || e
+        );
+        if (!cancelled) setErr("Projeler getirilemedi.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const categories = useMemo(() => {
     const uniq = new Set(
-      projects
-        .map((p) => p.category)
-        .filter(Boolean)
-        .map((s) => s.trim())
+      projects.map((p) => (p.category || "").trim()).filter(Boolean)
     );
     return ["Tümü", ...Array.from(uniq)];
   }, [projects]);
@@ -36,11 +55,29 @@ const ProjectsPageComponent = () => {
     });
   }, [projects, q, cat]);
 
+  if (loading)
+    return (
+      <section className="w-full py-16 text-center text-gray-500">
+        Yükleniyor…
+      </section>
+    );
+  if (err)
+    return (
+      <section className="w-full py-16 text-center text-red-600">{err}</section>
+    );
+
+  // 🔎 Teşhis göstergeleri:
+
+  console.log(
+    "[ProjectsPage] counts => raw:",
+    projects.length,
+    " filtered:",
+    filtered.length
+  );
+
   return (
     <section className="w-full">
-      {/* Toolbar */}
       <div className="mb-8 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-        {/* Search */}
         <div className="flex-1">
           <label className="sr-only" htmlFor="project-search">
             Projelerde ara
@@ -54,8 +91,6 @@ const ProjectsPageComponent = () => {
             className="w-full rounded-xl border border-gray-200 bg-white/60 backdrop-blur px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition"
           />
         </div>
-
-        {/* Categories */}
         <div className="flex flex-wrap gap-2">
           {categories.map((c) => (
             <button
@@ -74,7 +109,11 @@ const ProjectsPageComponent = () => {
         </div>
       </div>
 
-      {/* Grid */}
+      {/* 🔎 Ham veri sayacı */}
+      <p className="text-xs text-gray-500 mb-2">
+        Toplam: {projects.length} • Filtrelenmiş: {filtered.length}
+      </p>
+
       {filtered.length === 0 ? (
         <div className="text-center text-gray-500 border border-dashed rounded-2xl py-16">
           Aramanızla eşleşen proje bulunamadı.

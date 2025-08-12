@@ -1,5 +1,10 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import GuestRoute from "./context/GuestRoute.jsx";
 import PrivateRoute from "./context/PrivateRoute.jsx";
@@ -14,7 +19,8 @@ const publicRoutes = [
   { path: "/", element: <PublicPages.HomePage /> },
   { path: "/projects", element: <PublicPages.ProjectsPage /> },
   { path: "/project-detail/:id", element: <PublicPages.ProjectDetailPage /> },
-  { path: "/services", element: <PublicPages.ExplorePage /> },
+  { path: "/services", element: <PublicPages.ServicePage /> },
+  { path: "/services/:id", element: <PublicPages.ServiceDetailsPage /> }, // ✅ yeni ekleme
   { path: "/journal", element: <PublicPages.JournalPage /> },
   { path: "/journals/:id", element: <PublicPages.JournalDetailPage /> },
   { path: "/whyus", element: <PublicPages.WhyUsPage /> },
@@ -23,7 +29,6 @@ const publicRoutes = [
   { path: "/blog/:id", element: <PublicPages.BlogDetailPage /> },
   { path: "/iletisim", element: <PublicPages.ContactPage /> },
 ];
-
 const adminRoutes = [
   { path: "dashboard", element: <AdminPages.Dashboard /> },
   { path: "blogs", element: <AdminPages.BlogList /> },
@@ -38,19 +43,20 @@ const adminRoutes = [
   { path: "services", element: <AdminPages.ServiceList /> },
   { path: "services/add", element: <AdminPages.AddService /> },
   { path: "services/edit/:id", element: <AdminPages.EditService /> },
+  { path: "blogs/:id/comments", element: <AdminPages.BlogComments /> },
 ];
 
 const AppRoutes = () => {
   const location = useLocation();
 
   // 🔍 Her route değişiminde ziyaret kaydet
-useEffect(() => {
-  // Eğer admin paneldeysek loglama yapma
-  if (!location.pathname.startsWith("/admin")) {
-    console.log("Ziyaret gönderiliyor:", location.pathname);
-    api.post("/visits", { path: location.pathname }).catch(console.error);
-  }
-}, [location.pathname]);
+  useEffect(() => {
+    // Eğer admin paneldeysek loglama yapma
+    if (!location.pathname.startsWith("/admin")) {
+      console.log("Ziyaret gönderiliyor:", location.pathname);
+      api.post("/visits", { path: location.pathname }).catch(console.error);
+    }
+  }, [location.pathname]);
 
   return (
     <AnimatePresence mode="wait">

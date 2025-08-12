@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import ProjectGridItem from "./ProjectGridItem";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
-import api from "../../api"; // <- sabit URL yerine
+import api from "../../api";
 
 const ProjectGrid = () => {
   const [projects, setProjects] = useState([]);

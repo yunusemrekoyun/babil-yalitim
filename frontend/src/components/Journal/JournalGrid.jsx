@@ -1,20 +1,35 @@
-// src/components/Journal/Journal.jsx
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useNavigate } from "react-router-dom";
 import { FiArrowRight } from "react-icons/fi";
 import api from "../../api";
+import JournalGridItem from "./JournalGridItem";
 
-const Journal = () => {
+const JournalGrid = () => {
   const { ref, inView } = useInView({ triggerOnce: false, threshold: 0.18 });
   const navigate = useNavigate();
   const [journals, setJournals] = useState([]);
 
   useEffect(() => {
     api
-      .get("/journal")
-      .then(({ data }) => setJournals(data.slice(0, 2))) // sadece ilk 2 tanesi
+      .get("/journals")
+      .then(({ data }) => {
+        const list = Array.isArray(data) ? data : [];
+        // sadece ilk 2 kart
+        setJournals(
+          list.slice(0, 2).map((j) => ({
+            _id: j._id,
+            title: j.title,
+            // backend: cover.url
+            coverUrl: j?.cover?.url || "",
+            // içerik (kısa gösterim için)
+            content: j?.content || "",
+            // tarih (createdAt öncelikli)
+            date: j?.createdAt || j?.updatedAt || null,
+          }))
+        );
+      })
       .catch(console.error);
   }, []);
 
@@ -34,27 +49,13 @@ const Journal = () => {
 
       {/* cards */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-14 place-items-center mt-20">
-        {journals.map((data, index) => (
-          <motion.div
-            initial={{ x: 100, opacity: 0 }}
-            animate={inView ? { x: 0, opacity: 1 } : { x: 100, opacity: 0 }}
-            transition={{ duration: 0.6, delay: index * 0.2 }}
-            key={data._id}
-            className="bg-secondaryColor rounded-xl overflow-hidden shadow-md"
-          >
-            <img
-              src={data.image}
-              alt={data.title}
-              className="w-full h-[350px] object-cover"
-            />
-            <div className="space-y-2 py-6 px-6 text-center">
-              <p className="uppercase text-sm text-green-300">
-                {new Date(data.date).toLocaleDateString("tr-TR")}
-              </p>
-              <p className="text-xl font-semibold">{data.title}</p>
-              <p className="text-gray-300 mt-4">{data.about}</p>
-            </div>
-          </motion.div>
+        {journals.map((item, index) => (
+          <JournalGridItem
+            key={item._id}
+            item={item}
+            index={index}
+            inView={inView}
+          />
         ))}
       </div>
 
@@ -79,4 +80,4 @@ const Journal = () => {
   );
 };
 
-export default Journal;
+export default JournalGrid;

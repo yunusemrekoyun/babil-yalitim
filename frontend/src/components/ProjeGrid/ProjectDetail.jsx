@@ -1,13 +1,19 @@
 // frontend/src/components/ProjeGrid/ProjectDetail.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../../api";
 import { motion } from "framer-motion";
-import { CalendarDays, Tag } from "lucide-react";
+import { CalendarDays, Tag, Film, Images, Clock } from "lucide-react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
+
+const fmt = (v) => {
+  if (!v) return "—";
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("tr-TR");
 };
 
 const ProjectDetail = () => {
@@ -15,7 +21,11 @@ const ProjectDetail = () => {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // medya state
   const [activeIdx, setActiveIdx] = useState(0);
+  const [imgOk, setImgOk] = useState(true);
+  const videoRef = useRef(null);
 
   useEffect(() => {
     if (!id) return;
@@ -26,26 +36,38 @@ const ProjectDetail = () => {
         setProject(data);
         setNotFound(false);
         setActiveIdx(0);
+        setImgOk(true);
       })
-      .catch((err) => {
-        console.error("Proje bulunamadı:", err);
-        setNotFound(true);
-      })
+      .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Görsel listesi (öncelik: cover → images[])
   const images = useMemo(() => {
     if (!project) return [];
     const arr = [];
-    if (project.imageDataUrl) arr.push(project.imageDataUrl);
-    if (Array.isArray(project.galleryDataUrls)) {
-      project.galleryDataUrls.forEach((u) => u && arr.push(u));
+    if (project.cover?.url) arr.push(project.cover.url);
+    if (Array.isArray(project.images)) {
+      project.images.forEach((m) => m?.url && arr.push(m.url));
     }
-    if (!arr.length && project.imageUrl) arr.push(project.imageUrl);
     return arr;
   }, [project]);
 
-  const cover = images[activeIdx];
+  const heroImage = images[activeIdx] || null;
+  const hasAnyImage = images.length > 0;
+  const hasVideo = Boolean(project?.video?.url);
+
+  // keyboard nav (← / →)
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!hasAnyImage) return;
+      if (e.key === "ArrowRight") setActiveIdx((i) => (i + 1) % images.length);
+      if (e.key === "ArrowLeft")
+        setActiveIdx((i) => (i - 1 + images.length) % images.length);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [images.length, hasAnyImage]);
 
   if (loading) {
     return (
@@ -67,15 +89,26 @@ const ProjectDetail = () => {
     <section className="w-full">
       {/* HERO */}
       <div className="relative h-[42vh] md:h-[56vh] overflow-hidden">
-        {cover ? (
+        {hasAnyImage ? (
           <motion.img
-            key={cover}
-            src={cover}
+            key={heroImage + String(imgOk)}
+            src={heroImage}
             alt={project.title}
+            onError={() => setImgOk(false)}
             initial={{ scale: 1.05, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : hasVideo ? (
+          <video
+            ref={videoRef}
+            src={project.video.url}
+            className="absolute inset-0 w-full h-full object-cover"
+            muted
+            autoPlay
+            loop
+            playsInline
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300" />
@@ -85,18 +118,18 @@ const ProjectDetail = () => {
           variants={fadeUp}
           initial="hidden"
           animate="show"
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-5xl px-4"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-6xl px-4"
         >
-          <h1 className="text-white text-3xl md:text-5xl font-bold drop-shadow">
+          <h1 className="text-white text-3xl md:text-5xl font-extrabold drop-shadow">
             {project.title}
           </h1>
         </motion.div>
       </div>
 
       {/* CONTENT */}
-      <div className="max-w-5xl mx-auto px-4 md:px-6 relative z-10 mt-16 md:mt-20">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Sol: açıklama */}
+      <div className="max-w-6xl mx-auto px-4 md:px-6 relative z-10 mt-10 md:mt-14">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          {/* Sol kolon: açıklama + küçük galeri */}
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -110,20 +143,20 @@ const ProjectDetail = () => {
               {project.description || "Açıklama mevcut değil."}
             </p>
 
-            {/* Thumbnail galeri (mobilde aşağıda, desktop’ta bu kart içinde) */}
+            {/* Görsel thumbnails */}
             {images.length > 1 && (
               <div className="mt-6">
                 <div className="flex gap-3 overflow-x-auto pb-1">
                   {images.map((src, i) => (
                     <button
-                      key={i}
+                      key={src + i}
                       type="button"
                       onClick={() => setActiveIdx(i)}
                       className={`relative flex-shrink-0 h-20 w-28 rounded-lg overflow-hidden border transition 
                         ${
                           i === activeIdx
                             ? "ring-2 ring-brandBlue border-transparent"
-                            : "border-gray-200"
+                            : "border-gray-200 hover:border-brandBlue/50"
                         }`}
                       title={`Görsel ${i + 1}`}
                     >
@@ -140,7 +173,7 @@ const ProjectDetail = () => {
             )}
           </motion.div>
 
-          {/* Sağ: bilgiler */}
+          {/* Sağ kolon: bilgiler + video kartı */}
           <motion.aside
             variants={fadeUp}
             initial="hidden"
@@ -148,45 +181,102 @@ const ProjectDetail = () => {
             transition={{ delay: 0.05 }}
             className="space-y-6"
           >
+            {/* Bilgi kartı */}
             <div className="bg-white/80 backdrop-blur rounded-2xl shadow p-6">
               <h3 className="text-base font-semibold text-brandBlue mb-4">
                 Proje Bilgileri
               </h3>
               <ul className="space-y-3 text-sm text-gray-700">
-                <li className="flex items-center gap-3">
-                  <Tag size={18} className="text-brandBlue flex-none" />
+                <li className="flex items-start gap-3">
+                  <Tag size={18} className="text-brandBlue flex-none mt-0.5" />
                   <span>
                     <strong>Kategori:</strong>{" "}
                     {project.category || "Belirtilmemiş"}
                   </span>
                 </li>
-                <li className="flex items-center gap-3">
+                <li className="flex items-start gap-3">
                   <CalendarDays
                     size={18}
-                    className="text-brandBlue flex-none"
+                    className="text-brandBlue flex-none mt-0.5"
                   />
-                  <span>
-                    <strong>Tarih:</strong>{" "}
-                    {project.createdAt
-                      ? new Date(project.createdAt).toLocaleDateString("tr-TR")
-                      : "—"}
+                  <span className="space-x-2">
+                    {project.startDate && (
+                      <span>Başlangıç: {fmt(project.startDate)}</span>
+                    )}
+                    {project.endDate && (
+                      <span>Bitiş: {fmt(project.endDate)}</span>
+                    )}
+                    {!project.startDate && !project.endDate && (
+                      <span>Oluşturulma: {fmt(project.createdAt)}</span>
+                    )}
                   </span>
                 </li>
+                {(project.durationDays || project.completedAt) && (
+                  <li className="flex items-start gap-3">
+                    <Clock
+                      size={18}
+                      className="text-brandBlue flex-none mt-0.5"
+                    />
+                    <span className="space-x-2">
+                      {project.completedAt && (
+                        <span>Tamamlandı: {fmt(project.completedAt)}</span>
+                      )}
+                      {project.durationDays ? (
+                        <span>({project.durationDays} gün)</span>
+                      ) : null}
+                    </span>
+                  </li>
+                )}
+                {images.length > 0 && (
+                  <li className="flex items-start gap-3">
+                    <Images
+                      size={18}
+                      className="text-brandBlue flex-none mt-0.5"
+                    />
+                    <span>{images.length} görsel</span>
+                  </li>
+                )}
               </ul>
             </div>
 
-            {/* Küçük kapak kartı (thumb seçimiyle senkron) */}
+            {/* Video kartı (varsa) */}
+            {hasVideo && (
+              <div className="bg-white/80 backdrop-blur rounded-2xl shadow p-4">
+                <div className="flex items-center gap-2 mb-3 text-brandBlue">
+                  <Film size={18} />
+                  <h3 className="font-semibold text-sm">Proje Videosu</h3>
+                </div>
+                <div className="aspect-video w-full overflow-hidden rounded-lg">
+                  <video
+                    src={project.video.url}
+                    controls
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Küçük kapak/aktif görsel */}
             <div className="bg-white/80 backdrop-blur rounded-2xl shadow p-3">
               <div className="aspect-video w-full overflow-hidden rounded-lg">
-                {cover ? (
+                {hasAnyImage ? (
                   <motion.img
-                    key={`mini-${cover}`}
-                    src={cover}
+                    key={`mini-${heroImage}`}
+                    src={heroImage}
                     alt="Kapak"
                     className="w-full h-full object-cover"
-                    initial={{ opacity: 0.2 }}
+                    initial={{ opacity: 0.25 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.4 }}
+                    transition={{ duration: 0.35 }}
+                  />
+                ) : hasVideo ? (
+                  <video
+                    src={project.video.url}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                    controls
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-200" />
@@ -196,20 +286,20 @@ const ProjectDetail = () => {
           </motion.aside>
         </div>
 
-        {/* Alt galeri: mobilde ayrı gösterim (lg:hidden) */}
+        {/* Alt galeri: mobilde ayrı (lg:hidden) */}
         {images.length > 1 && (
           <div className="lg:hidden mt-6">
             <div className="flex gap-3 overflow-x-auto pb-1">
               {images.map((src, i) => (
                 <button
-                  key={`m-${i}`}
+                  key={`m-${src}-${i}`}
                   type="button"
                   onClick={() => setActiveIdx(i)}
                   className={`relative flex-shrink-0 h-20 w-28 rounded-lg overflow-hidden border transition 
                     ${
                       i === activeIdx
                         ? "ring-2 ring-brandBlue border-transparent"
-                        : "border-gray-200"
+                        : "border-gray-200 hover:border-brandBlue/50"
                     }`}
                   title={`Görsel ${i + 1}`}
                 >
