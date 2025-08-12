@@ -2,7 +2,14 @@
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Briefcase, CheckCircle, Smile, PhoneCall } from "lucide-react";
+import {
+  Briefcase,
+  CheckCircle,
+  Smile,
+  PhoneCall,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import img1 from "../../assets/1.jpg";
 import img2 from "../../assets/2.jpg";
 import img3 from "../../assets/3.jpg";
@@ -10,101 +17,134 @@ import img3 from "../../assets/3.jpg";
 const sections = [
   {
     title: "Hakkımızda",
-    text: "Babil Yalıtım olarak 10 yılı aşkın süredir su yalıtımı alanında faaliyet gösteriyoruz. Tecrübemiz, uzman kadromuz ve müşteri odaklı hizmet anlayışımızla projelerinize kalıcı çözümler sunuyoruz.",
+    text: "Babil Yalıtım olarak 10 yılı aşkın süredir su yalıtımı alanında faaliyet gösteriyoruz. Tecrübemiz, uzman kadromuz ve müşteri odaklı yaklaşımımızla projelerinize kalıcı çözümler sunuyoruz.",
     img: img1,
   },
   {
     title: "Misyonumuz",
-    text: "Her projeye özel yaklaşımımızla en kaliteli ve uzun ömürlü yalıtım hizmetini sunmak, müşteri memnuniyetini en üst seviyede tutmak.",
+    text: "Her projeye özel yaklaşımımızla en kaliteli ve uzun ömürlü yalıtım hizmetini sunmak; güven, şeffaflık ve memnuniyeti merkeze almak.",
     img: img2,
   },
   {
     title: "Vizyonumuz",
-    text: "Yalıtım sektöründe yenilikçi çözümlerle lider olmak, çevreye duyarlı ve sürdürülebilir hizmet anlayışını benimsemek.",
+    text: "Yalıtım sektöründe yenilikçi ve sürdürülebilir çözümlerle lider olmak; çevreye duyarlı bir üretim ve uygulama kültürünü yaygınlaştırmak.",
     img: img3,
   },
 ];
+
+const cardFx = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
+};
 
 const AboutPageComponent = () => {
   const [index, setIndex] = useState(0);
   const navigate = useNavigate();
 
-  const next = () => setIndex((prev) => (prev + 1) % sections.length);
+  const next = () => setIndex((p) => (p + 1) % sections.length);
   const prev = () =>
-    setIndex((prev) => (prev - 1 + sections.length) % sections.length);
+    setIndex((p) => (p - 1 + sections.length) % sections.length);
+
+  const s = sections[index];
 
   return (
-    <motion.div
-      className="w-full max-w-6xl mx-auto relative text-gray-800"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.6 }}
-    >
-      {/* Başlık */}
-      <div className="text-center mb-10">
-        <h2 className="text-4xl md:text-5xl font-extrabold text-secondaryColor">
-          {sections[index].title}
-        </h2>
-        <div className="h-1 w-20 bg-secondaryColor mx-auto mt-3 rounded-full" />
-      </div>
+    <div className="w-full space-y-10">
+      {/* Ana içerik kartı: ortak “glass” dilinde */}
+      <motion.div
+        variants={cardFx}
+        initial="hidden"
+        animate="show"
+        className="rounded-3xl bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-6 md:p-8"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          {/* Görsel */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={s.img}
+              initial={{ opacity: 0, x: -40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 40 }}
+              transition={{ duration: 0.45 }}
+              className="rounded-2xl overflow-hidden shadow-md"
+            >
+              <img
+                src={s.img}
+                alt={s.title}
+                className="w-full h-72 md:h-[380px] object-cover"
+                loading="lazy"
+              />
+            </motion.div>
+          </AnimatePresence>
 
-      {/* İçerik */}
-      <div className="relative flex flex-col md:flex-row items-center gap-8">
-        {/* Görsel */}
-        <AnimatePresence mode="wait">
-          <motion.img
-            key={sections[index].img}
-            src={sections[index].img}
-            alt={sections[index].title}
-            initial={{ opacity: 0, x: 80 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -80 }}
-            transition={{ duration: 0.5 }}
-            className="w-full md:w-1/2 h-72 object-cover rounded-2xl shadow-lg"
-          />
-        </AnimatePresence>
+          {/* Metin */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={s.text}
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -40 }}
+              transition={{ duration: 0.45 }}
+              className="space-y-3"
+            >
+              <h2 className="text-2xl md:text-3xl font-extrabold text-secondaryColor">
+                {s.title}
+              </h2>
+              <div className="h-[3px] w-16 bg-quaternaryColor rounded-full" />
+              <p className="text-gray-700 leading-relaxed">{s.text}</p>
 
-        {/* Metin */}
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={sections[index].text}
-            initial={{ opacity: 0, x: -80 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 80 }}
-            transition={{ duration: 0.5 }}
-            className="md:w-1/2 text-lg leading-relaxed bg-white/60 backdrop-blur-sm p-6 rounded-xl shadow-sm"
-          >
-            {sections[index].text}
-          </motion.p>
-        </AnimatePresence>
+              {/* CTA */}
+              <div className="pt-2">
+                <button
+                  onClick={() => navigate("/projects")}
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm text-white bg-quaternaryColor hover:bg-opacity-90 transition-shadow hover:shadow-lg"
+                >
+                  Projeleri Gör
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
-        {/* Navigasyon butonları */}
-        <button
-          onClick={prev}
-          className="absolute left-0 md:-left-10 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-3 rounded-full shadow-md hover:scale-110 transition"
-        >
-          ←
-        </button>
-        <button
-          onClick={next}
-          className="absolute right-0 md:-right-10 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-3 rounded-full shadow-md hover:scale-110 transition"
-        >
-          →
-        </button>
-      </div>
+        {/* Navigasyon & göstergeler */}
+        <div className="mt-6 flex items-center justify-between">
+          <div className="flex gap-2">
+            {sections.map((_, i) => (
+              <span
+                key={i}
+                className={`h-2 w-2 rounded-full transition ${
+                  i === index ? "bg-quaternaryColor" : "bg-gray-300"
+                }`}
+              />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={prev}
+              className="inline-flex items-center justify-center rounded-full bg-white border px-3 py-2 hover:bg-gray-50"
+              aria-label="Önceki"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={next}
+              className="inline-flex items-center justify-center rounded-full bg-white border px-3 py-2 hover:bg-gray-50"
+              aria-label="Sonraki"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </motion.div>
 
-      {/* Projeler butonu */}
-      <div className="text-center mt-10">
-        <button
-          onClick={() => navigate("/projects")}
-          className="px-8 py-3 bg-secondaryColor text-white font-semibold rounded-full shadow-md hover:bg-secondaryColor/90 transition"
-        >
-          Projeleri Gör
-        </button>
-      </div>
-
-      {/* İstatistikler */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12">
+      {/* İstatistikler — ortak rozet stili */}
+      <motion.div
+        variants={cardFx}
+        initial="hidden"
+        animate="show"
+        transition={{ delay: 0.05 }}
+        className="grid grid-cols-2 md:grid-cols-4 gap-6"
+      >
         {[
           {
             label: "Yıllık Deneyim",
@@ -126,25 +166,22 @@ const AboutPageComponent = () => {
             value: "Evet",
             icon: <PhoneCall className="w-6 h-6" />,
           },
-        ].map((stat, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-white/70 backdrop-blur-lg border border-white/40 p-6 rounded-xl shadow-lg text-center hover:scale-[1.02] transition"
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/40 p-6 text-center shadow-sm hover:shadow-md transition"
           >
             <div className="flex justify-center text-secondaryColor mb-2">
               {stat.icon}
             </div>
-            <p className="text-3xl font-bold text-secondaryColor">
+            <p className="text-2xl md:text-3xl font-extrabold text-secondaryColor">
               {stat.value}
             </p>
             <p className="text-gray-700 mt-1 text-sm">{stat.label}</p>
-          </motion.div>
+          </div>
         ))}
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 };
 
