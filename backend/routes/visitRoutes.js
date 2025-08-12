@@ -5,11 +5,19 @@ const {
   recordVisit,
   getAllVisits,
   getVisitCountByPath,
+  getSummary,
+  getTopPages,
+  getTimeseries,
 } = require("../controller/visitController");
 
-// ✅ Token kontrolü kaldırıldı!
+// 🔓 Public (KVKK onayı header’la geldiği sürece kayıt alınıyor)
 router.post("/", recordVisit);
+
+// 📊 Raporlar / Listeler (admin panelinden çağıracaksın → burada istersen verifyToken ekleyebilirsin)
 router.get("/", getAllVisits);
 router.get("/count/:path", getVisitCountByPath);
+router.get("/summary", getSummary);
+router.get("/top-pages", getTopPages);
+router.get("/timeseries", getTimeseries);
 
 module.exports = router;

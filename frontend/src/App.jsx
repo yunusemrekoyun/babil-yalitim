@@ -12,16 +12,16 @@ import Login from "./admin/pages/Login";
 import AdminLayout from "./admin/components/AdminLayout";
 import * as PublicPages from "../src/pages/index.jsx";
 import * as AdminPages from "../src/admin/pages/index.jsx";
-import { useEffect } from "react";
-import api from "./api"; // 🔍 ziyaret kaydı için
-import ScrollToTop from "./components/Common/ScrollToTop.jsx";
+import CookieConsent from "./components/Consent/CookieConsent.jsx";
+import AnalyticsTracker from "./components/Analytics/AnalyticsTracker.jsx";
+import useConsent from "./hooks/useConsent.js";
 
 const publicRoutes = [
   { path: "/", element: <PublicPages.HomePage /> },
   { path: "/projects", element: <PublicPages.ProjectsPage /> },
   { path: "/project-detail/:id", element: <PublicPages.ProjectDetailPage /> },
   { path: "/services", element: <PublicPages.ServicePage /> },
-  { path: "/services/:id", element: <PublicPages.ServiceDetailsPage /> }, // ✅ yeni ekleme
+  { path: "/services/:id", element: <PublicPages.ServiceDetailsPage /> },
   { path: "/journal", element: <PublicPages.JournalPage /> },
   { path: "/journals/:id", element: <PublicPages.JournalDetailPage /> },
   { path: "/whyus", element: <PublicPages.WhyUsPage /> },
@@ -30,11 +30,13 @@ const publicRoutes = [
   { path: "/blog/:id", element: <PublicPages.BlogDetailPage /> },
   { path: "/iletisim", element: <PublicPages.ContactPage /> },
 ];
+
 const adminRoutes = [
   { path: "dashboard", element: <AdminPages.Dashboard /> },
   { path: "blogs", element: <AdminPages.BlogList /> },
   { path: "blogs/add", element: <AdminPages.AddBlog /> },
   { path: "blogs/edit/:id", element: <AdminPages.EditBlog /> },
+  { path: "blogs/:id/comments", element: <AdminPages.BlogComments /> },
   { path: "journals", element: <AdminPages.JournalList /> },
   { path: "journals/add", element: <AdminPages.AddJournal /> },
   { path: "journals/edit/:id", element: <AdminPages.EditJournal /> },
@@ -44,20 +46,12 @@ const adminRoutes = [
   { path: "services", element: <AdminPages.ServiceList /> },
   { path: "services/add", element: <AdminPages.AddService /> },
   { path: "services/edit/:id", element: <AdminPages.EditService /> },
-  { path: "blogs/:id/comments", element: <AdminPages.BlogComments /> },
 ];
 
 const AppRoutes = () => {
   const location = useLocation();
 
-  // 🔍 Her route değişiminde ziyaret kaydet
-  useEffect(() => {
-    // Eğer admin paneldeysek loglama yapma
-    if (!location.pathname.startsWith("/admin")) {
-      console.log("Ziyaret gönderiliyor:", location.pathname);
-      api.post("/visits", { path: location.pathname }).catch(console.error);
-    }
-  }, [location.pathname]);
+  // ❌ ESKİ: api.post("/visits", { path }) useEffect'i KALDIRILDI
 
   return (
     <AnimatePresence mode="wait">
@@ -65,6 +59,7 @@ const AppRoutes = () => {
         {publicRoutes.map(({ path, element }) => (
           <Route key={path} path={path} element={element} />
         ))}
+
         <Route
           path="/admin"
           element={
@@ -73,6 +68,7 @@ const AppRoutes = () => {
             </GuestRoute>
           }
         />
+
         {adminRoutes.map(({ path, element }) => (
           <Route
             key={path}
@@ -89,11 +85,22 @@ const AppRoutes = () => {
   );
 };
 
-// 🔧 Burada Router sarmalayıcısını kullanman gerekiyor!
 export default function App() {
+  const { consent, accept, decline } = useConsent();
+  const showBanner = consent === null; // daha önce seçim yapılmadıysa göster
+
   return (
     <Router>
-      <ScrollToTop />
+      {/* Onay banner'ı */}
+      <CookieConsent
+        visible={showBanner}
+        onAccept={accept}
+        onDecline={decline}
+      />
+
+      {/* Analytics tracker (admin rotalarını kendi içinde filtreliyor) */}
+      <AnalyticsTracker />
+
       <AppRoutes />
     </Router>
   );

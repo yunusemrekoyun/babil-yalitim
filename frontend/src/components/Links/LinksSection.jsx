@@ -21,11 +21,11 @@ const links = [
     href: "/projects",
   },
   {
-    label: "Markalar",
+    label: "Bloglar",
     img: img3,
     color: "text-brandBlue",
-    desc: "Çalıştığımız markaları görmek için tıklayın.",
-    href: "#brands",
+    desc: "Sizler için yayınladığımız içerikleri görmek için tıklayın.",
+    href: "/blog",
   },
 ];
 

@@ -1,19 +1,25 @@
-///Applications/Works/tailwind-react-babil/backend/routes/index.js
+// backend/routes/index.js
 const express = require("express");
 const router = express.Router();
 
-const blogRoutes = require("./blogRoutes");
-const journalRoutes = require("./journalRoutes");
-const projectRoutes = require("./projectRoutes");
-const serviceRoutes = require("./serviceRoutes");
-const visitRoutes = require("./visitRoutes"); // 🔧 düzeltildi
+function mount(path, modPath) {
+  try {
+    console.log("⇒ mount", path, "from", modPath);
+    const mod = require(modPath);
+    router.use(path, mod);
+    console.log("✓ mounted", path);
+  } catch (e) {
+    console.error("✗ FAILED mounting", path, "from", modPath, "\n", e);
+    throw e; // burada durdur; hangisi bozuk net görünsün
+  }
+}
 
-
-
-router.use("/blogs", blogRoutes);
-router.use("/journals", journalRoutes);
-router.use("/projects", projectRoutes);
-router.use("/services", serviceRoutes);
-router.use("/visits", visitRoutes); // 
+mount("/search", "./searchRoutes");
+mount("/blogs", "./blogRoutes");
+mount("/journals", "./journalRoutes");
+mount("/projects", "./projectRoutes");
+mount("/services", "./serviceRoutes");
+mount("/auth", "./authRoutes");
+mount("/visits", "./visitRoutes");
 
 module.exports = router;

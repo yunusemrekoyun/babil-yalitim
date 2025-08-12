@@ -19,12 +19,15 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "geoip-lite": "^1.4.10",
     "iyzipay": "^2.0.64",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.3",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
-    "sharp": "^0.34.3"
+    "sharp": "^0.34.3",
+    "ua-parser-js": "^2.0.4",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

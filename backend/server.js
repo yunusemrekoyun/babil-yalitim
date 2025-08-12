@@ -1,3 +1,4 @@
+// backend/server.js
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
@@ -8,26 +9,32 @@ connectDB();
 
 const app = express();
 
+// Proxy arkasında IP'yi doğru almak için
+app.set("trust proxy", true);
+
+// CORS — credentials:true kullanıldığı için '*' kullanma
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.BASE_URL;
+
 app.use(
   cors({
-    origin: process.env.BASE_URL,
+    origin: FRONTEND_ORIGIN,
     credentials: true,
   })
 );
+
+// ⚠️ BU SATIRI SİL: Express 5'te '*' path invalid
+// app.options("*", cors({ origin: FRONTEND_ORIGIN, credentials: true }));
+
 app.use(express.json());
 
-// 🔓 Herkese açık rotalar
-app.use("/api/search", require("./routes/searchRoutes"));
-app.use("/api/projects", require("./routes/projectRoutes"));
-app.use("/api/blogs", require("./routes/blogRoutes"));
-app.use("/api/journals", require("./routes/journalRoutes"));
-app.use("/api/services", require("./routes/serviceRoutes"));
-app.use("/api/auth", require("./routes/authRoutes"));
+// Basit health check
+app.get("/api/health", (req, res) => res.json({ ok: true }));
 
-// ✅ Ziyaret kayıt rotası eklendi
-app.use("/api/visits", require("./routes/visitRoutes"));
+// Tüm rotaları merkezi index.js üzerinden yükle
+app.use("/api", require("./routes/index"));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Sunucu ${PORT} portunda çalışıyor`);
+  console.log(`🌐 CORS origin: ${FRONTEND_ORIGIN}`);
 });
