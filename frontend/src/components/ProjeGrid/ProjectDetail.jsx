@@ -24,6 +24,7 @@ const ProjectDetail = () => {
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [imgOk, setImgOk] = useState(true);
+  const [badThumbs, setBadThumbs] = useState(new Set());
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -36,35 +37,61 @@ const ProjectDetail = () => {
         setNotFound(false);
         setActiveIdx(0);
         setImgOk(true);
+        setBadThumbs(new Set());
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Orijinal görsel listesi (boş/kırık URL filtrelemesi daha sonra yapılacak)
   const images = useMemo(() => {
     if (!project) return [];
-    const arr = [];
-    if (project.cover?.url) arr.push(project.cover.url);
-    if (Array.isArray(project.images)) {
-      project.images.forEach((m) => m?.url && arr.push(m.url));
+    const urls = [];
+    const push = (u) => {
+      if (typeof u === "string") {
+        const s = u.trim();
+        if (s && !urls.includes(s)) urls.push(s);
+      }
+    };
+    push(project?.cover?.url);
+    if (Array.isArray(project?.images)) {
+      project.images.forEach((m) => push(m?.url));
     }
-    return arr;
+    return urls;
   }, [project]);
 
-  const heroImage = images[activeIdx] || null;
-  const hasAnyImage = images.length > 0;
+  // Kırık thumb'ları filtrele
+  const thumbImages = useMemo(
+    () => images.filter((u) => !badThumbs.has(u)),
+    [images, badThumbs]
+  );
+
+  const heroImage = thumbImages[activeIdx] || null;
+  const hasAnyImage = thumbImages.length > 0;
   const hasVideo = Boolean(project?.video?.url);
 
+  // Aktif index liste kısalırsa sıfırla
+  useEffect(() => {
+    if (activeIdx >= thumbImages.length) setActiveIdx(0);
+  }, [thumbImages.length, activeIdx]);
+
+  // Ok tuşlarıyla görsel değişimi
   useEffect(() => {
     const onKey = (e) => {
       if (!hasAnyImage) return;
-      if (e.key === "ArrowRight") setActiveIdx((i) => (i + 1) % images.length);
+      if (e.key === "ArrowRight")
+        setActiveIdx((i) => (i + 1) % thumbImages.length);
       if (e.key === "ArrowLeft")
-        setActiveIdx((i) => (i - 1 + images.length) % images.length);
+        setActiveIdx((i) => (i - 1 + thumbImages.length) % thumbImages.length);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [images.length, hasAnyImage]);
+  }, [thumbImages.length, hasAnyImage]);
+
+  // Aktif thumb değişince hero tekrar denesin
+  useEffect(() => {
+    setImgOk(true);
+  }, [activeIdx]);
 
   if (loading) {
     return (
@@ -86,11 +113,11 @@ const ProjectDetail = () => {
     <section className="w-full">
       {/* HERO */}
       <div className="relative h-[42vh] md:h-[56vh] overflow-hidden">
-        {hasAnyImage ? (
+        {hasAnyImage && imgOk ? (
           <motion.img
             key={heroImage + String(imgOk)}
             src={heroImage}
-            alt={project.title}
+            alt={project.title || "Proje görseli"}
             onError={() => setImgOk(false)}
             initial={{ scale: 1.05, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -124,12 +151,12 @@ const ProjectDetail = () => {
           </h1>
         </motion.div>
 
-        {/* 👇 yeni: thumbnail şeridi (hero içinde) */}
-        {images.length > 1 && (
+        {/* Thumbnail şeridi */}
+        {thumbImages.length > 1 && (
           <div className="absolute left-1/2 -translate-x-1/2 bottom-4 w-full max-w-6xl px-4">
             <div className="rounded-xl bg-black/35 backdrop-blur-md border border-white/20 px-3 py-2">
               <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                {images.map((src, i) => (
+                {thumbImages.map((src, i) => (
                   <button
                     key={src + i}
                     type="button"
@@ -148,6 +175,13 @@ const ProjectDetail = () => {
                       alt={`thumb-${i}`}
                       className="h-full w-full object-cover"
                       loading="lazy"
+                      onError={() => {
+                        setBadThumbs((prev) => {
+                          const next = new Set(prev);
+                          next.add(src);
+                          return next;
+                        });
+                      }}
                     />
                   </button>
                 ))}
@@ -160,7 +194,7 @@ const ProjectDetail = () => {
       {/* CONTENT */}
       <div className="max-w-6xl mx-auto px-4 md:px-6 relative z-10 mt-8 md:mt-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Sol kolon: açıklama */}
+          {/* Sol kolon */}
           <motion.div
             variants={fadeUp}
             initial="hidden"
@@ -175,7 +209,7 @@ const ProjectDetail = () => {
             </p>
           </motion.div>
 
-          {/* Sağ kolon: bilgiler + video kartı + mini görsel */}
+          {/* Sağ kolon */}
           <motion.aside
             variants={fadeUp}
             initial="hidden"
@@ -228,13 +262,13 @@ const ProjectDetail = () => {
                     </span>
                   </li>
                 )}
-                {images.length > 0 && (
+                {thumbImages.length > 0 && (
                   <li className="flex items-start gap-3">
                     <Images
                       size={18}
                       className="text-brandBlue flex-none mt-0.5"
                     />
-                    <span>{images.length} görsel</span>
+                    <span>{thumbImages.length} görsel</span>
                   </li>
                 )}
               </ul>
@@ -257,31 +291,34 @@ const ProjectDetail = () => {
               </div>
             )}
 
-            <div className="bg-white/80 backdrop-blur rounded-2xl shadow p-3">
-              <div className="aspect-video w-full overflow-hidden rounded-lg">
-                {hasAnyImage ? (
-                  <motion.img
-                    key={`mini-${heroImage}`}
-                    src={heroImage}
-                    alt="Kapak"
-                    className="w-full h-full object-cover"
-                    initial={{ opacity: 0.25 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.35 }}
-                  />
-                ) : hasVideo ? (
-                  <video
-                    src={project.video.url}
-                    className="w-full h-full object-cover"
-                    muted
-                    playsInline
-                    controls
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-200" />
-                )}
+            {(hasAnyImage || hasVideo) && (
+              <div className="bg-white/80 backdrop-blur rounded-2xl shadow p-3">
+                <div className="aspect-video w-full overflow-hidden rounded-lg">
+                  {hasAnyImage ? (
+                    <motion.img
+                      key={`mini-${heroImage}`}
+                      src={heroImage}
+                      alt="Kapak"
+                      className="w-full h-full object-cover"
+                      initial={{ opacity: 0.25 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.35 }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <video
+                      src={project.video.url}
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                      controls
+                    />
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </motion.aside>
         </div>
       </div>

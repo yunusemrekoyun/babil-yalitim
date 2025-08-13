@@ -11,16 +11,17 @@ const About = () => {
 
       {/* Glass surface — daha ferah */}
       <div className="mx-auto max-w-7xl rounded-3xl border border-white/40 bg-white/25 backdrop-blur-2xl shadow-[0_12px_50px_rgba(0,0,0,0.15)] p-4 sm:p-6 md:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10 items-start">
+          {" "}
           {/* Sol: Görsel */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.4 }}
             transition={{ duration: 0.5 }}
-            className="rounded-2xl overflow-hidden shadow-lg"
+            className="rounded-2xl overflow-hidden shadow-lg h-full"
           >
-            <div className="aspect-[16/11] w-full">
+            <div className="h-full w-full">
               <img
                 src={img1}
                 alt="Yalıtım uygulaması"
@@ -29,7 +30,6 @@ const About = () => {
               />
             </div>
           </motion.div>
-
           {/* Sağ: İçerik Kartı */}
           {/* Sağ: İçerik Kartı */}
           <motion.div
