@@ -15,6 +15,7 @@ import * as AdminPages from "../src/admin/pages/index.jsx";
 import CookieConsent from "./components/Consent/CookieConsent.jsx";
 import AnalyticsTracker from "./components/Analytics/AnalyticsTracker.jsx";
 import useConsent from "./hooks/useConsent.js";
+import ScrollToTop from "./components/Common/ScrollToTop.jsx";
 
 const publicRoutes = [
   { path: "/", element: <PublicPages.HomePage /> },
@@ -29,6 +30,7 @@ const publicRoutes = [
   { path: "/blog", element: <PublicPages.BlogPage /> },
   { path: "/blog/:id", element: <PublicPages.BlogDetailPage /> },
   { path: "/iletisim", element: <PublicPages.ContactPage /> },
+  { path: "/kvkk", element: <PublicPages.KvkkPage /> },
 ];
 
 const adminRoutes = [
@@ -91,6 +93,7 @@ export default function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       {/* Onay banner'ı */}
       <CookieConsent
         visible={showBanner}

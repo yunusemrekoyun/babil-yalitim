@@ -8,28 +8,17 @@ import ServiceGridItem from "./ServiceGridItem";
 const ServiceGrid = () => {
   const [items, setItems] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [hasMounted, setHasMounted] = useState(false);
-
-  // Sadece video kartlarını kontrol etmek için
-  const videoRefs = useRef({}); // { [globalIndex]: HTMLVideoElement }
-
-  useEffect(() => {
-    const t = setTimeout(() => setHasMounted(true), 50);
-    return () => clearTimeout(t);
-  }, []);
+  const videoRefs = useRef({});
 
   useEffect(() => {
     api
       .get("/services")
-      .then((res) => {
-        const data = Array.isArray(res.data) ? res.data : [];
-        setItems(data);
-      })
+      .then((res) => setItems(Array.isArray(res.data) ? res.data : []))
       .catch((err) => console.error("Hizmet verileri alınamadı:", err));
   }, []);
 
   const len = items.length;
-  const getIndex = (offset) => (!len ? 0 : (currentIndex + offset + len) % len);
+  const getIndex = (o) => (!len ? 0 : (currentIndex + o + len) % len);
 
   const visibleSlots = useMemo(
     () =>
@@ -46,25 +35,25 @@ const ServiceGrid = () => {
     [currentIndex, len]
   );
 
-  const slotClassMap = {
-    prev2: "hidden md:block scale-75 blur-sm -translate-x-56 z-0 opacity-40",
-    prev1: "scale-90 blur-sm -translate-x-28 z-10 opacity-70",
-    center:
-      "scale-100 blur-0 translate-x-0 z-20 opacity-100 drop-shadow-[0_18px_32px_rgba(0,0,0,0.25)]",
-    next1: "scale-90 blur-sm translate-x-28 z-10 opacity-70",
-    next2: "hidden md:block scale-75 blur-sm translate-x-56 z-0 opacity-40",
+  // hedef konum/ölçek/opacity/blur/z
+  const slotTargets = (slot) => {
+    const map = {
+      prev2: { x: -360, scale: 0.78, opacity: 0.55, z: 5, blur: 2 },
+      prev1: { x: -200, scale: 0.9, opacity: 0.75, z: 8, blur: 1.5 },
+      center: { x: 0, scale: 1.0, opacity: 1.0, z: 10, blur: 0 },
+      next1: { x: 200, scale: 0.9, opacity: 0.75, z: 8, blur: 1.5 },
+      next2: { x: 360, scale: 0.78, opacity: 0.55, z: 5, blur: 2 },
+    };
+    return map[slot] || map.center;
   };
-  const getSlotClass = (slot) =>
-    hasMounted ? slotClassMap[slot] : "opacity-0 scale-95";
 
-  // Ortadaki karttaki video oynasın, diğerleri dursun
+  // yalnız merkezdeki video oynasın
   const stopAllVideosExcept = (indexToPlay) => {
     Object.entries(videoRefs.current).forEach(([idxStr, vid]) => {
       const idx = Number(idxStr);
       if (!vid) return;
       try {
         if (idx === indexToPlay) {
-          // güvene almak için başa sar + play
           vid.currentTime = 0;
           vid.play().catch(() => {});
         } else {
@@ -72,19 +61,16 @@ const ServiceGrid = () => {
           vid.currentTime = 0;
         }
       } catch {
-        // sessiz
-      } finally {
-        vid.onended = () => {
-          vid.currentTime = 0;
-          vid.pause();
-        };
+        console.error("Video oynatılırken hata olustu");
       }
+      vid.onended = () => {
+        vid.currentTime = 0;
+        vid.pause();
+      };
     });
   };
 
-  // index değişince merkezdekini oynat
   useEffect(() => {
-    // refs mount’u kaçırmamak için microtask
     const id = setTimeout(() => stopAllVideosExcept(getIndex(0)), 0);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,63 +87,75 @@ const ServiceGrid = () => {
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded" />
       </div>
 
-      <div className="flex items-center justify-center gap-4">
+      <div className="relative mx-auto max-w-7xl h-[520px]">
+        {/* Sol ok */}
         <button
           onClick={() => setCurrentIndex((p) => (p - 1 + len) % len)}
-          className="text-white bg-black/40 p-2 rounded-full hover:bg-white/20 z-30"
+          className="absolute left-2 top-1/2 -translate-y-1/2 text-white/90 bg-black/35 hover:bg-black/45 border border-white/20 rounded-full p-2 z-[50] active:scale-95 transition"
           aria-label="Önceki"
         >
-          <ChevronLeft size={28} />
+          <ChevronLeft size={24} />
         </button>
 
-        <div className="relative flex items-center justify-center w-full max-w-full md:max-w-7xl h-[500px]">
-          {visibleSlots.map(({ slot, index }) => (
-            <motion.div
-              key={`${slot}-${items[index]?._id || index}`}
-              className={`absolute transition-all duration-500 ease-in-out rounded-xl overflow-hidden ${getSlotClass(
-                slot
-              )}`}
-            >
-              <ServiceGridItem
-                item={items[index]}
-                isCenter={slot === "center"}
-                registerVideoRef={(el) => {
-                  if (el) videoRefs.current[index] = el;
-                  else delete videoRefs.current[index];
+        {/* Saha */}
+        <div className="relative w-full h-full">
+          {visibleSlots.map(({ slot, index }) => {
+            const t = slotTargets(slot);
+            const key = items[index]?._id || index;
+
+            return (
+              <motion.div
+                key={key}
+                className="absolute rounded-xl overflow-hidden will-change-transform"
+                // merkeze sabitle
+                style={{ left: "50%", top: "50%", zIndex: t.z }}
+                initial={false}
+                // framer tüm transformu yazdığı için translateY'yi de burada sabitliyoruz
+                animate={{
+                  // -50% + x px ile yatay konum
+                  translateX: `calc(-50% + ${t.x}px)`,
+                  // dikeyde her zaman merkeze pinle
+                  translateY: "-50%",
+                  scale: t.scale,
+                  opacity: t.opacity,
+                  filter: `blur(${t.blur}px)`,
                 }}
-              />
-            </motion.div>
-          ))}
+                transition={{
+                  duration: 0.45,
+                  ease: [0.22, 1, 0.36, 1], // smooth
+                }}
+              >
+                <ServiceGridItem
+                  item={items[index]}
+                  isCenter={slot === "center"}
+                  registerVideoRef={(el) => {
+                    if (el) videoRefs.current[index] = el;
+                    else delete videoRefs.current[index];
+                  }}
+                />
+              </motion.div>
+            );
+          })}
         </div>
 
+        {/* Sağ ok */}
         <button
           onClick={() => setCurrentIndex((p) => (p + 1) % len)}
-          className="text-white bg-black/40 p-2 rounded-full hover:bg-white/20 z-30"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-white/90 bg-black/35 hover:bg-black/45 border border-white/20 rounded-full p-2 z-[50] active:scale-95 transition"
           aria-label="Sonraki"
         >
-          <ChevronRight size={28} />
+          <ChevronRight size={24} />
         </button>
-      </div>
 
-      {/* sağ-alt CTA */}
-      <motion.div
-        initial={{ x: 100, opacity: 0 }}
-        whileInView={{ x: 0, opacity: 1 }}
-        viewport={{ once: false, amount: 0.5 }}
-        transition={{ duration: 0.6 }}
-        whileHover={{ scale: 1.05 }}
-        className="absolute bottom-6 right-6 z-40"
-      >
+        {/* CTA — biraz daha aşağı */}
         <a
           href="/services"
-          className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-            px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
-            transition-all duration-300"
+          className="absolute -bottom-6 md:-bottom-7 right-6 z-[45] flex items-center gap-2 text-sm text-white bg-quaternaryColor px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg transition-all"
         >
           Hizmetlerin detayları için…
           <ChevronRight size={16} />
         </a>
-      </motion.div>
+      </div>
     </section>
   );
 };

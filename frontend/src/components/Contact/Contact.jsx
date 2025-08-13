@@ -75,10 +75,10 @@ const Contact = () => {
                 <div>
                   <p className="text-sm text-gray-600">E‑posta</p>
                   <a
-                    href="mailto:info@babilyalitim.com"
+                    href="mailto:babilyalitim@gmail.com"
                     className="font-medium hover:underline"
                   >
-                    info@babilyalitim.com
+                    babilyalitim@gmail.com
                   </a>
                 </div>
               </li>

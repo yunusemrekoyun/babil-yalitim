@@ -31,9 +31,9 @@ const topBarVariants = {
 };
 
 const navItems = [
-  { label: "Hakkımızda", path: "/about" },
-  { label: "Projeler", path: "/projects" },
   { label: "Hizmetler", path: "/services" },
+  { label: "Projeler", path: "/projects" },
+  { label: "Hakkımızda", path: "/about" },
   { label: "Blog", path: "/blog" },
   { label: "Haberler", path: "/journal" },
   { label: "İletişim", path: "/iletisim" },

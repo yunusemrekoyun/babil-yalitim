@@ -1,42 +1,68 @@
-// src/components/Service/ServiceGridItem.jsx
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 
-const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
-  // Olası video kaynağı (backend artık video da dönebiliyor)
-  const videoFromImages = (item?.images || []).find(
-    (m) => m?.resourceType === "video" && m?.url
-  )?.url;
-  const videoUrl = item?.videoUrl || videoFromImages || null;
+const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "";
 
-  const coverUrl =
-    item?.cover?.url ||
+// resourceType yoksa uzantıdan tahmin
+const looksVideo = (u) =>
+  /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(String(u || ""));
+
+const pickFirstImageAndVideo = (images = []) => {
+  let img = null;
+  let vid = null;
+  for (const m of images) {
+    const url = m?.url;
+    if (!url) continue;
+
+    const isImg =
+      m?.resourceType === "image" || (!m?.resourceType && !looksVideo(url));
+    const isVid =
+      m?.resourceType === "video" || (!m?.resourceType && looksVideo(url));
+
+    if (isImg && !img) img = url;
+    if (isVid && !vid) vid = url;
+    if (img && vid) break;
+  }
+  return { img, vid };
+};
+
+// Cloudinary video -> jpg thumb (ilk kare)
+const cloudinaryVideoThumb = (publicId) => {
+  if (!CLOUD || !publicId) return null;
+  // örnek: https://res.cloudinary.com/<cloud>/video/upload/so_0/<publicId>.jpg
+  return `https://res.cloudinary.com/${CLOUD}/video/upload/so_0/${publicId}.jpg`;
+};
+
+const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
+  const cover = item?.cover || null;
+  const imagesArr = Array.isArray(item?.images) ? item.images : [];
+  const { img: firstImage, vid: firstVideo } =
+    pickFirstImageAndVideo(imagesArr);
+
+  const coverIsVideo =
+    cover?.resourceType === "video" || looksVideo(cover?.url);
+
+  // merkezde oynatılacak video kaynağı
+  const videoUrl = coverIsVideo ? cover?.url : firstVideo || null;
+
+  // ÖNİZLEME görseli (yan kartlar için MUTLAKA image)
+  let previewSrc =
+    // 1) kapak image ise kapak
+    (!coverIsVideo && cover?.url) ||
+    // 2) galerideki ilk image
+    firstImage ||
+    // 3) kapak video ise cloudinary thumb
+    (coverIsVideo && cloudinaryVideoThumb(cover?.publicId)) ||
+    // 4) legacy alanlar
     item?.imageDataUrl ||
     item?.imageUrl ||
-    item?.images?.[0]?.url ||
-    "";
+    null;
 
-  const mediaEl = videoUrl ? (
-    <video
-      ref={registerVideoRef}
-      src={videoUrl}
-      muted
-      loop
-      playsInline
-      // poster ile ilk frame yerine cover gösterimi daha temiz
-      poster={coverUrl || undefined}
-      // merkezdeyken autoplay, diğerlerinde programatik olarak zaten pauselayacağız
-      autoPlay={isCenter}
-      className="w-[220px] h-[330px] md:w-[320px] md:h-[480px] object-cover rounded-xl"
-    />
-  ) : (
-    <img
-      src={coverUrl}
-      alt={item?.title || "service"}
-      className="w-[220px] h-[330px] md:w-[320px] md:h-[480px] object-cover rounded-xl"
-      loading="lazy"
-    />
-  );
+  // Yan kartlarda asla video render etme
+  const showVideo = Boolean(isCenter && videoUrl);
+
+  const size =
+    "w-[220px] h-[330px] md:w-[320px] md:h-[480px] object-cover rounded-xl";
 
   return (
     <Link
@@ -44,9 +70,34 @@ const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
       className="relative block focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-xl"
       aria-label={`${item?.title || "Hizmet"} detayına git`}
     >
-      {mediaEl}
+      {showVideo ? (
+        <video
+          ref={registerVideoRef}
+          src={videoUrl}
+          muted
+          loop
+          playsInline
+          poster={previewSrc || undefined}
+          autoPlay
+          className={size}
+        />
+      ) : previewSrc ? (
+        <img src={previewSrc} alt={item?.title || "service"} className={size} />
+      ) : videoUrl ? (
+        // thumb çıkarılamadıysa son çare
+        <video
+          src={videoUrl}
+          muted
+          playsInline
+          preload="metadata"
+          className={size}
+          aria-hidden="true"
+        />
+      ) : (
+        <div className={`${size} bg-white/10 border border-white/20`} />
+      )}
 
-      {/* Sadece başlık overlay; küçük galeri/thumb’lar kaldırıldı */}
+      {/* Overlay sadece merkezde */}
       {isCenter && (
         <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-4">
           <p className="text-white text-lg font-semibold mb-1 text-center md:text-left">
@@ -67,7 +118,6 @@ ServiceGridItem.propTypes = {
   item: PropTypes.shape({
     _id: PropTypes.string,
     title: PropTypes.string,
-    description: PropTypes.string,
     type: PropTypes.string,
     cover: PropTypes.shape({
       url: PropTypes.string,
@@ -78,14 +128,11 @@ ServiceGridItem.propTypes = {
       PropTypes.shape({
         url: PropTypes.string,
         publicId: PropTypes.string,
-        resourceType: PropTypes.string, // image | video
+        resourceType: PropTypes.string,
       })
     ),
-    // legacy alanlar:
     imageDataUrl: PropTypes.string,
     imageUrl: PropTypes.string,
-    galleryDataUrls: PropTypes.arrayOf(PropTypes.string),
-    videoUrl: PropTypes.string,
   }),
   isCenter: PropTypes.bool,
   registerVideoRef: PropTypes.func,

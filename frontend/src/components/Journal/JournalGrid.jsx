@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import JournalGridItem from "./JournalGridItem";
+
+const AUTOPLAY_MS = 4000;
 
 const Skeleton = () => (
   <div className="rounded-2xl overflow-hidden border border-white/40 bg-white/30 backdrop-blur-md shadow-md">
@@ -19,8 +21,16 @@ const Skeleton = () => (
 const JournalGrid = () => {
   const [journals, setJournals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
+  // slider state
+  const [groupIdx, setGroupIdx] = useState(0); // 0..groups-1
+  const [perView, setPerView] = useState(1); // sm:1, md+:2
+  const [paused, setPaused] = useState(false);
+
+  const navigate = useNavigate();
+  const timerRef = useRef(null);
+
+  // Veriyi çek
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -30,7 +40,7 @@ const JournalGrid = () => {
         const list = Array.isArray(data) ? data : [];
         if (!cancelled) {
           setJournals(
-            list.slice(0, 2).map((j) => ({
+            list.map((j) => ({
               _id: j._id,
               title: j.title,
               coverUrl: j?.cover?.url || "",
@@ -51,6 +61,31 @@ const JournalGrid = () => {
     };
   }, []);
 
+  const len = journals.length;
+
+  // Per-view: md ve üzeri 2, altında 1
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const apply = () => setPerView(mq.matches ? 2 : 1);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  const groups = Math.max(1, Math.ceil(len / perView));
+
+  // Otoplay
+  useEffect(() => {
+    if (!len) return;
+    if (paused) return;
+    timerRef.current = setInterval(() => {
+      setGroupIdx((p) => (p + 1) % groups);
+    }, AUTOPLAY_MS);
+    return () => clearInterval(timerRef.current);
+  }, [len, groups, paused]);
+
+  const goToGroup = (i) => setGroupIdx(((i % groups) + groups) % groups);
+
   return (
     <section
       className="relative w-full px-3 sm:px-4 md:px-6 py-10 md:py-12"
@@ -64,7 +99,6 @@ const JournalGrid = () => {
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded" />
       </div>
 
-      {/* Grid */}
       <div className="max-w-6xl mx-auto">
         {loading ? (
           <div className="grid gap-8 md:grid-cols-2">
@@ -72,7 +106,7 @@ const JournalGrid = () => {
               <Skeleton key={i} />
             ))}
           </div>
-        ) : journals.length === 0 ? (
+        ) : len === 0 ? (
           <div className="text-center py-14 bg-white/40 backdrop-blur-xl rounded-2xl border border-white/30">
             <p className="text-secondaryColor font-semibold text-lg">
               Henüz haber eklenmemiş.
@@ -82,30 +116,74 @@ const JournalGrid = () => {
             </p>
           </div>
         ) : (
-          <div className="grid gap-8 md:grid-cols-2">
-            {journals.map((item, index) => (
-              <JournalGridItem key={item._id} item={item} index={index} />
-            ))}
-          </div>
-        )}
-
-        {/* CTA */}
-        {!loading && journals.length > 0 && (
-          <div className="flex justify-center md:justify-end mt-8">
-            <motion.button
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              onClick={() => navigate("/journal")}
-              className="inline-flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-                         px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg 
-                         hover:bg-white/20 transition-all duration-300"
+          <>
+            {/* Slider (ikili görünüm md+) */}
+            <div
+              className="relative overflow-hidden rounded-2xl"
+              onMouseEnter={() => setPaused(true)}
+              onMouseLeave={() => setPaused(false)}
+              onTouchStart={() => setPaused(true)}
+              onTouchEnd={() => setPaused(false)}
             >
-              Tüm haberler
-              <span aria-hidden>→</span>
-            </motion.button>
-          </div>
+              <motion.div
+                className="flex"
+                // her grup tam viewport genişliği kadar kayar
+                animate={{ x: `-${groupIdx * 100}%` }}
+                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                style={{ willChange: "transform" }}
+              >
+                {journals.map((item, i) => (
+                  <div
+                    key={item._id}
+                    className="
+                      min-w-full md:min-w-[50%] 
+                      px-1 sm:px-2
+                    "
+                  >
+                    <JournalGridItem item={item} index={i} />
+                  </div>
+                ))}
+                {/* Eğer eleman sayısı tek ve md+ ise boş bir doldurucu ekleyerek hizayı koru */}
+                {perView === 2 && len % 2 === 1 && (
+                  <div className="hidden md:block min-w-[50%] px-1 sm:px-2" />
+                )}
+              </motion.div>
+            </div>
+
+            {/* Dots (grup bazlı) */}
+            <div className="mt-6 flex items-center justify-center gap-2">
+              {Array.from({ length: groups }).map((_, i) => {
+                const active = i === groupIdx;
+                return (
+                  <button
+                    key={i}
+                    aria-label={`Grup ${i + 1}`}
+                    onClick={() => goToGroup(i)}
+                    className={`h-2.5 rounded-full transition-all duration-300 ${
+                      active ? "w-6 bg-quaternaryColor" : "w-2.5 bg-gray-300"
+                    }`}
+                  />
+                );
+              })}
+            </div>
+
+            {/* CTA */}
+            <div className="flex justify-center md:justify-end mt-8">
+              <motion.button
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                onClick={() => navigate("/journal")}
+                className="inline-flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+                           px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg 
+                           hover:bg-white/20 transition-all duration-300"
+              >
+                Tüm haberler
+                <span aria-hidden>→</span>
+              </motion.button>
+            </div>
+          </>
         )}
       </div>
     </section>

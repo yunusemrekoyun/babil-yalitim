@@ -31,12 +31,13 @@ const About = () => {
           </motion.div>
 
           {/* Sağ: İçerik Kartı */}
+          {/* Sağ: İçerik Kartı */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.4 }}
             transition={{ duration: 0.55, delay: 0.05 }}
-            className="rounded-2xl bg-secondaryColor/95 shadow-lg border border-white/20 p-6 md:p-8 flex flex-col"
+            className="rounded-2xl bg-transparent hover:bg-secondaryColor/95 shadow-lg border border-white/20 p-6 md:p-8 flex flex-col transition-colors duration-500 ease-in-out"
           >
             <header>
               <h2 className="text-2xl md:text-3xl font-extrabold">
@@ -74,7 +75,7 @@ const About = () => {
               </div>
             </div>
 
-            {/* CTA — kart içinde, ferah boşlukla */}
+            {/* CTA */}
             <div className="mt-6 md:mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
               <a
                 href="/about"

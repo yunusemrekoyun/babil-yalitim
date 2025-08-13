@@ -30,7 +30,7 @@ const Footer = () => {
           <ul className="space-y-3 text-sm">
             <li className="flex items-center gap-2 "><MapPin size={18} className="text-secondaryColor" /> Kütahya, Türkiye</li>
             <li className="flex items-center gap-2 "><Phone size={18} className="text-secondaryColor" /> <a href="tel:+905551234567" className="hover:text-quaternaryColor transition">+90 555 123 45 67</a></li>
-            <li className="flex items-center gap-2 "><Mail size={18} className="text-secondaryColor" /> <a href="mailto:info@babilyalitim.com" className="hover:text-quaternaryColor transition">info@babilyalitim.com</a></li>
+            <li className="flex items-center gap-2 "><Mail size={18} className="text-secondaryColor" /> <a href="mailto:babilyalitim@gmail.com" className="hover:text-quaternaryColor transition">babilyalitim@gmail.com</a></li>
           </ul>
         </div>
 
