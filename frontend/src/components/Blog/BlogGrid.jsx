@@ -80,17 +80,21 @@ const BlogGrid = () => {
         )}
 
         {/* Alt CTA — cam panelin içinde, sağa hizalı */}
+        {/* Alt CTA — cam panelin içinde, sağa hizalı */}
         {!loading && blogs.length > 0 && (
           <div className="mt-8 md:mt-10 flex justify-center md:justify-end">
             <motion.button
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              whileHover={{ scale: 1.05 }}
               onClick={() => navigate("/blog")}
-              className="inline-flex items-center gap-2 rounded-full bg-quaternaryColor px-4 py-2 text-sm font-semibold text-white hover:bg-quaternaryColor/90 shadow-md"
+              className="inline-flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+                 px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg 
+                 hover:bg-white/20 transition-all duration-300"
             >
-              Tüm yazılar
+              Tüm blogları gör
               <span aria-hidden>→</span>
             </motion.button>
           </div>

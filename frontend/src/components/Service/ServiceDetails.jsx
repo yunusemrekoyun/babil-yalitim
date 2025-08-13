@@ -16,6 +16,40 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
 };
 
+// --- helpers (dosyanın üst kısmına koy) ---
+const looksVideo = (u = "") =>
+  /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(String(u));
+
+const firstImageFrom = (images = []) => {
+  for (const m of images) {
+    const u = m?.url;
+    if (!u) continue;
+    const isImg =
+      m?.resourceType === "image" || (!m?.resourceType && !looksVideo(u));
+    if (isImg) return u;
+  }
+  return null;
+};
+
+// Cloudinary URL'den cloudName + publicId çıkar
+const parseCloudinary = (url = "") => {
+  const m = url.match(
+    /^https?:\/\/res\.cloudinary\.com\/([^/]+)\/(?:image|video)\/upload\/(.+)$/i
+  );
+  if (!m) return null;
+  const cloudName = m[1];
+  const right = m[2].replace(/\?.*$/, "").replace(/#[^]*$/, "");
+  const publicId = right.replace(/\.[a-z0-9]+$/i, "");
+  return { cloudName, publicId };
+};
+
+// Video için ilk kare jpg thumb
+const cldVideoThumb = (url = "", { w = 480, h = 854 } = {}) => {
+  const parsed = parseCloudinary(url);
+  if (!parsed) return null;
+  const { cloudName, publicId } = parsed;
+  return `https://res.cloudinary.com/${cloudName}/video/upload/so_0,f_jpg,q_auto,c_fill,w_${w},h_${h}/${publicId}.jpg`;
+};
 const ServiceDetails = () => {
   const { id } = useParams();
   const [svc, setSvc] = useState(null);
@@ -321,12 +355,28 @@ const ServiceDetails = () => {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {related.map((it) => {
-              const cover =
-                it?.cover?.url ||
+              const coverUrl = it?.cover?.url || "";
+              const coverIsVideo =
+                it?.cover?.resourceType === "video" || looksVideo(coverUrl);
+
+              // 1) Galeriden ilk image
+              const galleryImg = firstImageFrom(it?.images);
+
+              // 2) Kapak video ise Cloudinary'den ilk kare thumb dene
+              const videoThumb = coverIsVideo ? cldVideoThumb(coverUrl) : null;
+
+              // 3) Kapak image ise onu kullan
+              const coverImage = !coverIsVideo ? coverUrl : null;
+
+              // Öncelik: galleryImg > coverImage > videoThumb > legacy
+              const preview =
+                galleryImg ||
+                coverImage ||
+                videoThumb ||
                 it?.imageDataUrl ||
                 it?.imageUrl ||
-                it?.images?.find((m) => m?.url)?.url ||
                 "";
+
               return (
                 <Link
                   key={it._id}
@@ -334,12 +384,26 @@ const ServiceDetails = () => {
                   className="group rounded-2xl overflow-hidden border bg-white hover:shadow-md transition"
                 >
                   <div className="relative aspect-[9/16]">
-                    <img
-                      src={cover}
-                      alt={it.title}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                    />
+                    {preview ? (
+                      <img
+                        src={preview}
+                        alt={it.title}
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                      />
+                    ) : coverIsVideo ? (
+                      // son çare: video'yu metadata ile, gerekirse poster düşer
+                      <video
+                        src={coverUrl}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gray-200" />
+                    )}
+
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
                       <div className="text-sm font-semibold line-clamp-2">

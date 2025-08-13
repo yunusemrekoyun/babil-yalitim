@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
 import AboutPageComponent from "../components/About/AboutPageComponent";
+import Breadcrumb from "../components/ui/Breadcrumb"; // yeni ekleme
 
 const AboutPage = () => {
   return (
@@ -16,9 +17,14 @@ const AboutPage = () => {
       >
         <NavbarPage />
 
+        {/* Breadcrumb */}
+        <div className="max-w-7xl mx-auto px-6 md:px-10 pt-6">
+          <Breadcrumb titleMap={{ about: "Hakkımızda" }} />
+        </div>
+
         {/* Hero / ortak başlık şeridi */}
         <header className="relative overflow-hidden">
-          <div className="max-w-7xl mx-auto px-6 md:px-10 pt-14 md:pt-18 pb-4">
+          <div className="max-w-7xl mx-auto px-6 md:px-10 pt-8 md:pt-12 pb-4">
             <h1 className="text-3xl md:text-5xl font-extrabold text-secondaryColor tracking-tight text-center">
               Hakkımızda
             </h1>

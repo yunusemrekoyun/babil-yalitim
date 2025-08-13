@@ -1,8 +1,10 @@
+// src/pages/JournalPage.jsx
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
 import JournalPreview from "../components/Journal/JournalPreview";
+import Breadcrumb from "../components/ui/Breadcrumb"; // ← EKLENDİ
 import api from "../api";
 
 const JournalPage = () => {
@@ -41,6 +43,16 @@ const JournalPage = () => {
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <NavbarPage />
+
+        {/* Breadcrumb */}
+        <section className="max-w-7xl mx-auto px-4 md:px-8 pt-6">
+          <Breadcrumb
+            titleMap={{
+              journal: "Haberler", // rotanız /journal ise bunu kullanın
+              journals: "Haberler", // bazı projelerde /journals olur; güvence için ekledik
+            }}
+          />
+        </section>
 
         {/* Hero */}
         <section className="relative overflow-hidden">

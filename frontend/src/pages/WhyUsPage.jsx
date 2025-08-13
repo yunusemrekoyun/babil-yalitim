@@ -1,7 +1,7 @@
-// src/pages/WhyUsPage.jsx
 import { motion } from "framer-motion";
 import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
+import Breadcrumb from "../components/ui/Breadcrumb";
 import {
   CheckCircle2,
   Wrench,
@@ -61,9 +61,19 @@ const WhyUsPage = () => {
       >
         <NavbarPage />
 
+        {/* breadcrumb */}
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6">
+          <Breadcrumb
+            items={[
+              { label: "Ana Sayfa", path: "/" },
+              { label: "Neden Babil?" },
+            ]}
+          />
+        </div>
+
         {/* Hero */}
         <section className="relative overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 pt-14 md:pt-20 pb-12">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 pt-8 md:pt-14 pb-12">
             <motion.h1
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -147,7 +157,7 @@ const WhyUsPage = () => {
           </div>
         </section>
 
-        {/* Referans/rozet şeridi (isteğe bağlı: markalarla uyumlu) */}
+        {/* Referans/rozet şeridi */}
         <section className="max-w-7xl mx-auto px-4 md:px-8 pb-10">
           <div className="rounded-3xl border border-white/30 bg-white/30 backdrop-blur-xl p-6 md:p-8 text-center shadow">
             <p className="text-sm md:text-base text-gray-700">

@@ -77,13 +77,20 @@ const About = () => {
 
             {/* CTA */}
             <div className="mt-6 md:mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
-              <a
+              <motion.a
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                whileHover={{ scale: 1.05 }}
                 href="/about"
-                className="inline-flex items-center gap-2 rounded-full bg-quaternaryColor px-5 py-2.5 text-sm font-semibold text-white hover:bg-quaternaryColor/90 transition-colors shadow-md"
+                className="inline-flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+               px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg 
+               hover:bg-white/20 transition-all duration-300"
               >
                 Daha Fazlasını Keşfedin
                 <ChevronRight size={16} />
-              </a>
+              </motion.a>
             </div>
           </motion.div>
         </div>

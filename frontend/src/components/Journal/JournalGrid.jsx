@@ -168,21 +168,24 @@ const JournalGrid = () => {
             </div>
 
             {/* CTA */}
-            <div className="flex justify-center md:justify-end mt-8">
-              <motion.button
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
+            <motion.div
+              initial={{ x: 100, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: false, amount: 0.5 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              whileHover={{ scale: 1.05 }}
+              className="flex justify-center md:justify-end mt-8"
+            >
+              <button
                 onClick={() => navigate("/journal")}
-                className="inline-flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-                           px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg 
-                           hover:bg-white/20 transition-all duration-300"
+                className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+      px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
+      transition-all duration-300"
               >
-                Tüm haberler
+                Tüm haberleri Gör
                 <span aria-hidden>→</span>
-              </motion.button>
-            </div>
+              </button>
+            </motion.div>
           </>
         )}
       </div>

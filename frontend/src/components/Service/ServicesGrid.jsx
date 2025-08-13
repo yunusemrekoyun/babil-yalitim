@@ -148,13 +148,24 @@ const ServiceGrid = () => {
         </button>
 
         {/* CTA — biraz daha aşağı */}
-        <a
-          href="/services"
-          className="absolute -bottom-6 md:-bottom-7 right-6 z-[45] flex items-center gap-2 text-sm text-white bg-quaternaryColor px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg transition-all"
+        <motion.div
+          initial={{ x: 100, opacity: 0 }}
+          whileInView={{ x: 0, opacity: 1 }}
+          viewport={{ once: false, amount: 0.5 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          whileHover={{ scale: 1.05 }}
+          className="absolute -bottom-6 md:-bottom-7 right-6 z-[45]"
         >
-          Hizmetlerin detayları için…
-          <ChevronRight size={16} />
-        </a>
+          <a
+            href="/services"
+            className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+      px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
+      transition-all duration-300"
+          >
+            Tüm Hizmetleri Gör
+            <ChevronRight size={16} />
+          </a>
+        </motion.div>
       </div>
     </section>
   );

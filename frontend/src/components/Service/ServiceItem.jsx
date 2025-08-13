@@ -1,19 +1,19 @@
+// src/components/Service/ServiceItem.jsx
 import PropTypes from "prop-types";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useInView } from "react-intersection-observer";
 
 /**
- * Dikey (9:16) kart. Kapak image/video destekler.
- * - Kapak video ise, kart görünümdeyken otomatik oynatılır; görünümden çıkınca durur.
- * - Hover’da hafif zoom, üstte başlık ve chip’ler.
+ * Dikey (9:16) kart.
+ * - Video varsa: sadece HOVER sırasında oynar, mouse ayrılınca durur ve başa sarar.
+ * - Hover’da hafif zoom efekti kalır.
+ * - “otomatik oynatım” rozeti kaldırıldı.
  */
 const ServiceItem = ({ service }) => {
   const [hovered, setHovered] = useState(false);
   const videoRef = useRef(null);
-  const { ref: inViewRef, inView } = useInView({ threshold: 0.45 });
 
-  const media = useMemo(() => {
+  const { isVideo, coverUrl, posterUrl } = useMemo(() => {
     const coverType = service?.cover?.resourceType || "image";
     const isVideo = coverType === "video";
     const coverUrl =
@@ -22,52 +22,67 @@ const ServiceItem = ({ service }) => {
       service?.imageUrl ||
       service?.images?.[0]?.url ||
       "";
-    return { isVideo, coverUrl };
+
+    // Video için poster (varsa galeriden ilk image’i kullan)
+    const posterUrl = isVideo
+      ? (service?.images || []).find(
+          (m) => (m?.resourceType || "image") === "image" && m?.url
+        )?.url
+      : undefined;
+
+    return { isVideo, coverUrl, posterUrl };
   }, [service]);
 
-  // görünüm durumuna göre video kontrolü
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
+  const handleEnter = () => {
+    setHovered(true);
+    const v = videoRef.current;
+    if (!v) return;
     try {
-      if (inView) {
-        el.currentTime = 0;
-        el.play().catch(() => {});
-      } else {
-        el.pause();
-        el.currentTime = 0;
-      }
+      v.currentTime = 0;
+      v.play().catch(() => {});
     } catch {
-      /* sessiz geç */
+      console.error("Failed to play video");
     }
-  }, [inView]);
+  };
+
+  const handleLeave = () => {
+    setHovered(false);
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      v.pause();
+      v.currentTime = 0;
+    } catch {
+      console.error("Failed to pause video");
+    }
+  };
 
   return (
     <Link
       to={service?._id ? `/services/${service._id}` : "#"}
       className="group rounded-3xl overflow-hidden border border-white/50 bg-white/60 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] hover:shadow-[0_18px_50px_rgba(0,0,0,0.12)] block focus:outline-none focus-visible:ring-2 focus-visible:ring-quaternaryColor/60 transition-shadow"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
       aria-label={`${service?.title || "Hizmet"} detayına git`}
-      ref={inViewRef}
     >
       {/* Media: 9:16 */}
       <div className="relative aspect-[9/16] overflow-hidden">
-        {media.isVideo ? (
+        {isVideo ? (
           <video
             ref={videoRef}
-            src={media.coverUrl}
+            src={coverUrl}
             muted
             loop
             playsInline
-            poster="" // opsiyonel: ayrı bir poster istenirse eklenir
+            // hover ile oynatılacağı için autoPlay yok
+            poster={posterUrl}
             className={`h-full w-full object-cover transition-transform duration-700 ${
               hovered ? "scale-105" : "scale-100"
             }`}
           />
-        ) : media.coverUrl ? (
+        ) : coverUrl ? (
           <img
-            src={media.coverUrl}
+            src={coverUrl}
             alt={service?.title || "service"}
             className={`h-full w-full object-cover transition-transform duration-700 ${
               hovered ? "scale-105" : "scale-100"
@@ -100,13 +115,6 @@ const ServiceItem = ({ service }) => {
             )}
           </div>
         </div>
-
-        {/* video için “play wave” ipucu */}
-        {media.isVideo && (
-          <div className="absolute top-3 left-3 bg-black/40 text-white text-[10px] px-2 py-1 rounded-full border border-white/20 backdrop-blur-sm">
-            otomatik oynatım
-          </div>
-        )}
       </div>
 
       {/* Alt içerik */}
@@ -169,7 +177,6 @@ ServiceItem.propTypes = {
         resourceType: PropTypes.string,
       })
     ),
-    // legacy:
     imageDataUrl: PropTypes.string,
     imageUrl: PropTypes.string,
     galleryDataUrls: PropTypes.arrayOf(PropTypes.string),

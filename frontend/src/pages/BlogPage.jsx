@@ -1,7 +1,9 @@
+// src/pages/BlogPage.jsx
 import { motion } from "framer-motion";
 import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
 import BlogPageComponent from "../components/Blog/BlogPageComponent";
+import Breadcrumb from "../components/ui/Breadcrumb"; // <-- EKLENDİ
 
 const BlogPage = () => {
   return (
@@ -14,6 +16,11 @@ const BlogPage = () => {
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <NavbarPage />
+
+        {/* Breadcrumb */}
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6">
+          <Breadcrumb titleMap={{ blog: "Blog" }} />
+        </div>
 
         <section className="px-4 md:px-8 lg:px-10 py-14 md:py-16 max-w-7xl mx-auto">
           <div className="text-center mb-10 md:mb-12">

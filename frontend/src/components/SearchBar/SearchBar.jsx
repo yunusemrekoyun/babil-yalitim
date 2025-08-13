@@ -20,9 +20,48 @@ const normalizeTypeToPath = (type = "", id = "") => {
   return null; // bilinmeyen tip
 };
 
+/* ---------- EKLE: type -> Türkçe etiket eşlemesi ---------- */
+const typeLabelMap = {
+  blog: "Blog",
+  blogs: "Blog",
+
+  journal: "Haberler",
+  journals: "Haberler",
+  news: "Haberler",
+
+  project: "Projeler",
+  projects: "Projeler",
+  "project-detail": "Projeler", // güvenli tarafta kalalım
+
+  service: "Hizmetler",
+  services: "Hizmetler",
+
+  about: "Hakkımızda",
+  whyus: "Neden Biz?",
+  contact: "İletişim",
+  iletisim: "İletişim",
+  kvkk: "KVKK",
+};
+
+/* ---------- EKLE: item'dan düzgün etiket üret ---------- */
+const getTypeLabel = (item = {}) => {
+  const t = String(item.type || "").toLowerCase();
+  if (t && typeLabelMap[t]) return typeLabelMap[t];
+
+  // Bazı backend'ler path döndürebilir: /project-detail/123 gibi
+  const path = String(item.path || item.pathname || "");
+  if (path.startsWith("/")) {
+    const seg = path.split("/")[1] || ""; // ilk segment
+    if (typeLabelMap[seg]) return typeLabelMap[seg];
+    if (seg === "project-detail") return "Projeler";
+  }
+
+  return "Diğer";
+};
+
 const SearchBar = () => {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]); // [{_id, title, type}, ...]
+  const [results, setResults] = useState([]); // [{_id, title, type, path?}, ...]
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const navigate = useNavigate();
   const containerRef = useRef(null);
@@ -63,7 +102,11 @@ const SearchBar = () => {
 
   const go = (item) => {
     const id = item?._id || item?.id || item?.slug;
-    const path = normalizeTypeToPath(item?.type, id);
+    let path = normalizeTypeToPath(item?.type, id);
+
+    // Yedek: backend path gönderdiyse onu kullan
+    if (!path && item?.path) path = item.path;
+
     if (path) {
       navigate(path);
     } else {
@@ -136,9 +179,17 @@ const SearchBar = () => {
                 }`}
               >
                 <span className="line-clamp-1">{item.title}</span>
+
+                {/* 🔧 SAĞDA TÜRKÇE ETİKET */}
                 <span className="text-gray-400 text-xs">
-                  ({String(item.type || "").toLowerCase()})
+                  ({getTypeLabel(item)})
                 </span>
+
+                {/* Badge görünümü tercih edersen: 
+                <span className="ml-2 text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border">
+                  {getTypeLabel(item)}
+                </span>
+                */}
               </li>
             );
           })}
