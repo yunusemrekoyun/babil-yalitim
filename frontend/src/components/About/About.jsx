@@ -1,4 +1,4 @@
-import img1 from "../../assets/about.jpg";
+import img1 from "../../assets/about.png";
 import { Users, CheckCircle, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
