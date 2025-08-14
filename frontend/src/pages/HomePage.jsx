@@ -6,7 +6,7 @@ import Journal from "../components/Journal/JournalGrid";
 import Footer from "../components/Footer/Footer";
 import ProjectsSection from "../components/ProjeGrid/ProjectsSection";
 import WhyUs from "../components/WhyUs/WhyUs";
-import heroVideo from "../assets/hero.mp4";
+import heroVideo from "../assets/heroo.mp4";
 import ServiceSection from "../components/Service/ServiceSection";
 import AboutSection from "../components/About/AboutSection";
 import GlassSection from "../components/Layout/GlassSection";
