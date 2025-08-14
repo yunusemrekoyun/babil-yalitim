@@ -1,5 +1,4 @@
-# === Proje asset klasörü ===
-/Applications/Works/tailwind-react-babil/frontend/src/assets
+/frontend/src/assets/
 # === Node Modules (Hem frontend hem backend) ===
 **/node_modules
 
@@ -52,8 +51,3 @@ Desktop.ini
 *.mkv
 *.webm
 
-# === Public dizininde özel yüklemeler varsa dışarıda tut ===
-!frontend/public/vite.svg
-/frontend/src/assets
-/frontend/src/assets
-frontend/src/assets/hero.mp4
