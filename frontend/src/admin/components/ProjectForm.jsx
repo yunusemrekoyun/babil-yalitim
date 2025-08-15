@@ -1,6 +1,7 @@
 // src/admin/components/ProjectForm.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
+import ToastAlert from "./ToastAlert";
 
 /** MediaPreview: seçilen dosyayı veya mevcut URL’yi gösterir */
 const MediaPreview = ({ src, type = "image", className = "" }) => {
@@ -19,6 +20,11 @@ MediaPreview.propTypes = {
 };
 
 const ProjectForm = ({ initialData, onSubmit }) => {
+  // toast
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = "info", duration = 4000) =>
+    setToast({ msg, type, duration });
+
   // text alanları
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(
@@ -91,6 +97,12 @@ const ProjectForm = ({ initialData, onSubmit }) => {
 
   const handleImagesChange = (e) => {
     const files = Array.from(e.target.files || []);
+    if (files.length > remainingImageSlots) {
+      showToast(
+        `En fazla ${remainingImageSlots} görsel daha eklenebilir.`,
+        "info"
+      );
+    }
     const limited = files.slice(0, remainingImageSlots);
     setImagesFiles(limited);
 
@@ -105,7 +117,8 @@ const ProjectForm = ({ initialData, onSubmit }) => {
   const submit = (e) => {
     e.preventDefault();
     if (!existingCover && !coverFile) {
-      return alert("Kapak medyası zorunludur (görsel ya da video).");
+      showToast("Kapak medyası zorunludur (görsel ya da video).", "error");
+      return;
     }
 
     const fd = new FormData();
@@ -121,12 +134,13 @@ const ProjectForm = ({ initialData, onSubmit }) => {
     if (videoFile) fd.append("video", videoFile);
     imagesFiles.forEach((f) => fd.append("images", f));
 
-    for (const [k, v] of fd.entries()) {
-      console.log(
-        k,
-        v instanceof File ? { name: v.name, type: v.type, size: v.size } : v
-      );
-    }
+    // İstersen debug kalsın; prod'da silebilirsin
+    // for (const [k, v] of fd.entries()) {
+    //   console.log(
+    //     k,
+    //     v instanceof File ? { name: v.name, type: v.type, size: v.size } : v
+    //   );
+    // }
     onSubmit(fd);
   };
 
@@ -310,6 +324,16 @@ const ProjectForm = ({ initialData, onSubmit }) => {
           )}
         </div>
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <ToastAlert
+          msg={toast.msg}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={() => setToast(null)}
+        />
+      )}
     </form>
   );
 };

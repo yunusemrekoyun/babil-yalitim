@@ -1,8 +1,11 @@
+// frontend/src/admin/pages/BlogComments.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { message } from "antd";
 import api from "../../../api";
 import PropTypes from "prop-types";
+import ToastAlert from "../../components/ToastAlert";
+import ConfirmDialog from "../../components/ConfirmDialog";
+
 const Pill = ({ children, color = "gray" }) => (
   <span
     className={`inline-block rounded-full px-2 py-0.5 text-[11px] bg-${color}-100 text-${color}-700`}
@@ -10,6 +13,20 @@ const Pill = ({ children, color = "gray" }) => (
     {children}
   </span>
 );
+Pill.propTypes = {
+  children: PropTypes.node.isRequired,
+  color: PropTypes.oneOf([
+    "gray",
+    "green",
+    "yellow",
+    "red",
+    "blue",
+    "sky",
+    "emerald",
+    "amber",
+  ]),
+};
+Pill.defaultProps = { color: "gray" };
 
 const BlogComments = () => {
   const { id } = useParams();
@@ -18,11 +35,19 @@ const BlogComments = () => {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all"); // all | pending | approved
 
+  // Toast state
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = "info", duration = 4000) =>
+    setToast({ msg, type, duration });
+
+  // Confirm state (silme için)
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+
   const fetchAll = async () => {
     try {
       setLoading(true);
       const { data } = await api.get(`/blogs/${id}/comments/all`);
-      // data: { blogId, title, comments: [] }
       setBlog({
         title: data.title,
         comments: Array.isArray(data.comments) ? data.comments : [],
@@ -32,7 +57,7 @@ const BlogComments = () => {
         "GET /blogs/:id/comments/all error:",
         e?.response?.data || e
       );
-      message.error(e?.response?.data?.message || "Yorumlar alınamadı.");
+      showToast(e?.response?.data?.message || "Yorumlar alınamadı.", "error");
     } finally {
       setLoading(false);
     }
@@ -74,26 +99,42 @@ const BlogComments = () => {
           c._id === commentId ? { ...c, approved: nextVal } : c
         ),
       }));
-      message.success(nextVal ? "Yorum onaylandı." : "Onay kaldırıldı.");
+      showToast(nextVal ? "Yorum onaylandı." : "Onay kaldırıldı.", "success");
     } catch (e) {
       console.error("PATCH approve error:", e?.response?.data || e);
-      message.error(e?.response?.data?.message || "Güncellenemedi.");
+      showToast(e?.response?.data?.message || "Güncellenemedi.", "error");
     }
   };
 
-  const handleDelete = async (commentId) => {
-    if (!window.confirm("Bu yorumu silmek istediğinize emin misiniz?")) return;
+  // Sil'e basılınca sadece diyalogu aç
+  const handleDeleteClick = (commentId) => {
+    setPendingDeleteId(commentId);
+    setConfirmOpen(true);
+  };
+
+  // Onay verilince gerçekten sil
+  const confirmDelete = async () => {
+    const commentId = pendingDeleteId;
+    setConfirmOpen(false);
+    setPendingDeleteId(null);
+    if (!commentId) return;
+
     try {
       await api.delete(`/blogs/${id}/comments/${commentId}`);
       setBlog((prev) => ({
         ...prev,
         comments: prev.comments.filter((c) => c._id !== commentId),
       }));
-      message.success("Yorum silindi.");
+      showToast("Yorum silindi.", "success");
     } catch (e) {
       console.error("DELETE comment error:", e?.response?.data || e);
-      message.error(e?.response?.data?.message || "Silinemedi.");
+      showToast(e?.response?.data?.message || "Silinemedi.", "error");
     }
+  };
+
+  const cancelDelete = () => {
+    setConfirmOpen(false);
+    setPendingDeleteId(null);
   };
 
   if (loading) return <div className="p-6">Yükleniyor…</div>;
@@ -193,7 +234,7 @@ const BlogComments = () => {
                         {c.approved ? "Onayı Kaldır" : "Onayla"}
                       </button>
                       <button
-                        onClick={() => handleDelete(c._id)}
+                        onClick={() => handleDeleteClick(c._id)}
                         className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
                       >
                         Sil
@@ -204,31 +245,37 @@ const BlogComments = () => {
               ))}
             </tbody>
           </table>
-          {/* alt bilgi */}
+
           <div className="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-t">
             Toplam: {blog?.comments?.length || 0} • Görüntülenen:{" "}
             {filtered.length}
           </div>
         </div>
       )}
+
+      {/* Toast */}
+      {toast && (
+        <ToastAlert
+          msg={toast.msg}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Silme onayı */}
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Yorumu Sil"
+        message="Bu yorumu silmek istediğinize emin misiniz?"
+        confirmText="Evet, sil"
+        cancelText="Vazgeç"
+        type="error"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };
-Pill.propTypes = {
-  children: PropTypes.node.isRequired,
-  color: PropTypes.oneOf([
-    "gray",
-    "green",
-    "yellow",
-    "red",
-    "blue",
-    "sky",
-    "emerald",
-    "amber",
-  ]),
-};
 
-Pill.defaultProps = {
-  color: "gray",
-};
 export default BlogComments;

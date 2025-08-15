@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { message } from "antd";
+import ToastAlert from "../../components/ToastAlert";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import api from "../../../api";
 
 const BlogList = () => {
@@ -9,6 +10,15 @@ const BlogList = () => {
   const [q, setQ] = useState("");
   const [err, setErr] = useState("");
 
+  // toast
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = "info", duration = 4000) =>
+    setToast({ msg, type, duration });
+
+  // confirm
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTargetId, setConfirmTargetId] = useState(null);
+
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
@@ -16,11 +26,10 @@ const BlogList = () => {
         const { data } = await api.get("/blogs");
         setBlogs(Array.isArray(data) ? data : []);
       } catch (e) {
-
         console.error("GET /blogs error:", e?.response?.data || e);
         const msg = e?.response?.data?.message || "Bloglar getirilemedi.";
         setErr(msg);
-        message.error(msg);
+        showToast(msg, "error");
       } finally {
         setLoading(false);
       }
@@ -42,17 +51,36 @@ const BlogList = () => {
     return arr;
   }, [blogs, q]);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bu blogu silmek istediğinize emin misiniz?")) return;
+  // Sil butonuna basılınca: confirm aç
+  const askDelete = (id) => {
+    setConfirmTargetId(id);
+    setConfirmOpen(true);
+  };
+
+  // Confirm "Evet"
+  const confirmDelete = async () => {
+    const id = confirmTargetId;
+    setConfirmOpen(false);
+    setConfirmTargetId(null);
+    if (!id) return;
+
     try {
       await api.delete(`/blogs/${id}`);
-      message.success("Blog silindi");
+      showToast("Blog silindi", "success");
       setBlogs((prev) => prev.filter((b) => b._id !== id));
     } catch (e) {
-
       console.error("DELETE /blogs/:id error:", e?.response?.data || e);
-      message.error(e?.response?.data?.message || "Silme işlemi başarısız.");
+      showToast(
+        e?.response?.data?.message || "Silme işlemi başarısız.",
+        "error"
+      );
     }
+  };
+
+  // Confirm "Vazgeç"
+  const cancelDelete = () => {
+    setConfirmOpen(false);
+    setConfirmTargetId(null);
   };
 
   if (loading) return <div className="p-6">Yükleniyor…</div>;
@@ -147,7 +175,7 @@ const BlogList = () => {
                       Yorumlar
                     </Link>
                     <button
-                      onClick={() => handleDelete(b._id)}
+                      onClick={() => askDelete(b._id)}
                       className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
                     >
                       Sil
@@ -159,6 +187,28 @@ const BlogList = () => {
           </tbody>
         </table>
       )}
+
+      {/* Toast */}
+      {toast && (
+        <ToastAlert
+          msg={toast.msg}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Confirm */}
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Silme Onayı"
+        message="Bu blogu silmek istediğinize emin misiniz?"
+        confirmText="Evet, sil"
+        cancelText="Vazgeç"
+        type="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };

@@ -1,13 +1,32 @@
+// frontend/src/admin/pages/JournalList.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { message } from "antd";
 import api from "../../../api.js";
+import ToastAlert from "../../components/ToastAlert";
+import ConfirmModal from "../../components/ConfirmDialog.jsx";
 
 const JournalList = () => {
   const [journals, setJournals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [err, setErr] = useState("");
+
+  // Toast state
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = "info", duration = 4000) =>
+    setToast({ msg, type, duration });
+
+  // Confirm state
+  const [confirm, setConfirm] = useState({
+    open: false,
+    title: "",
+    desc: "",
+    onConfirm: null,
+  });
+  const openConfirm = (title, desc, onConfirm) =>
+    setConfirm({ open: true, title, desc, onConfirm });
+  const closeConfirm = () =>
+    setConfirm((c) => ({ ...c, open: false, onConfirm: null }));
 
   const fetchAll = async () => {
     try {
@@ -18,15 +37,19 @@ const JournalList = () => {
       console.error("GET /journals error:", e?.response?.data || e);
       const msg = e?.response?.data?.message || "Haberler getirilemedi.";
       setErr(msg);
-      message.error(msg);
+      showToast(msg, "error");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
+  useEffect(
+    () => {
+      fetchAll();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -38,16 +61,23 @@ const JournalList = () => {
     );
   }, [journals, q]);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bu haberi silmek istiyor musunuz?")) return;
-    try {
-      await api.delete(`/journals/${id}`);
-      message.success("Haber silindi");
-      setJournals((prev) => prev.filter((j) => j._id !== id));
-    } catch (e) {
-      console.error("DELETE /journals/:id error:", e?.response?.data || e);
-      message.error(e?.response?.data?.message || "Silinemedi.");
-    }
+  const handleDeleteClick = (id, title) => {
+    openConfirm(
+      "Haberi Sil",
+      `“${title || "Adsız"}” başlıklı haberi silmek istiyor musunuz?`,
+      async () => {
+        try {
+          await api.delete(`/journals/${id}`);
+          setJournals((prev) => prev.filter((j) => j._id !== id));
+          showToast("Haber silindi", "success");
+        } catch (e) {
+          console.error("DELETE /journals/:id error:", e?.response?.data || e);
+          showToast(e?.response?.data?.message || "Silinemedi.", "error");
+        } finally {
+          closeConfirm();
+        }
+      }
+    );
   };
 
   if (loading) return <p className="p-4">Yükleniyor…</p>;
@@ -129,7 +159,7 @@ const JournalList = () => {
                       Düzenle
                     </Link>
                     <button
-                      onClick={() => handleDelete(j._id)}
+                      onClick={() => handleDeleteClick(j._id, j.title)}
                       className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
                     >
                       Sil
@@ -140,6 +170,27 @@ const JournalList = () => {
             ))}
           </tbody>
         </table>
+      )}
+
+      {/* Confirm & Toast */}
+      <ConfirmModal
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.desc}
+        confirmText="Evet, sil"
+        cancelText="Vazgeç"
+        onConfirm={confirm.onConfirm || (() => {})}
+        onCancel={closeConfirm}
+        onClose={closeConfirm}
+      />
+
+      {toast && (
+        <ToastAlert
+          msg={toast.msg}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

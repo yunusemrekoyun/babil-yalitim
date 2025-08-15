@@ -1,7 +1,9 @@
+// src/admin/pages/service/ServiceList.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { message } from "antd";
 import api from "../../../api";
+import ToastAlert from "../../components/ToastAlert";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 // geleni güvenli diziye çevir
 const toArray = (data) => (Array.isArray(data) ? data : []);
@@ -13,6 +15,19 @@ const ServiceList = () => {
   const [cat, setCat] = useState("all");
   const [err, setErr] = useState("");
 
+  // toast
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = "info", duration = 4000) =>
+    setToast({ msg, type, duration });
+
+  // confirm
+  const [confirm, setConfirm] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
+
   useEffect(() => {
     const fetchServices = async () => {
       try {
@@ -23,7 +38,7 @@ const ServiceList = () => {
         console.error("GET /services error:", e?.response?.data || e);
         const msg = e?.response?.data?.message || "Servisler getirilemedi.";
         setErr(msg);
-        message.error(msg);
+        showToast(msg, "error");
       } finally {
         setLoading(false);
       }
@@ -52,16 +67,27 @@ const ServiceList = () => {
     return arr;
   }, [services, q, cat]);
 
-  const deleteService = async (id) => {
-    if (!window.confirm("Bu hizmeti silmek istediğinize emin misiniz?")) return;
-    try {
-      await api.delete(`/services/${id}`);
-      setServices((prev) => prev.filter((s) => s._id !== id));
-      message.success("Servis silindi");
-    } catch (e) {
-      console.error("DELETE /services/:id error:", e?.response?.data || e);
-      message.error(e?.response?.data?.message || "Servis silinemedi.");
-    }
+  const askDelete = (id, title) => {
+    setConfirm({
+      open: true,
+      title: "Hizmeti Sil",
+      message: `"${title || "Bu hizmet"}" silinsin mi? Bu işlem geri alınamaz.`,
+      onConfirm: async () => {
+        try {
+          await api.delete(`/services/${id}`);
+          setServices((prev) => prev.filter((s) => s._id !== id));
+          showToast("Hizmet silindi.", "success");
+        } catch (e) {
+          console.error("DELETE /services/:id error:", e?.response?.data || e);
+          showToast(
+            e?.response?.data?.message || "Hizmet silinemedi.",
+            "error"
+          );
+        } finally {
+          setConfirm((c) => ({ ...c, open: false }));
+        }
+      },
+    });
   };
 
   if (loading) return <p className="p-4">Yükleniyor…</p>;
@@ -176,7 +202,7 @@ const ServiceList = () => {
                       Düzenle
                     </Link>
                     <button
-                      onClick={() => deleteService(s._id)}
+                      onClick={() => askDelete(s._id, s.title)}
                       className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
                     >
                       Sil
@@ -187,6 +213,27 @@ const ServiceList = () => {
             ))}
           </tbody>
         </table>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <ToastAlert
+          msg={toast.msg}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Confirm */}
+      {confirm.open && (
+        <ConfirmDialog
+          open={confirm.open}
+          title={confirm.title}
+          message={confirm.message}
+          onCancel={() => setConfirm((c) => ({ ...c, open: false }))}
+          onConfirm={confirm.onConfirm}
+        />
       )}
     </div>
   );

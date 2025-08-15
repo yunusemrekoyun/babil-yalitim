@@ -1,7 +1,8 @@
+// frontend/src/admin/pages/EditJournal.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { message } from "antd";
 import JournalForm from "../../components/JournalForm.jsx";
+import ToastAlert from "../../components/ToastAlert";
 import api from "../../../api.js";
 
 const EditJournal = () => {
@@ -10,13 +11,18 @@ const EditJournal = () => {
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Toast state
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = "info", duration = 4000) =>
+    setToast({ msg, type, duration });
+
   const fetchOne = async () => {
     try {
       const { data } = await api.get(`/journals/${id}`);
       setInitialData(data);
     } catch (err) {
       console.error("GET /journals/:id error:", err?.response?.data || err);
-      message.error(err?.response?.data?.message || "Haber getirilemedi.");
+      showToast(err?.response?.data?.message || "Haber getirilemedi.", "error");
     } finally {
       setLoading(false);
     }
@@ -30,11 +36,11 @@ const EditJournal = () => {
   const handleSubmit = async (fd) => {
     try {
       await api.put(`/journals/${id}`, fd);
-      message.success("Haber güncellendi");
-      navigate("/admin/journals");
+      showToast("Haber güncellendi", "success");
+      setTimeout(() => navigate("/admin/journals"), 600);
     } catch (err) {
       console.error("PUT /journals/:id error:", err?.response?.data || err);
-      message.error(err?.response?.data?.message || "Güncellenemedi.");
+      showToast(err?.response?.data?.message || "Güncellenemedi.", "error");
     }
   };
 
@@ -44,7 +50,7 @@ const EditJournal = () => {
       await api.delete(
         `/journals/${id}/assets/${encodeURIComponent(publicId)}`
       );
-      message.success("Medya silindi");
+      showToast("Medya silindi", "success");
       // local state güncelle
       setInitialData((prev) =>
         prev
@@ -58,7 +64,7 @@ const EditJournal = () => {
       );
     } catch (err) {
       console.error("DELETE asset error:", err?.response?.data || err);
-      message.error(err?.response?.data?.message || "Medya silinemedi.");
+      showToast(err?.response?.data?.message || "Medya silinemedi.", "error");
     }
   };
 
@@ -74,6 +80,15 @@ const EditJournal = () => {
         onSubmit={handleSubmit}
         onRemoveAsset={handleRemoveAsset}
       />
+
+      {toast && (
+        <ToastAlert
+          msg={toast.msg}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

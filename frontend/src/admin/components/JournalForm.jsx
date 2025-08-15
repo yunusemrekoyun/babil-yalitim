@@ -1,5 +1,7 @@
+// frontend/src/admin/components/JournalForm.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
+import ToastAlert from "./ToastAlert";
 
 /* Küçük yardımcı */
 const MediaThumb = ({ src, type = "image", className = "" }) => {
@@ -50,6 +52,11 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset }) => {
   const [assetsPreviews, setAssetsPreviews] = useState([]);
   const revokers = useRef([]);
 
+  // Toast
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = "info", duration = 4000) =>
+    setToast({ msg, type, duration });
+
   useEffect(() => {
     return () => {
       revokers.current.forEach((u) => {
@@ -91,7 +98,8 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset }) => {
     e.preventDefault();
 
     if (!isEdit && !coverFile) {
-      alert("Kapak görseli zorunludur.");
+      // alert yerine ortak toast
+      showToast("Kapak görseli zorunludur.", "error");
       return;
     }
 
@@ -234,6 +242,15 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset }) => {
           )}
         </div>
       </div>
+
+      {toast && (
+        <ToastAlert
+          msg={toast.msg}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={() => setToast(null)}
+        />
+      )}
     </form>
   );
 };
@@ -255,7 +272,7 @@ JournalForm.propTypes = {
     ),
   }),
   onSubmit: PropTypes.func.isRequired,
-  onRemoveAsset: PropTypes.func, // sadece edit ekranında kullanılıyor
+  onRemoveAsset: PropTypes.func, // sadece edit ekranında kullanılıyor (ConfirmModal parent'ta)
 };
 
 export default JournalForm;

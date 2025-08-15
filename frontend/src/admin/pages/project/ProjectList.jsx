@@ -1,9 +1,12 @@
 // src/admin/pages/project/ProjectList.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { message } from "antd";
 import PropTypes from "prop-types";
 import api from "../../../api";
+
+// Ortak uyarı & onay
+import ToastAlert from "../../components/ToastAlert";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 const Card = ({ project, onDelete }) => {
   const coverIsVideo = project?.cover?.resourceType === "video";
@@ -41,7 +44,11 @@ const Card = ({ project, onDelete }) => {
           <span className="px-2 py-0.5 rounded bg-gray-100">
             {project.category || "Kategori yok"}
           </span>
-          <span>{new Date(project.createdAt).toLocaleDateString("tr-TR")}</span>
+          <span>
+            {project.createdAt
+              ? new Date(project.createdAt).toLocaleDateString("tr-TR")
+              : "-"}
+          </span>
         </div>
       </div>
 
@@ -53,7 +60,7 @@ const Card = ({ project, onDelete }) => {
           Düzenle
         </Link>
         <button
-          onClick={() => onDelete(project._id)}
+          onClick={() => onDelete(project._id, project.title)}
           className="inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-1.5 text-white text-sm hover:bg-red-700"
         >
           Sil
@@ -72,13 +79,13 @@ Card.propTypes = {
     createdAt: PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.instanceOf(Date),
-    ]).isRequired,
+    ]),
     cover: PropTypes.shape({
       resourceType: PropTypes.oneOf(["image", "video"]),
       url: PropTypes.string,
     }),
   }).isRequired,
-  onDelete: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired, // (id, title) => void
 };
 
 const ProjectList = () => {
@@ -90,14 +97,26 @@ const ProjectList = () => {
   const [cat, setCat] = useState("all");
   const [sort, setSort] = useState("-createdAt"); // -createdAt / createdAt / title
 
+  // Toast & Confirm state
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = "info", duration = 4000) =>
+    setToast({ msg, type, duration });
+
+  const [confirm, setConfirm] = useState(null);
+  const askConfirm = (cfg) => setConfirm(cfg);
+
   useEffect(() => {
     const run = async () => {
       try {
+        setLoading(true);
         const { data } = await api.get("/projects");
-        setAll(data || []);
+        setAll(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error(err);
-        message.error(err.response?.data?.message || "Projeler getirilemedi.");
+        console.error("GET /projects error:", err?.response?.data || err);
+        showToast(
+          err?.response?.data?.message || "Projeler getirilemedi.",
+          "error"
+        );
       } finally {
         setLoading(false);
       }
@@ -132,16 +151,33 @@ const ProjectList = () => {
     return arr;
   }, [all, q, cat, sort]);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bu projeyi silmek istediğinize emin misiniz?")) return;
-    try {
-      const { data } = await api.delete(`/projects/${id}`);
-      message.success(data?.message || "Proje silindi");
-      setAll((prev) => prev.filter((p) => p._id !== id));
-    } catch (err) {
-      console.error(err);
-      message.error(err.response?.data?.message || "Silme işleminde hata.");
-    }
+  const handleDelete = (id, title) => {
+    askConfirm({
+      title: "Proje silinsin mi?",
+      message: `“${
+        title || "Adsız Proje"
+      }” kalıcı olarak silinecek. Bu işlemi onaylıyor musunuz?`,
+      confirmText: "Evet, sil",
+      cancelText: "Vazgeç",
+      tone: "danger",
+      onConfirm: async () => {
+        try {
+          const { data } = await api.delete(`/projects/${id}`);
+          setAll((prev) => prev.filter((p) => p._id !== id));
+          showToast(data?.message || "Proje silindi.", "success");
+        } catch (err) {
+          console.error(
+            "DELETE /projects/:id error:",
+            err?.response?.data || err
+          );
+          showToast(
+            err?.response?.data?.message || "Silme işleminde hata.",
+            "error"
+          );
+        }
+      },
+      onCancel: () => {},
+    });
   };
 
   if (loading) return <div className="p-4">Yükleniyor…</div>;
@@ -198,6 +234,36 @@ const ProjectList = () => {
           </div>
         )}
       </div>
+
+      {/* Onay & Uyarı */}
+      {confirm && (
+        <ConfirmDialog
+          open={true}
+          title={confirm.title}
+          message={confirm.message}
+          confirmText={confirm.confirmText || "Onayla"}
+          cancelText={confirm.cancelText || "Vazgeç"}
+          tone={confirm.tone}
+          onClose={() => setConfirm(null)}
+          onConfirm={async () => {
+            const fn = confirm.onConfirm;
+            setConfirm(null);
+            await fn?.();
+          }}
+          onCancel={() => {
+            confirm.onCancel?.();
+            setConfirm(null);
+          }}
+        />
+      )}
+      {toast && (
+        <ToastAlert
+          msg={toast.msg}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

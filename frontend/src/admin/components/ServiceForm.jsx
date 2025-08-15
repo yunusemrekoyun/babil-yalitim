@@ -1,6 +1,7 @@
 // src/admin/components/ServiceForm.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
+import ToastAlert from "./ToastAlert";
 
 /* ------- Küçük yardımcı bileşenler ------- */
 const ImagePreview = ({ src, className = "" }) => {
@@ -59,7 +60,7 @@ const normalizeAreas = (val) => {
       if (Array.isArray(parsed))
         return parsed.filter(Boolean).map((s) => String(s).trim());
     } catch {
-      console.error("JSON parse error:", val);
+      // noop
     }
     return val
       .split(",")
@@ -80,13 +81,11 @@ const checkPortrait = (file, minRatio = FRONT_VERTICAL_MIN_RATIO) =>
     const type = file.type || "";
     const url = URL.createObjectURL(file);
 
-    // Temizlik
     const done = (ok, metaMsg = "") => {
       URL.revokeObjectURL(url);
       ok ? resolve(true) : reject(new Error(metaMsg));
     };
 
-    // Video
     if (type.startsWith("video/")) {
       const v = document.createElement("video");
       v.preload = "metadata";
@@ -108,7 +107,6 @@ const checkPortrait = (file, minRatio = FRONT_VERTICAL_MIN_RATIO) =>
       return;
     }
 
-    // Görsel
     if (type.startsWith("image/")) {
       const img = new Image();
       img.src = url;
@@ -129,7 +127,6 @@ const checkPortrait = (file, minRatio = FRONT_VERTICAL_MIN_RATIO) =>
       return;
     }
 
-    // Diğer türler
     return done(false, "Desteklenmeyen dosya türü.");
   });
 
@@ -157,7 +154,6 @@ const ServiceForm = ({ initialData, onSubmit }) => {
   const [usageAreas, setUsageAreas] = useState(
     normalizeAreas(initialData?.usageAreas)
   );
-
   useEffect(() => {
     setTitle(initialData?.title || "");
     setType(initialData?.type || "");
@@ -178,8 +174,16 @@ const ServiceForm = ({ initialData, onSubmit }) => {
   const [imagesPreviews, setImagesPreviews] = useState([]);
   const revokers = useRef([]);
 
-  // Hata mesajı
+  // Hata mesajı + toast
   const [mediaError, setMediaError] = useState("");
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = "info", duration = 4000) =>
+    setToast({ msg, type, duration });
+
+  // mediaError değişince toast da göster
+  useEffect(() => {
+    if (mediaError) showToast(mediaError, "error");
+  }, [mediaError]);
 
   // Cleanup — blob URL’leri serbest bırak
   useEffect(() => {
@@ -203,6 +207,8 @@ const ServiceForm = ({ initialData, onSubmit }) => {
     if (!v) return;
     if (!usageAreas.includes(v)) {
       setUsageAreas((arr) => [...arr, v]);
+    } else {
+      showToast("Bu kullanım alanı zaten ekli.", "info", 2500);
     }
     setUsageInput("");
   };
@@ -231,8 +237,8 @@ const ServiceForm = ({ initialData, onSubmit }) => {
       setCoverFile(f);
       blobify(f, setCoverPreview);
     } catch (err) {
-      setMediaError(err.message || "Kapak dosyası kabul edilmedi.");
-      // input’u temizle
+      const msg = err.message || "Kapak dosyası kabul edilmedi.";
+      setMediaError(msg);
       e.target.value = "";
       setCoverFile(null);
       setCoverPreview(null);
@@ -247,27 +253,21 @@ const ServiceForm = ({ initialData, onSubmit }) => {
       setImagesPreviews([]);
       return;
     }
-
-    // İstersen tüm galeriye de dikey zorunluluk uygula:
-    // Aşağıdaki blok açık; dikey olmayanı reddediyoruz.
     for (const f of files) {
       try {
         await checkPortrait(f);
       } catch (err) {
-        setMediaError(
+        const msg =
           err.message ||
-            "Galeri dosyalarından biri dikey değil. Lütfen kontrol edin."
-        );
-        // input’u temizle
+          "Galeri dosyalarından biri dikey değil. Lütfen kontrol edin.";
+        setMediaError(msg);
         e.target.value = "";
         setImagesFiles([]);
         setImagesPreviews([]);
         return;
       }
     }
-
     setImagesFiles(files);
-    // Eski blobları temizle
     imagesPreviews.forEach((u) => {
       if (u?.startsWith("blob:")) URL.revokeObjectURL(u);
     });
@@ -283,7 +283,7 @@ const ServiceForm = ({ initialData, onSubmit }) => {
     e.preventDefault();
 
     if (!isEdit && !coverFile) {
-      alert("Kapak (dikey image/video) zorunludur.");
+      showToast("Kapak (dikey image/video) zorunludur.", "error");
       return;
     }
 
@@ -292,10 +292,10 @@ const ServiceForm = ({ initialData, onSubmit }) => {
     fd.append("type", type);
     fd.append("category", category);
     fd.append("description", description);
-    fd.append("usageAreas", JSON.stringify(usageAreas)); // backend JSON.parse ediyor
+    fd.append("usageAreas", JSON.stringify(usageAreas));
 
-    if (coverFile) fd.append("cover", coverFile); // REPLACE
-    imagesFiles.forEach((f) => fd.append("images", f)); // EKLE
+    if (coverFile) fd.append("cover", coverFile);
+    imagesFiles.forEach((f) => fd.append("images", f));
 
     onSubmit(fd);
   };
@@ -427,7 +427,6 @@ const ServiceForm = ({ initialData, onSubmit }) => {
             {FRONT_VERTICAL_MIN_RATIO}:1.
           </p>
           <div className="mt-2 overflow-hidden rounded-lg border bg-gray-50">
-            {/* Yeni seçildiyse onu göster */}
             {coverPreview ? (
               coverPreviewIsVideo ? (
                 <VideoPreview
@@ -480,7 +479,8 @@ const ServiceForm = ({ initialData, onSubmit }) => {
           {!!existingImages.length && (
             <>
               <p className="mt-2 text-xs text-gray-500">
-                Mevcut medya (silme bu ekranda yok; yeniler **eklenir**)
+                Mevcut medya (silme bu ekranda yok; yeniler{" "}
+                <strong>eklenir</strong>)
               </p>
               <div className="mt-2 grid grid-cols-4 gap-2">
                 {existingImages.map((m, i) =>
@@ -535,6 +535,15 @@ const ServiceForm = ({ initialData, onSubmit }) => {
           )}
         </div>
       </div>
+
+      {toast && (
+        <ToastAlert
+          msg={toast.msg}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={() => setToast(null)}
+        />
+      )}
     </form>
   );
 };
