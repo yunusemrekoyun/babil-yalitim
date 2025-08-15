@@ -1,4 +1,3 @@
-// src/components/Service/ServiceGrid.jsx
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -8,8 +7,12 @@ import ServiceGridItem from "./ServiceGridItem";
 const ServiceGrid = () => {
   const [items, setItems] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const videoRefs = useRef({});
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
 
+  const videoRefs = useRef({});
+  const scrollRef = useRef(null);
+
+  // fetch
   useEffect(() => {
     api
       .get("/services")
@@ -17,25 +20,29 @@ const ServiceGrid = () => {
       .catch((err) => console.error("Hizmet verileri alınamadı:", err));
   }, []);
 
+  // responsive flag
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   const len = items.length;
   const getIndex = (o) => (!len ? 0 : (currentIndex + o + len) % len);
 
-  const visibleSlots = useMemo(
-    () =>
-      len === 0
-        ? []
-        : [
-            { slot: "prev2", index: getIndex(-2) },
-            { slot: "prev1", index: getIndex(-1) },
-            { slot: "center", index: getIndex(0) },
-            { slot: "next1", index: getIndex(1) },
-            { slot: "next2", index: getIndex(2) },
-          ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentIndex, len]
-  );
+  // desktop/tablet için görünür slotlar
+  const visibleSlots = useMemo(() => {
+    if (!len) return [];
+    return [
+      { slot: "prev2", index: getIndex(-2) },
+      { slot: "prev1", index: getIndex(-1) },
+      { slot: "center", index: getIndex(0) },
+      { slot: "next1", index: getIndex(1) },
+      { slot: "next2", index: getIndex(2) },
+    ];
+  }, [currentIndex, len]);
 
-  // hedef konum/ölçek/opacity/blur/z
+  // desktop hedefleri
   const slotTargets = (slot) => {
     const map = {
       prev2: { x: -360, scale: 0.78, opacity: 0.55, z: 5, blur: 2 },
@@ -47,7 +54,7 @@ const ServiceGrid = () => {
     return map[slot] || map.center;
   };
 
-  // yalnız merkezdeki video oynasın
+  // yalnız merkezde video oynat
   const stopAllVideosExcept = (indexToPlay) => {
     Object.entries(videoRefs.current).forEach(([idxStr, vid]) => {
       const idx = Number(idxStr);
@@ -60,26 +67,44 @@ const ServiceGrid = () => {
           vid.pause();
           vid.currentTime = 0;
         }
-      } catch {
-        console.error("Video oynatılırken hata olustu");
-      }
+      } catch {}
       vid.onended = () => {
         vid.currentTime = 0;
         vid.pause();
       };
     });
   };
-
   useEffect(() => {
     const id = setTimeout(() => stopAllVideosExcept(getIndex(0)), 0);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, len]);
 
+  // MOBİL: scroll ile index’i güncelle
+  useEffect(() => {
+    if (!isMobile) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const slideW = el.clientWidth; // her kart w-full
+      const i = Math.round(el.scrollLeft / slideW);
+      setCurrentIndex((i + len) % len);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [isMobile, len]);
+
+  const scrollToIndex = (i) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+    setCurrentIndex(i);
+  };
+
   if (!len) return null;
 
   return (
-    <section className="relative text-white py-20 px-6 overflow-hidden">
+    <section className="relative text-white py-16 px-4 sm:px-6 overflow-hidden">
       <div className="max-w-6xl mx-auto mb-10 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
           Hizmetlerimiz
@@ -87,43 +112,38 @@ const ServiceGrid = () => {
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl h-[520px]">
-        {/* Sol ok */}
-        <button
-          onClick={() => setCurrentIndex((p) => (p - 1 + len) % len)}
-          className="absolute left-2 top-1/2 -translate-y-1/2 text-white/90 bg-black/35 hover:bg-black/45 border border-white/20 rounded-full p-2 z-[50] active:scale-95 transition"
-          aria-label="Önceki"
-        >
-          <ChevronLeft size={24} />
-        </button>
+      <div className="relative mx-auto max-w-7xl h-[68vh] sm:h-[520px]">
+        {/* DESKTOP/TABLET: 5 slot + oklar */}
+        <div className="hidden sm:block relative w-full h-full">
+          {/* Sol ok */}
+          <button
+            onClick={() => setCurrentIndex((p) => (p - 1 + len) % len)}
+            className="absolute left-2 top-1/2 -translate-y-1/2
+                       text-white/90 bg-black/35 hover:bg-black/45 border border-white/20
+                       rounded-full p-2 z-[50] active:scale-95 transition"
+            aria-label="Önceki"
+          >
+            <ChevronLeft size={24} />
+          </button>
 
-        {/* Saha */}
-        <div className="relative w-full h-full">
+          {/* Kartlar */}
           {visibleSlots.map(({ slot, index }) => {
             const t = slotTargets(slot);
             const key = items[index]?._id || index;
-
             return (
               <motion.div
                 key={key}
-                className="absolute rounded-xl overflow-hidden will-change-transform"
-                // merkeze sabitle
+                className="absolute rounded-2xl overflow-hidden will-change-transform"
                 style={{ left: "50%", top: "50%", zIndex: t.z }}
                 initial={false}
-                // framer tüm transformu yazdığı için translateY'yi de burada sabitliyoruz
                 animate={{
-                  // -50% + x px ile yatay konum
                   translateX: `calc(-50% + ${t.x}px)`,
-                  // dikeyde her zaman merkeze pinle
                   translateY: "-50%",
                   scale: t.scale,
                   opacity: t.opacity,
                   filter: `blur(${t.blur}px)`,
                 }}
-                transition={{
-                  duration: 0.45,
-                  ease: [0.22, 1, 0.36, 1], // smooth
-                }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
               >
                 <ServiceGridItem
                   item={items[index]}
@@ -136,31 +156,57 @@ const ServiceGrid = () => {
               </motion.div>
             );
           })}
+
+          {/* Sağ ok */}
+          <button
+            onClick={() => setCurrentIndex((p) => (p + 1) % len)}
+            className="absolute right-2 top-1/2 -translate-y-1/2
+                       text-white/90 bg-black/35 hover:bg-black/45 border border-white/20
+                       rounded-full p-2 z-[50] active:scale-95 transition"
+            aria-label="Sonraki"
+          >
+            <ChevronRight size={24} />
+          </button>
         </div>
 
-        {/* Sağ ok */}
-        <button
-          onClick={() => setCurrentIndex((p) => (p + 1) % len)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-white/90 bg-black/35 hover:bg-black/45 border border-white/20 rounded-full p-2 z-[50] active:scale-95 transition"
-          aria-label="Sonraki"
+        {/* MOBİL: tek kart, full genişlik, scroll-snap + dots */}
+        <div
+          ref={scrollRef}
+          className="sm:hidden relative w-full h-full overflow-x-auto no-scrollbar snap-x snap-mandatory"
         >
-          <ChevronRight size={24} />
-        </button>
+          <div className="flex h-full">
+            {items.map((item, i) => (
+              <div
+                key={item?._id || i}
+                className="w-full shrink-0 snap-center px-0 flex items-start justify-center pt-2"
+              >
+                <ServiceGridItem
+                  item={item}
+                  isCenter={i === currentIndex}
+                  registerVideoRef={(el) => {
+                    if (el) videoRefs.current[i] = el;
+                    else delete videoRefs.current[i];
+                  }}
+                />
+              </div>
+            ))}
+          </div>
 
-        {/* CTA — biraz daha aşağı */}
+         
+        </div>
         <motion.div
           initial={{ x: 100, opacity: 0 }}
           whileInView={{ x: 0, opacity: 1 }}
           viewport={{ once: false, amount: 0.5 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           whileHover={{ scale: 1.05 }}
-          className="absolute -bottom-6 md:-bottom-7 right-6 z-[45]"
+          className="absolute bottom-[10px] right-4 sm:bottom-[12px] sm:right-6 z-[45]"
         >
           <a
             href="/services"
             className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-      px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
-      transition-all duration-300"
+               px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
+               transition-all duration-300"
           >
             Tüm Hizmetleri Gör
             <ChevronRight size={16} />

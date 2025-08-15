@@ -1,18 +1,28 @@
-// src/components/ProjeGrid/ProjectGridItem.jsx
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 const ProjectGridItem = ({ project, index }) => {
   const videoRef = useRef(null);
+  const isMobile = window.innerWidth < 640; // sm altı
 
   const coverImage = project?.cover?.url || "";
   const videoUrl = project?.video?.url || null;
 
+  useEffect(() => {
+    if (isMobile && videoUrl && videoRef.current) {
+      try {
+        videoRef.current.play();
+      } catch {
+        console.error("Error playing video");
+      }
+    }
+  }, [isMobile, videoUrl]);
+
   return (
     <motion.div
-      className="group relative overflow-hidden rounded-xl text-white cursor-pointer"
+      className="group relative overflow-hidden rounded-xl text-white cursor-pointer h-full"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: false, amount: 0.3 }}
@@ -25,7 +35,7 @@ const ProjectGridItem = ({ project, index }) => {
         },
       }}
       onMouseEnter={() => {
-        if (videoUrl && videoRef.current) {
+        if (!isMobile && videoUrl && videoRef.current) {
           try {
             videoRef.current.currentTime = 0;
             videoRef.current.play();
@@ -35,7 +45,7 @@ const ProjectGridItem = ({ project, index }) => {
         }
       }}
       onMouseLeave={() => {
-        if (videoUrl && videoRef.current) {
+        if (!isMobile && videoUrl && videoRef.current) {
           try {
             videoRef.current.pause();
           } catch {
@@ -66,17 +76,17 @@ const ProjectGridItem = ({ project, index }) => {
           )}
         </div>
 
-        {/* OVERLAY (hover’da biraz koyulaşır) */}
+        {/* OVERLAY */}
         <div className="absolute inset-0 z-10 bg-black/35 transition-opacity duration-300 group-hover:opacity-60" />
 
-        {/* BAŞLIK (ufak yukarı hareket) */}
+        {/* BAŞLIK */}
         <div className="absolute left-4 bottom-4 z-20">
           <h3 className="text-lg md:text-xl font-semibold transition-transform duration-300 group-hover:-translate-y-1.5">
             {project.title}
           </h3>
         </div>
 
-        {/* tıklanabilirliği korumak için görünmeyen bir spacer */}
+        {/* Spacer */}
         <span className="invisible block pb-[56%]" />
       </Link>
     </motion.div>

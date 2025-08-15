@@ -18,6 +18,7 @@ export default {
           "100%": { transform: "translateX(-50%)" },
         },
       },
+      
 
       colors: {
         brandDark: "#0b0b0d",
@@ -52,3 +53,4 @@ export default {
   },
   plugins: [],
 };
+

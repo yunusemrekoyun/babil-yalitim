@@ -6,6 +6,7 @@ import api from "../../api";
 
 const ProjectGrid = () => {
   const [projects, setProjects] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
   useEffect(() => {
     api
@@ -15,7 +16,14 @@ const ProjectGrid = () => {
         else console.warn("Beklenmeyen veri formatı:", data);
       })
       .catch((err) => console.error("Proje verileri alınamadı:", err));
+
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // mobilde 4 tane ile sınırla
+  const visibleProjects = isMobile ? projects.slice(0, 4) : projects;
 
   return (
     <section className="relative w-full px-4 py-16">
@@ -26,8 +34,8 @@ const ProjectGrid = () => {
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded"></div>
       </div>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-3 gap-4 auto-rows-[200px] md:auto-rows-[250px]">
-        {projects.map((project, index) => (
+      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 auto-rows-[250px]">
+        {visibleProjects.map((project, index) => (
           <ProjectGridItem
             key={project._id || index}
             project={project}

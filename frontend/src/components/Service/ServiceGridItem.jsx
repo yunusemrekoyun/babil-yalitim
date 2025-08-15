@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "";
 
-// resourceType yoksa uzantıdan tahmin
 const looksVideo = (u) =>
   /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(String(u || ""));
 
@@ -13,12 +12,10 @@ const pickFirstImageAndVideo = (images = []) => {
   for (const m of images) {
     const url = m?.url;
     if (!url) continue;
-
     const isImg =
       m?.resourceType === "image" || (!m?.resourceType && !looksVideo(url));
     const isVid =
       m?.resourceType === "video" || (!m?.resourceType && looksVideo(url));
-
     if (isImg && !img) img = url;
     if (isVid && !vid) vid = url;
     if (img && vid) break;
@@ -26,10 +23,9 @@ const pickFirstImageAndVideo = (images = []) => {
   return { img, vid };
 };
 
-// Cloudinary video -> jpg thumb (ilk kare)
+// Cloudinary video -> thumb
 const cloudinaryVideoThumb = (publicId) => {
   if (!CLOUD || !publicId) return null;
-  // örnek: https://res.cloudinary.com/<cloud>/video/upload/so_0/<publicId>.jpg
   return `https://res.cloudinary.com/${CLOUD}/video/upload/so_0/${publicId}.jpg`;
 };
 
@@ -42,35 +38,27 @@ const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
   const coverIsVideo =
     cover?.resourceType === "video" || looksVideo(cover?.url);
 
-  // merkezde oynatılacak video kaynağı
   const videoUrl = coverIsVideo ? cover?.url : firstVideo || null;
 
-  // ÖNİZLEME görseli (yan kartlar için MUTLAKA image)
   let previewSrc =
-    // 1) kapak image ise kapak
     (!coverIsVideo && cover?.url) ||
-    // 2) galerideki ilk image
     firstImage ||
-    // 3) kapak video ise cloudinary thumb
     (coverIsVideo && cloudinaryVideoThumb(cover?.publicId)) ||
-    // 4) legacy alanlar
     item?.imageDataUrl ||
     item?.imageUrl ||
     null;
 
-  // Yan kartlarda asla video render etme
-  const showVideo = Boolean(isCenter && videoUrl);
-
+  // 🔸 Boyutlar: mobilde tam genişliğe yakın; desktop’ta önceki gibi
   const size =
-    "w-[220px] h-[330px] md:w-[320px] md:h-[480px] object-cover rounded-xl";
+    "w-[70vw] h-[60vh] sm:w-[320px] sm:h-[480px] object-cover rounded-[22px]";
 
   return (
     <Link
       to={item?._id ? `/services/${item._id}` : "#"}
-      className="relative block focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-xl"
+      className="relative block focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-2xl"
       aria-label={`${item?.title || "Hizmet"} detayına git`}
     >
-      {showVideo ? (
+      {isCenter && videoUrl ? (
         <video
           ref={registerVideoRef}
           src={videoUrl}
@@ -84,7 +72,6 @@ const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
       ) : previewSrc ? (
         <img src={previewSrc} alt={item?.title || "service"} className={size} />
       ) : videoUrl ? (
-        // thumb çıkarılamadıysa son çare
         <video
           src={videoUrl}
           muted
@@ -99,12 +86,12 @@ const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
 
       {/* Overlay sadece merkezde */}
       {isCenter && (
-        <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-4">
-          <p className="text-white text-lg font-semibold mb-1 text-center md:text-left">
+        <div className="absolute inset-0 bg-black/35 flex flex-col justify-end p-4 rounded-[22px]">
+          <p className="text-white text-lg font-semibold mb-1 text-center sm:text-left">
             {item?.title}
           </p>
           {item?.type && (
-            <span className="self-center md:self-start inline-block text-[11px] px-2 py-1 rounded-full bg-white/20 border border-white/30 backdrop-blur">
+            <span className="self-center sm:self-start inline-block text-[11px] px-2 py-1 rounded-full bg-white/20 border border-white/30 backdrop-blur">
               {item.type}
             </span>
           )}
