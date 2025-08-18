@@ -10,7 +10,6 @@ import heroVideo from "../assets/heroo.mp4";
 import ServiceSection from "../components/Service/ServiceSection";
 import AboutSection from "../components/About/AboutSection";
 import GlassSection from "../components/Layout/GlassSection";
-import BrandsSection from "../components/Brands/BrandsSection";
 import BlogGrid from "../components/Blog/BlogGrid";
 
 const HomePage = () => {
@@ -176,7 +175,6 @@ const HomePage = () => {
       <div className="relative z-10">
         <Navbar />
         <Hero />
-        <BrandsSection />
 
         <div className="bg-transparanColor space-y-12 w-full px-4 sm:px-6 md:px-8 py-12 sm:py-16 flex flex-col items-center justify-center">
           <GlassSection>

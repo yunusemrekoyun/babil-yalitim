@@ -1,13 +1,14 @@
-import { useState, useRef } from "react";
+// src/components/Navbar/Navbar.jsx
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Logo from "../../assets/logo.png";
 
 /** ---- Ayarlar ---- */
-const LOGO_WIDTH = 200; // px: gerçek logo genişliği
-const GAP = 28; // logo ile chipler arası boşluk
-const CLOSE_DELAY = 1200; // ms
+const LOGO_WIDTH = 200; // px: desktop merkez hesapları için
+const GAP = 28;
+const CLOSE_DELAY = 1200;
 
 /** ---- Variants ---- */
 const chip = (dir) => ({
@@ -25,7 +26,6 @@ const chip = (dir) => ({
     transition: { duration: 0.22, ease: "easeIn" },
   },
 });
-
 const row = {
   initial: { opacity: 0 },
   animate: {
@@ -64,7 +64,16 @@ export default function Navbar() {
     hideTimer.current = setTimeout(() => setFlyout(false), CLOSE_DELAY);
   };
 
-  /** ---- Mutlak konumlar: logo merkezinden sağ/sola kaydır ---- */
+  /** body scroll kilidi (mobil menü açıkken) */
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    if (isOpen) document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen]);
+
+  /** ---- Desktop için mutlak konumlar ---- */
   const half = LOGO_WIDTH / 2;
   const leftAnchorStyle = {
     left: `calc(50% - ${half + GAP}px)`,
@@ -90,7 +99,6 @@ export default function Navbar() {
         >
           <a href="/" className="block relative">
             <img src={Logo} alt="Logo" className="w-full pointer-events-none" />
-            {/* hover kaçmasın diye tampon alan */}
             <span className="absolute inset-[-18px]" />
           </a>
 
@@ -166,12 +174,19 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* ===== Mobil (değişmedi) ===== */}
-      <div className="md:hidden px-4 py-3 flex justify-between items-center bg-black/60 text-white">
-        <a href="/">
-          <img src={Logo} alt="Logo" className="h-10" />
+      {/* ===== Mobil (light/glass tasarım) ===== */}
+      <div className="md:hidden sticky top-0 z-40 px-4 py-3 flex justify-between items-center text-white">
+        {/* bar'ı şeffaf tut, okunabilirlik için çok hafif cam efekti ve çizgi */}
+        <div className="absolute inset-0 bg-white/10 backdrop-blur-xl border-b border-white/20 pointer-events-none" />
+        <a href="/" className="shrink-0 relative z-10">
+          {/* logo daha büyük */}
+          <img src={Logo} alt="Logo" className="h-12" />
         </a>
-        <button onClick={() => setIsOpen(!isOpen)} className="text-white z-50">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="relative z-10 text-white size-10 grid place-items-center rounded-md active:scale-95"
+          aria-label={isOpen ? "Menüyü kapat" : "Menüyü aç"}
+        >
           {isOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
@@ -180,28 +195,48 @@ export default function Navbar() {
         {isOpen && (
           <motion.div
             initial={{ y: "-100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1, transition: { duration: 0.4 } }}
-            exit={{ y: "-100%", opacity: 0, transition: { duration: 0.3 } }}
-            className="md:hidden absolute top-0 left-0 right-0 bg-black text-white flex flex-col items-center gap-4 py-6 z-40"
+            animate={{
+              y: 0,
+              opacity: 1,
+              transition: { duration: 0.35, ease: "easeOut" },
+            }}
+            exit={{
+              y: "-100%",
+              opacity: 0,
+              transition: { duration: 0.28, ease: "easeIn" },
+            }}
+            className="md:hidden fixed inset-0 z-40"
           >
-            {[...navLeft, ...navRight].map((it) => (
-              <a
-                key={it.href}
-                href={it.href}
-                onClick={() => setIsOpen(false)}
-                className={`w-[140px] text-center py-2 text-lg uppercase rounded-full transition ${
-                  location.pathname === it.href
-                    ? "bg-white text-black"
-                    : "border border-white/60 hover:bg-white/10"
-                }`}
-              >
-                {it.label}
-              </a>
-            ))}
+            {/* aydınlık, siyahsız menü yüzeyi */}
+            <div className="absolute inset-0 bg-white/85 backdrop-blur-md" />
+            <div className="relative h-full w-full flex flex-col items-center gap-4 pt-[calc(env(safe-area-inset-top,0)+88px)] pb-[calc(env(safe-area-inset-bottom,0)+24px)]">
+              {[...navLeft, ...navRight].map((it) => (
+                <a
+                  key={it.href}
+                  href={it.href}
+                  onClick={() => setIsOpen(false)}
+                  className={`w-[78%] max-w-xs text-center py-3 text-lg uppercase rounded-full transition ${
+                    location.pathname === it.href
+                      ? "bg-gray-900 text-white"
+                      : "bg-white border border-gray-300 text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  {it.label}
+                </a>
+              ))}
+            </div>
+
+            {/* kapatma butonu (üst sağ) – kontrastlı */}
+            <button
+              onClick={() => setIsOpen(false)}
+              aria-label="Kapat"
+              className="absolute top-[calc(env(safe-area-inset-top,0)+12px)] right-4 text-gray-900/80 hover:text-gray-900 active:scale-95"
+            >
+              <X size={28} />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
     </header>
   );
 }
-
