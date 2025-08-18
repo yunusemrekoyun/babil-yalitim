@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, useAnimation, useInView } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import api from "../../api";
 import ServiceGridItem from "./ServiceGridItem";
@@ -74,6 +74,7 @@ const ServiceGrid = () => {
       };
     });
   };
+
   useEffect(() => {
     const id = setTimeout(() => stopAllVideosExcept(getIndex(0)), 0);
     return () => clearTimeout(id);
@@ -101,6 +102,40 @@ const ServiceGrid = () => {
     setCurrentIndex(i);
   };
 
+  // ── CTA animasyon kontrolü (desktop)
+  const desktopCtaRef = useRef(null);
+  const desktopCtaInView = useInView(desktopCtaRef, { amount: 0.5 });
+  const desktopCtaControls = useAnimation();
+
+  useEffect(() => {
+    if (desktopCtaInView) {
+      desktopCtaControls.start({
+        x: 0,
+        opacity: 1,
+        transition: { duration: 0.6, ease: "easeOut" },
+      });
+    } else {
+      desktopCtaControls.set({ x: 100, opacity: 0 });
+    }
+  }, [desktopCtaInView, desktopCtaControls]);
+
+  // ── CTA animasyon kontrolü (mobil)
+  const mobileCtaRef = useRef(null);
+  const mobileCtaInView = useInView(mobileCtaRef, { amount: 0.5 });
+  const mobileCtaControls = useAnimation();
+
+  useEffect(() => {
+    if (mobileCtaInView) {
+      mobileCtaControls.start({
+        y: 0,
+        opacity: 1,
+        transition: { duration: 0.5, ease: "easeOut" },
+      });
+    } else {
+      mobileCtaControls.set({ y: 20, opacity: 0 });
+    }
+  }, [mobileCtaInView, mobileCtaControls]);
+
   if (!len) return null;
 
   return (
@@ -112,7 +147,8 @@ const ServiceGrid = () => {
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl h-[68vh] sm:h-[520px]">
+      {/* desktop/tablet yüksekliği sabit, mobilde biraz daha kısa ve altına padding bırak */}
+      <div className="relative mx-auto max-w-7xl h-[64vh] sm:h-[520px] pb-8 sm:pb-0">
         {/* DESKTOP/TABLET: 5 slot + oklar */}
         <div className="hidden sm:block relative w-full h-full">
           {/* Sol ok */}
@@ -167,9 +203,28 @@ const ServiceGrid = () => {
           >
             <ChevronRight size={24} />
           </button>
+
+          {/* Desktop CTA */}
+          <motion.div
+            ref={desktopCtaRef}
+            initial={false}
+            animate={desktopCtaControls}
+            whileHover={{ scale: 1.05 }}
+            className="hidden sm:flex items-center absolute bottom-[12px] right-6 z-[45]"
+          >
+            <a
+              href="/services"
+              className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+                         px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
+                         transition-all duration-300"
+            >
+              Tüm Hizmetleri Gör
+              <ChevronRight size={16} />
+            </a>
+          </motion.div>
         </div>
 
-        {/* MOBİL: tek kart, full genişlik, scroll-snap + dots */}
+        {/* MOBİL: tek kart, full genişlik, scroll-snap */}
         <div
           ref={scrollRef}
           className="sm:hidden relative w-full h-full overflow-x-auto no-scrollbar snap-x snap-mandatory"
@@ -191,22 +246,21 @@ const ServiceGrid = () => {
               </div>
             ))}
           </div>
-
-         
         </div>
+
+        {/* Mobil CTA */}
         <motion.div
-          initial={{ x: 100, opacity: 0 }}
-          whileInView={{ x: 0, opacity: 1 }}
-          viewport={{ once: false, amount: 0.5 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          whileHover={{ scale: 1.05 }}
-          className="absolute bottom-[10px] right-4 sm:bottom-[12px] sm:right-6 z-[45]"
+          ref={mobileCtaRef}
+          initial={false}
+          animate={mobileCtaControls}
+          whileHover={{ scale: 1.03 }}
+          className="sm:hidden mt-6 flex justify-center"
         >
           <a
             href="/services"
-            className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-               px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
-               transition-all duration-300"
+            className="inline-flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+                       px-5 py-2.5 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
+                       transition-all duration-300"
           >
             Tüm Hizmetleri Gör
             <ChevronRight size={16} />

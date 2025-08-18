@@ -2,24 +2,13 @@
 const express = require("express");
 const router = express.Router();
 
-function mount(path, modPath) {
-  try {
-    console.log("⇒ mount", path, "from", modPath);
-    const mod = require(modPath);
-    router.use(path, mod);
-    console.log("✓ mounted", path);
-  } catch (e) {
-    console.error("✗ FAILED mounting", path, "from", modPath, "\n", e);
-    throw e; // burada durdur; hangisi bozuk net görünsün
-  }
-}
-
-mount("/search", "./searchRoutes");
-mount("/blogs", "./blogRoutes");
-mount("/journals", "./journalRoutes");
-mount("/projects", "./projectRoutes");
-mount("/services", "./serviceRoutes");
-mount("/auth", "./authRoutes");
-mount("/visits", "./visitRoutes");
+// ✅ Prod’da crash etmesin: sade ve güvenli mount
+router.use("/search", require("./searchRoutes"));
+router.use("/blogs", require("./blogRoutes"));
+router.use("/journals", require("./journalRoutes"));
+router.use("/projects", require("./projectRoutes"));
+router.use("/services", require("./serviceRoutes"));
+router.use("/auth", require("./authRoutes"));
+router.use("/visits", require("./visitRoutes"));
 
 module.exports = router;

@@ -32,8 +32,7 @@ const cloudinaryVideoThumb = (publicId) => {
 const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
   const cover = item?.cover || null;
   const imagesArr = Array.isArray(item?.images) ? item.images : [];
-  const { img: firstImage, vid: firstVideo } =
-    pickFirstImageAndVideo(imagesArr);
+  const { img: firstImage, vid: firstVideo } = pickFirstImageAndVideo(imagesArr);
 
   const coverIsVideo =
     cover?.resourceType === "video" || looksVideo(cover?.url);
@@ -48,9 +47,13 @@ const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
     item?.imageUrl ||
     null;
 
-  // 🔸 Boyutlar: mobilde tam genişliğe yakın; desktop’ta önceki gibi
+  /**
+   * Boyutlar:
+   * - Mobilde biraz daha geniş ve kısa (kart ile buton arasında boşluk kalsın)
+   * - Desktop’ta mevcut ölçüler korunuyor
+   */
   const size =
-    "w-[70vw] h-[60vh] sm:w-[320px] sm:h-[480px] object-cover rounded-[22px]";
+    "w-[78vw] h-[52vh] sm:w-[320px] sm:h-[480px] object-cover rounded-[22px] shadow-lg";
 
   return (
     <Link

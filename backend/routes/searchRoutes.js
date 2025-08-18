@@ -2,23 +2,25 @@
 const express = require("express");
 const router = express.Router();
 
-const Blog = require("../models/blog");
-const Journal = require("../models/journal");
-const Project = require("../models/project");
-const Service = require("../models/service");
+// ✅ Linux case-sensitive: model dosya adları büyük harfle
+const Blog = require("../models/Blog");
+const Journal = require("../models/Journal");
+const Project = require("../models/Project");
+const Service = require("../models/Service");
 
 router.get("/", async (req, res) => {
-  const query = req.query.q || "";
+  const query = (req.query.q || "").trim();
   const regex = new RegExp(query, "i");
 
   try {
     const [blogs, journals, projects, services] = await Promise.all([
-      Blog.find({ title: regex }).limit(5).lean(),
-      Journal.find({ title: regex }).limit(5).lean(),
-      Project.find({ title: regex }).limit(5).lean(),
-      Service.find({ title: regex }).limit(5).lean(),
+      Blog.find({ title: regex }).select("_id title").limit(5).lean(),
+      Journal.find({ title: regex }).select("_id title").limit(5).lean(),
+      Project.find({ title: regex }).select("_id title").limit(5).lean(),
+      Service.find({ title: regex }).select("_id title").limit(5).lean(),
     ]);
 
+    // 🔁 Mevcut response yapını korudum (tek array + type alanı)
     res.json([
       ...blogs.map((item) => ({ ...item, type: "blog" })),
       ...journals.map((item) => ({ ...item, type: "journal" })),
