@@ -1,8 +1,8 @@
-// src/context/PrivateRoute.jsx
 import { useAuth } from "./AuthContext.jsx";
 import { Navigate, useLocation } from "react-router-dom";
 import PropTypes from "prop-types";
 
+/** Admin paneli koruması: /admin/* */
 const PrivateRoute = ({ children }) => {
   const { isAdmin } = useAuth();
   const location = useLocation();
@@ -15,7 +15,8 @@ const PrivateRoute = ({ children }) => {
   return children;
 };
 
-export default PrivateRoute;
 PrivateRoute.propTypes = {
   children: PropTypes.node.isRequired,
 };
+
+export default PrivateRoute;

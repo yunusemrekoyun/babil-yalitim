@@ -2,15 +2,16 @@
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
+  const uri = process.env.MONGO_URI;
+  if (!uri) {
+    console.error("❌ MONGO_URI tanımlı değil.");
+    process.exit(1);
+  }
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-
-    console.log(`MongoDB Bağlandı: ${conn.connection.host}`);
+    const conn = await mongoose.connect(uri);
+    console.log(`✅ MongoDB bağlandı: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`MongoDB Hatası: ${error.message}`);
+    console.error(`❌ MongoDB bağlantı hatası: ${error.message}`);
     process.exit(1);
   }
 };

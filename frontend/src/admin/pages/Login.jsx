@@ -3,6 +3,15 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 
+// Küçük yardımcı: cookie'den okuma (csrfToken httpOnly DEĞİLDİR)
+const getCookie = (name) => {
+  if (typeof document === "undefined") return "";
+  const m = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${name}=`));
+  return m ? decodeURIComponent(m.split("=").slice(1).join("=")) : "";
+};
+
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -17,10 +26,31 @@ const Login = () => {
     e.preventDefault();
     setError("");
     try {
-      await login(username, password);
+      const result = await login(username, password);
+
+      // 1) Tercihen response’tan al
+      let csrf = result?.csrfToken;
+
+      // 2) Fallback: cookie’e yazılan csrfToken’ı oku
+      if (!csrf) {
+        csrf = getCookie("csrfToken");
+      }
+
+      // 3) Sakla (api.js state‑changing isteklerde header’a ekler)
+      if (csrf) {
+        localStorage.setItem("csrfToken", csrf);
+      } else {
+        console.warn("CSRF token alınamadı; yazma istekleri 403 verebilir.");
+      }
+
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message);
+      setError(
+        err?.response?.data?.message ||
+          err?.friendlyMessage ||
+          err?.message ||
+          "Giriş başarısız"
+      );
     }
   };
 
