@@ -1,17 +1,24 @@
+// frontend/src/components/Brands/BrandGrid.jsx
 import BrandItem from "./BrandItem";
 
+import brandKoster from "../../assets/brand-koster.png";
+import brandSika from "../../assets/brand-sika.png";
+import brandOde from "../../assets/brand-ode.png";
+import brandGeoplas from "../../assets/brand-geoplas.png";
+import brandHuntsman from "../../assets/brand-huntsman.png";
+import brandMonokim from "../../assets/brand-monokim.png";
+
 const brands = [
-  { id: 1, name: "Koster", img: "/src/assets/brand-koster.png", link: "https://koster.com" },
-  { id: 2, name: "Sika", img: "/src/assets/brand-sika.png", link: "https://sika.com" },
-  { id: 3, name: "ODE", img: "/src/assets/brand-ode.png", link: "https://ode.com.tr" },
-  { id: 4, name: "Geoplas", img: "/src/assets/brand-geoplas.png", link: "https://geoplas.com" },
-  { id: 5, name: "Huntsman", img: "/src/assets/brand-huntsman.png", link: "https://huntsman.com" },
-  { id: 6, name: "Monokim", img: "/src/assets/brand-monokim.png", link: "https://monokim.com" },
+  { id: 1, name: "Koster", img: brandKoster, link: "https://www.kostermarket.com/" },
+  { id: 2, name: "Sika", img: brandSika, link: "https://tur.sika.com/" },
+  { id: 3, name: "ODE", img: brandOde, link: "https://ode.com.tr" },
+  { id: 4, name: "Geoplas", img: brandGeoplas, link: "https://www.geoplas.com.tr/en" },
+  { id: 5, name: "Huntsman", img: brandHuntsman, link: "https://huntsman.com" },
+  { id: 6, name: "Monokim", img: brandMonokim, link: "https://monokim.com" },
 ];
 
 const BrandGrid = () => {
   const fullList = [...brands, ...brands];
-
   return (
     <div id="brands" className="w-full overflow-hidden relative mt-5">
       <div className="flex whitespace-nowrap animate-[marquee_12s_linear_infinite] sm:animate-[marquee_20s_linear_infinite]">
