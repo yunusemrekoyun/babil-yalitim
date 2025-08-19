@@ -46,7 +46,6 @@ Desktop.ini
 
 # === Video önizleme thumbnail / cache gibi dosyalar (eğer varsa) ===
 *.avi
-*.mp4
 *.mov
 *.mkv
 *.webm
