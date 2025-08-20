@@ -4,12 +4,9 @@ import PropTypes from "prop-types";
 
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "";
 
-
-/** Cloudinary URL helper'ları */
 const cldVideo = (publicId, { mobile = false } = {}) => {
   if (!CLOUD || !publicId) return "";
-  // f_auto,q_auto → format/kalite otomatik
-  // İstersen mobile varyantına bitrate ekleyebilirsin (örn: br_1000k)
+
   const trans = mobile ? "f_auto,q_auto" : "f_auto,q_auto";
   return `https://res.cloudinary.com/${CLOUD}/video/upload/${trans}/${publicId}.mp4`;
 };
@@ -29,9 +26,9 @@ const cldPoster = (publicId) => {
  */
 export default function BackgroundVideo({
   desktopPublicId,
-  mobilePublicId,
-  posterPublicId,
-  className,
+  mobilePublicId = "",
+  posterPublicId = "",
+  className = "",
 }) {
   const vA = useRef(null);
   const vB = useRef(null);
@@ -117,7 +114,7 @@ export default function BackgroundVideo({
         A.currentTime = 0.01;
         B.currentTime = 0.01;
       } catch {
-        // bazı tarayıcılarda izin verilmeyebilir
+        // empty
       }
       A.style.opacity = 1;
       B.style.opacity = 0;
@@ -129,7 +126,7 @@ export default function BackgroundVideo({
       try {
         toEl.currentTime = 0.01;
       } catch {
-        // izin verilmeyebilir, sorun değil
+        // empty
       }
       playSafe(toEl);
 
@@ -142,7 +139,7 @@ export default function BackgroundVideo({
         try {
           fromEl.pause();
         } catch {
-          // pause başarısız olabilir, ignore
+          // empty
         }
         stateRef.current.active = stateRef.current.active === "A" ? "B" : "A";
         stateRef.current.fading = false;
@@ -296,10 +293,4 @@ BackgroundVideo.propTypes = {
   mobilePublicId: PropTypes.string,
   posterPublicId: PropTypes.string,
   className: PropTypes.string,
-};
-
-BackgroundVideo.defaultProps = {
-  mobilePublicId: "",
-  posterPublicId: "",
-  className: "",
 };

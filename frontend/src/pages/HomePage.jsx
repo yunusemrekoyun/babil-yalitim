@@ -11,9 +11,9 @@ import GlassSection from "../components/Layout/GlassSection";
 import BlogGrid from "../components/Blog/BlogGrid";
 import BackgroundVideo from "../components/Background/BackgroundVideo";
 
-const HERO_DESKTOP = import.meta.env.VITE_HERO_PUBLIC_ID; // örn: "site/hero_desktop"
-const HERO_MOBILE = import.meta.env.VITE_HERO_MOBILE_PUBLIC_ID; // opsiyonel
-const HERO_POSTER = import.meta.env.VITE_HERO_POSTER_PUBLIC_ID; // opsiyonel (yoksa videodan kare)
+const HERO_DESKTOP = import.meta.env.VITE_HERO_PUBLIC_ID;
+const HERO_MOBILE = import.meta.env.VITE_HERO_MOBILE_PUBLIC_ID;
+const HERO_POSTER = import.meta.env.VITE_HERO_POSTER_PUBLIC_ID;
 
 export default function HomePage() {
   return (
@@ -25,8 +25,16 @@ export default function HomePage() {
       />
 
       <div className="relative z-10">
-        <Navbar />
-        <Hero />
+        {/* Navbar’a bir id verelim ki yüksekliğini hesaplayabilelim (opsiyonel) */}
+        <div id="site-navbar">
+          <Navbar />
+        </div>
+
+        {/* ↓↓↓ Hero’ya tıklanınca kaydıracağımız hedefin id’si */}
+        <Hero targetId="after-hero" />
+
+        {/* Hedef çıpa: sayfanın “devamı” buradan başlıyor */}
+        <div id="after-hero" />
 
         <div className="bg-transparanColor space-y-12 w-full px-4 sm:px-6 md:px-8 py-12 sm:py-16 flex flex-col items-center justify-center">
           <GlassSection>
