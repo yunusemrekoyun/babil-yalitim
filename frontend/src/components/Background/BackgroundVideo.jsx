@@ -4,11 +4,13 @@ import PropTypes from "prop-types";
 
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "";
 
+// Cloudinary video URL
 const cldVideo = (publicId) =>
   CLOUD && publicId
     ? `https://res.cloudinary.com/${CLOUD}/video/upload/f_auto,q_auto/${publicId}.mp4`
     : "";
 
+// Cloudinary poster (ilk kare) URL
 const cldPoster = (publicId) =>
   CLOUD && publicId
     ? `https://res.cloudinary.com/${CLOUD}/video/upload/so_0,f_jpg,q_auto/${publicId}.jpg`
@@ -16,41 +18,36 @@ const cldPoster = (publicId) =>
 
 export default function BackgroundVideo({
   desktopPublicId,
-  mobilePublicId = "",
   posterPublicId = "",
   className = "",
 }) {
   const vA = useRef(null);
   const vB = useRef(null);
-  const [active, setActive] = useState("A");
 
   const desktopUrl = useMemo(
     () => cldVideo(desktopPublicId),
     [desktopPublicId]
   );
-  const mobileUrl = useMemo(
-    () => cldVideo(mobilePublicId || desktopPublicId),
-    [mobilePublicId, desktopPublicId]
-  );
+
+  // Poster öncelik: posterPublicId -> desktopPublicId
   const posterUrl = useMemo(
-    () =>
-      posterPublicId
-        ? cldPoster(posterPublicId)
-        : cldPoster(desktopPublicId || ""),
+    () => cldPoster(posterPublicId || desktopPublicId || ""),
     [posterPublicId, desktopPublicId]
   );
 
-  const [isMobile, setIsMobile] = useState(() =>
+  const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 640 : false
   );
+
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 640);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // DESKTOP: 30 sn’de bir A/B videolar arasında yumuşak geçiş
   useEffect(() => {
-    if (isMobile) return;
+    if (isMobile) return; // mobilde video yok
 
     const A = vA.current;
     const B = vB.current;
@@ -60,59 +57,67 @@ export default function BackgroundVideo({
     A.playsInline = B.playsInline = true;
     A.preload = B.preload = "auto";
 
-    const playSafe = (el) => el.play().catch(() => {});
-
-    let timerId;
-
-    const loop = () => {
-      const cur = active === "A" ? A : B;
-      const next = active === "A" ? B : A;
-
-      // reset next
-      try {
-        next.currentTime = 0.01;
-      } catch {
-        console.error();
-      }
-      next.style.opacity = 0;
-      playSafe(next);
-
-      // fade
-      next.style.transition = "opacity 1s linear";
-      cur.style.transition = "opacity 1s linear";
-      next.style.opacity = 1;
-      cur.style.opacity = 0;
-
-      setActive((p) => (p === "A" ? "B" : "A"));
-
-      timerId = setTimeout(loop, 30000); // 30 saniye sonra tekrar
-    };
+    const playSafe = (el) => el?.play().catch(() => {});
 
     // başlat
-    playSafe(A);
     A.style.opacity = 1;
     B.style.opacity = 0;
-    timerId = setTimeout(loop, 30000);
+    playSafe(A);
 
-    return () => clearTimeout(timerId);
-  }, [active, isMobile]);
+    let timerId = 0;
+    const DURATION_MS = 30000; // 30sn sabit
+    const FADE_MS = 1000;
+
+    const crossFade = (fromEl, toEl) => {
+      if (!toEl) return;
+      try {
+        toEl.currentTime = 0.01;
+      } catch (err) {
+        console.warn("Video reset error:", err);
+      }
+      playSafe(toEl);
+
+      toEl.style.transition = `opacity ${FADE_MS}ms linear`;
+      fromEl.style.transition = `opacity ${FADE_MS}ms linear`;
+      toEl.style.opacity = 1;
+      fromEl.style.opacity = 0;
+    };
+
+    let active = "A";
+
+    const tick = () => {
+      if (active === "A") {
+        crossFade(A, B);
+        active = "B";
+      } else {
+        crossFade(B, A);
+        active = "A";
+      }
+      timerId = window.setTimeout(tick, DURATION_MS);
+    };
+
+    timerId = window.setTimeout(tick, DURATION_MS);
+
+    return () => {
+      if (timerId) window.clearTimeout(timerId);
+    };
+  }, [isMobile, desktopUrl]);
 
   return (
     <div
       className={`fixed inset-0 w-full h-full -z-10 overflow-hidden ${className}`}
     >
       {isMobile ? (
-        <video
-          src={mobileUrl}
+        // 🔹 MOBİL: SADECE GÖRSEL (video yok)
+        <img
+          src={posterUrl || "/fallback-hero.jpg"}
+          alt=""
           className="absolute inset-0 w-full h-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          poster={posterUrl || undefined}
+          loading="eager"
+          decoding="async"
         />
       ) : (
+        // 🔹 DESKTOP: Çift video, 30sn’de bir yumuşak fade ile sıfırdan başlar
         <>
           <video
             ref={vA}
@@ -120,6 +125,7 @@ export default function BackgroundVideo({
             className="absolute inset-0 w-full h-full object-cover"
             muted
             playsInline
+            preload="metadata"
             poster={posterUrl || undefined}
           />
           <video
@@ -128,8 +134,9 @@ export default function BackgroundVideo({
             className="absolute inset-0 w-full h-full object-cover"
             muted
             playsInline
-            poster={posterUrl || undefined}
+            preload="metadata"
             style={{ opacity: 0 }}
+            poster={posterUrl || undefined}
           />
         </>
       )}
@@ -139,7 +146,6 @@ export default function BackgroundVideo({
 
 BackgroundVideo.propTypes = {
   desktopPublicId: PropTypes.string.isRequired,
-  mobilePublicId: PropTypes.string,
   posterPublicId: PropTypes.string,
   className: PropTypes.string,
 };
