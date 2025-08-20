@@ -55,7 +55,7 @@ const ServiceGrid = () => {
     return map[slot] || map.center;
   };
 
-  // yalnız merkezde video oynat
+  // yalnız merkezde video oynat (DESKTOP davranışı; mobilde de çalışsın ama animasyona dokunmuyoruz)
   const stopAllVideosExcept = (indexToPlay) => {
     Object.entries(videoRefs.current).forEach(([idxStr, vid]) => {
       const idx = Number(idxStr);
@@ -83,7 +83,7 @@ const ServiceGrid = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, len]);
 
-  // MOBİL: scroll ile index’i güncelle
+  // MOBİL: scroll ile index’i güncelle (animasyon yok)
   useEffect(() => {
     if (!isMobile) return;
     const el = scrollRef.current;
@@ -97,13 +97,6 @@ const ServiceGrid = () => {
     return () => el.removeEventListener("scroll", onScroll);
   }, [isMobile, len]);
 
-  // const scrollToIndex = (i) => {
-  //   const el = scrollRef.current;
-  //   if (!el) return;
-  //   el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
-  //   setCurrentIndex(i);
-  // };
-
   if (!len) return null;
 
   return (
@@ -116,7 +109,7 @@ const ServiceGrid = () => {
       </div>
 
       <div className="relative mx-auto max-w-7xl h-[68vh] sm:h-[520px]">
-        {/* DESKTOP/TABLET: 5 slot + oklar */}
+        {/* DESKTOP/TABLET: 5 slot + oklar (animasyonlar AYNEN duruyor) */}
         <div className="hidden sm:block relative w-full h-full">
           {/* Sol ok */}
           <button
@@ -172,7 +165,7 @@ const ServiceGrid = () => {
           </button>
         </div>
 
-        {/* MOBİL: tek kart, full genişlik, scroll-snap + dots */}
+        {/* MOBİL: tek kart, full genişlik, scroll-snap (ANİMASYON YOK) */}
         <div
           ref={scrollRef}
           className="sm:hidden relative w-full h-full overflow-x-auto no-scrollbar snap-x snap-mandatory"
@@ -195,24 +188,38 @@ const ServiceGrid = () => {
             ))}
           </div>
         </div>
-        <motion.div
-          initial={{ x: 100, opacity: 0 }}
-          whileInView={{ x: 0, opacity: 1 }}
-          viewport={{ once: false, amount: 0.5 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          whileHover={{ scale: 1.05 }}
-          className="absolute bottom-0 right-4 sm:bottom-[12px] sm:right-6 z-[45]"
-        >
-          <a
-            href="/services"
-            className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
+
+        {/* Alttaki buton: DESKTOP'ta animasyonlu, MOBİLDE animasyonsuz */}
+        {isMobile ? (
+          <div className="absolute bottom-0 right-4 sm:bottom-[12px] sm:right-6 z-[45]">
+            <a
+              href="/services"
+              className="flex items-center gap-2 text-sm text-white bg-quaternaryColor px-4 py-2 rounded-full"
+            >
+              Tüm Hizmetleri Gör
+              <ChevronRight size={16} />
+            </a>
+          </div>
+        ) : (
+          <motion.div
+            initial={{ x: 100, opacity: 0 }}
+            whileInView={{ x: 0, opacity: 1 }}
+            viewport={{ once: false, amount: 0.5 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            whileHover={{ scale: 1.05 }}
+            className="absolute bottom-0 right-4 sm:bottom-[12px] sm:right-6 z-[45]"
+          >
+            <a
+              href="/services"
+              className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
                px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
                transition-all duration-300"
-          >
-            Tüm Hizmetleri Gör
-            <ChevronRight size={16} />
-          </a>
-        </motion.div>
+            >
+              Tüm Hizmetleri Gör
+              <ChevronRight size={16} />
+            </a>
+          </motion.div>
+        )}
       </div>
     </section>
   );
