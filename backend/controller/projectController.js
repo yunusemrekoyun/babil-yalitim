@@ -231,6 +231,69 @@ exports.updateProject = async (req, res) => {
   }
 };
 
+exports.getProjectCovers = async (req, res) => {
+  try {
+    // Sadece gerekli alanları çek (performans)
+    const items = await Project.find(
+      {},
+      {
+        _id: 1,
+        title: 1,
+        // cover detayları
+        "cover.url": 1,
+        "cover.resourceType": 1,
+        "cover.publicId": 1,
+        // images sadece ilkini alalım
+        images: { $slice: 1 },
+        // video detayları
+        "video.publicId": 1,
+        "video.url": 1,
+      }
+    )
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const mapped = items.map((p) => {
+      let mobileCoverUrl = null;
+
+      // 1) cover image ise direkt onu kullan
+      if (p?.cover?.resourceType === "image" && p.cover.url) {
+        mobileCoverUrl = p.cover.url;
+      }
+
+      // 2) değilse images[0] varsa onu kullan
+      if (!mobileCoverUrl) {
+        const firstImg =
+          Array.isArray(p.images) && p.images.length ? p.images[0] : null;
+        if (firstImg?.url) {
+          mobileCoverUrl = firstImg.url;
+        }
+      }
+
+      // 3) hâlâ yoksa video posteri üret
+      if (!mobileCoverUrl && p?.video?.publicId) {
+        // Cloudinary: video’dan jpg poster
+        // format: 'jpg' + start_offset '0' (ilk kare)
+        mobileCoverUrl = cloudinary.url(p.video.publicId, {
+          resource_type: "video",
+          format: "jpg",
+          secure: true,
+          transformation: [{ quality: "auto" }, { start_offset: "0" }],
+        });
+      }
+
+      return {
+        _id: p._id,
+        title: p.title,
+        mobileCoverUrl, // <-- sadece mobilde bunu kullanacağız
+      };
+    });
+
+    res.json(mapped);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 /* ---------- DELETE ---------- */
 exports.deleteProject = async (req, res) => {
   try {

@@ -1,24 +1,68 @@
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
 import { Link } from "react-router-dom";
 
-const ProjectGridItem = ({ project, index }) => {
+// Aynı projeyi birden çok kez loglamamak için
+const missingLogSet = new Set();
+
+const ProjectGridItem = ({ project, index, isMobile }) => {
   const videoRef = useRef(null);
-  const isMobile = window.innerWidth < 640; // sm altı
 
-  const coverImage = project?.cover?.url || "";
-  const videoUrl = project?.video?.url || null;
+  /* -------------------- MOBİL: SADECE backend'in verdiği mobileCoverUrl -------------------- */
+  if (isMobile) {
+    const mobileSrc = project?.mobileCoverUrl || "";
 
-  useEffect(() => {
-    if (isMobile && videoUrl && videoRef.current) {
-      try {
-        videoRef.current.play();
-      } catch {
-        console.error("Error playing video");
+    if (!mobileSrc) {
+      // Aynı proje için sadece 1 kez logla
+      const key = project?._id || project?.id || JSON.stringify(project);
+      if (!missingLogSet.has(key)) {
+        console.error(
+          "[PGI mobile] missing mobileCoverUrl for project:",
+          project
+        );
+        missingLogSet.add(key);
       }
+      return null; // placeholder yok, hiçbir şey render etme
     }
-  }, [isMobile, videoUrl]);
+
+    return (
+      <div className="group relative overflow-hidden rounded-xl text-white cursor-pointer h-full">
+        <Link to={`/project-detail/${project._id}`} className="block h-full">
+          <div className="absolute inset-0">
+            <img
+              src={mobileSrc}
+              alt={project?.title || "Proje"}
+              className="absolute inset-0 w-full h-full object-cover bg-gray-200"
+              loading="lazy"
+              decoding="async"
+              onError={(e) => {
+                console.error(
+                  "[PGI mobile] image load ERROR",
+                  { id: project?._id, title: project?.title },
+                  "src:",
+                  e.currentTarget?.src
+                );
+              }}
+            />
+          </div>
+
+          <div className="absolute inset-0 z-10 bg-black/35" />
+          <div className="absolute left-4 bottom-4 z-20">
+            <h3 className="text-lg md:text-xl font-semibold">
+              {project.title}
+            </h3>
+          </div>
+
+          <span className="invisible block pb-[56%]" />
+        </Link>
+      </div>
+    );
+  }
+
+  /* -------------------- DESKTOP: MEVCUT DAVRANIŞ (DEĞİŞMEDİ) -------------------- */
+  const coverImage = project?.cover?.url || "";
+  const videoUrl = project?.video?.url || "";
 
   return (
     <motion.div
@@ -35,27 +79,26 @@ const ProjectGridItem = ({ project, index }) => {
         },
       }}
       onMouseEnter={() => {
-        if (!isMobile && videoUrl && videoRef.current) {
+        if (videoUrl && videoRef.current) {
           try {
             videoRef.current.currentTime = 0;
             videoRef.current.play();
-          } catch {
-            console.error("Error playing video");
+          } catch (err) {
+            console.error("[PGI desktop] video play error:", err);
           }
         }
       }}
       onMouseLeave={() => {
-        if (!isMobile && videoUrl && videoRef.current) {
+        if (videoUrl && videoRef.current) {
           try {
             videoRef.current.pause();
-          } catch {
-            console.error("Error pausing video");
+          } catch (err) {
+            console.error("[PGI desktop] video pause error:", err);
           }
         }
       }}
     >
       <Link to={`/project-detail/${project._id}`} className="block h-full">
-        {/* MEDYA */}
         <div className="absolute inset-0">
           {videoUrl ? (
             <video
@@ -65,6 +108,14 @@ const ProjectGridItem = ({ project, index }) => {
               loop
               playsInline
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              onError={(e) => {
+                console.error(
+                  "[PGI desktop] video load ERROR",
+                  { id: project?._id, title: project?.title },
+                  "src:",
+                  e.currentTarget?.currentSrc || e.currentTarget?.src
+                );
+              }}
             />
           ) : (
             <img
@@ -72,35 +123,52 @@ const ProjectGridItem = ({ project, index }) => {
               alt={project.title}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               loading="lazy"
+              decoding="async"
+              onError={(e) => {
+                console.error(
+                  "[PGI desktop] image load ERROR",
+                  { id: project?._id, title: project?.title },
+                  "src:",
+                  e.currentTarget?.src
+                );
+              }}
             />
           )}
         </div>
 
-        {/* OVERLAY */}
         <div className="absolute inset-0 z-10 bg-black/35 transition-opacity duration-300 group-hover:opacity-60" />
-
-        {/* BAŞLIK */}
         <div className="absolute left-4 bottom-4 z-20">
           <h3 className="text-lg md:text-xl font-semibold transition-transform duration-300 group-hover:-translate-y-1.5">
             {project.title}
           </h3>
         </div>
 
-        {/* Spacer */}
         <span className="invisible block pb-[56%]" />
       </Link>
     </motion.div>
   );
 };
 
+// project, iki farklı veri şekline sahip olabilir: (mobil) veya (desktop)
 ProjectGridItem.propTypes = {
-  project: PropTypes.shape({
-    _id: PropTypes.string,
-    cover: PropTypes.object,
-    video: PropTypes.object,
-    title: PropTypes.string,
-  }).isRequired,
+  project: PropTypes.oneOfType([
+    // MOBİL: /projects/covers cevabı
+    PropTypes.shape({
+      _id: PropTypes.string,
+      title: PropTypes.string,
+      mobileCoverUrl: PropTypes.string, // mobilde beklenen alan
+    }),
+    // DESKTOP: /projects cevabı
+    PropTypes.shape({
+      _id: PropTypes.string,
+      title: PropTypes.string,
+      cover: PropTypes.object,
+      video: PropTypes.object,
+      images: PropTypes.array,
+    }),
+  ]).isRequired,
   index: PropTypes.number.isRequired,
+  isMobile: PropTypes.bool.isRequired,
 };
 
 export default ProjectGridItem;
