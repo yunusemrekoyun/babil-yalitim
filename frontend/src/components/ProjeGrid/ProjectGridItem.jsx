@@ -15,6 +15,7 @@ const ProjectGridItem = ({ project, index, isMobile }) => {
 
     if (!mobileSrc) {
       // Aynı proje için sadece 1 kez logla
+      // eslint-disable-next-line react/prop-types
       const key = project?._id || project?.id || JSON.stringify(project);
       if (!missingLogSet.has(key)) {
         console.error(
