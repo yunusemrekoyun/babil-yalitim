@@ -1,9 +1,19 @@
-// frontend/src/admin/pages/AddJournal.jsx
+// src/admin/pages/journal/AddJournal.jsx
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import JournalForm from "../../components/JournalForm.jsx";
 import ToastAlert from "../../components/ToastAlert";
 import api from "../../../api.js";
+
+// Global loader helper'larını LoadingToast'tan al
+import {
+  mountGlobalLoadingToast,
+  showGlobalLoading,
+  hideGlobalLoading,
+} from "../../components/LoadingToast";
+
+// Modül yüklenirken bir kez global loader'ı body'ye tak
+mountGlobalLoadingToast();
 
 const AddJournal = () => {
   const navigate = useNavigate();
@@ -15,6 +25,9 @@ const AddJournal = () => {
 
   const handleSubmit = async (fd) => {
     try {
+      // Global mini loader’ı aç
+      showGlobalLoading("Kaydediliyor…");
+
       // FormData: Content-Type set etme!
       await api.post("/journals", fd);
       showToast("Haber eklendi", "success");
@@ -22,6 +35,9 @@ const AddJournal = () => {
     } catch (err) {
       console.error("POST /journals error:", err?.response?.data || err);
       showToast(err?.response?.data?.message || "Haber eklenemedi.", "error");
+    } finally {
+      // Global mini loader’ı kapat
+      hideGlobalLoading();
     }
   };
 

@@ -24,7 +24,40 @@ const fmtDate = (d) => {
   if (Number.isNaN(x.getTime())) return "";
   return x.toLocaleDateString("tr-TR");
 };
+// Detay rotaları önce, liste rotaları sonra (sıra ÖNEMLİ)
+const TR_PATH_MAP = [
+  { test: /^\/$/, label: "Ana Sayfa" },
+  { test: /^\/home(?:\/|$)/i, label: "Ana Sayfa" },
 
+  // --- Detay sayfaları ---
+  { test: /^\/project[-/]detail(?:\/|$)/i, label: "Proje Detayı" },
+  { test: /^\/projects?\/[^/]+(?:\/|$)/i, label: "Proje Detayı" },
+
+  { test: /^\/blog[-/]detail(?:\/|$)/i, label: "Blog Detayı" },
+  { test: /^\/blog\/[^/]+(?:\/|$)/i, label: "Blog Detayı" },
+
+  { test: /^\/journal[-/]detail(?:\/|$)/i, label: "Haber Detayı" },
+  { test: /^\/journals?\/[^/]+(?:\/|$)/i, label: "Haber Detayı" },
+
+  // (İstersen)
+  { test: /^\/service[-/]detail(?:\/|$)/i, label: "Hizmet Detayı" },
+  { test: /^\/services?\/[^/]+(?:\/|$)/i, label: "Hizmet Detayı" },
+
+  // --- Liste/ana rotalar ---
+  { test: /^\/projects?(?:\/|$)/i, label: "Projeler" },
+  { test: /^\/blog(?:\/|$)/i, label: "Blog" },
+  { test: /^\/journals?(?:\/|$)/i, label: "Haberler" },
+  { test: /^\/services?(?:\/|$)/i, label: "Hizmetler" },
+  { test: /^\/contact(?:\/|$)/i, label: "İletişim" },
+  { test: /^\/about(?:\/|$)/i, label: "Hakkımızda" },
+];
+
+const trPathLabel = (path = "") => {
+  for (const { test, label } of TR_PATH_MAP) {
+    if (test.test(path)) return label;
+  }
+  return path || "-";
+};
 const toQuery = (filters) => {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => {
@@ -437,7 +470,9 @@ const TopPagesTable = ({ rows }) => {
         <tbody>
           {rows.map((r, i) => (
             <tr key={i} className="border-t">
-              <td className="py-2 pr-3 font-mono">{r.path}</td>
+              <td className="py-2 pr-3">
+                <span title={r.path}>{trPathLabel(r.path)}</span>
+              </td>
               <td className="py-2 pr-3">{r.count}</td>
             </tr>
           ))}
@@ -471,7 +506,9 @@ const RecentTable = ({ rows }) => {
               <td className="py-2 pr-3 whitespace-nowrap">
                 {fmtDate(r.createdAt)}
               </td>
-              <td className="py-2 pr-3 font-mono">{r.path}</td>
+              <td className="py-2 pr-3">
+                <span title={r.path}>{trPathLabel(r.path)}</span>
+              </td>
               <td className="py-2 pr-3">{r.device || "-"}</td>
               <td className="py-2 pr-3">{r.country || "-"}</td>
               <td className="py-2 pr-3">{Number(r.duration || 0)}</td>

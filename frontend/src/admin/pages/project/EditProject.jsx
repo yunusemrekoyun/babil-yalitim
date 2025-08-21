@@ -5,7 +5,17 @@ import ProjectForm from "../../components/ProjectForm";
 import api from "../../../api";
 import ToastAlert from "../../components/ToastAlert";
 
-const EditProject = () => {
+// Global loader helper'larını LoadingToast'tan al
+import {
+  mountGlobalLoadingToast,
+  showGlobalLoading,
+  hideGlobalLoading,
+} from "../../components/LoadingToast";
+
+// Modül yüklenirken bir kez global loader'ı body'ye tak
+mountGlobalLoadingToast();
+
+const EditProject = ({ onRequestClose }) => {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -23,12 +33,8 @@ const EditProject = () => {
         const { data } = await api.get(`/projects/${id}`);
         setInitialData(data);
       } catch (err) {
-
         console.error("GET /projects/:id error:", err?.response?.data || err);
-        showToast(
-          err?.response?.data?.message || "Proje yüklenemedi.",
-          "error"
-        );
+        showToast(err?.response?.data?.message || "Proje yüklenemedi.", "error");
       } finally {
         setLoading(false);
       }
@@ -38,14 +44,23 @@ const EditProject = () => {
 
   const handleSubmit = async (formData) => {
     try {
+      // Global mini loader’ı aç
+      showGlobalLoading("Güncelleniyor…");
+
+      // Eğer modal içindeyse, burada kapat
+      if (typeof onRequestClose === "function") {
+        try { onRequestClose(); } catch {}
+      }
+
       // Content-Type başlığını ELLE set etme!
       await api.put(`/projects/${id}`, formData);
       showToast("Proje güncellendi", "success");
       setTimeout(() => navigate("/admin/projects"), 300);
     } catch (err) {
-
       console.error("PUT /projects/:id error:", err?.response?.data || err);
       showToast(err?.response?.data?.message || "Güncellenemedi.", "error");
+    } finally {
+      hideGlobalLoading(); // Global mini loader’ı kapat
     }
   };
 

@@ -1,9 +1,19 @@
-// frontend/src/admin/pages/EditJournal.jsx
+// src/admin/pages/journal/EditJournal.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import JournalForm from "../../components/JournalForm.jsx";
 import ToastAlert from "../../components/ToastAlert";
 import api from "../../../api.js";
+
+// Global loader helper'larını LoadingToast'tan al
+import {
+  mountGlobalLoadingToast,
+  showGlobalLoading,
+  hideGlobalLoading,
+} from "../../components/LoadingToast";
+
+// Modül yüklenirken bir kez global loader'ı body'ye tak
+mountGlobalLoadingToast();
 
 const EditJournal = () => {
   const { id } = useParams();
@@ -35,18 +45,27 @@ const EditJournal = () => {
 
   const handleSubmit = async (fd) => {
     try {
+      // Global mini loader’ı aç
+      showGlobalLoading("Güncelleniyor…");
+
       await api.put(`/journals/${id}`, fd);
       showToast("Haber güncellendi", "success");
       setTimeout(() => navigate("/admin/journals"), 600);
     } catch (err) {
       console.error("PUT /journals/:id error:", err?.response?.data || err);
       showToast(err?.response?.data?.message || "Güncellenemedi.", "error");
+    } finally {
+      // Global mini loader’ı kapat
+      hideGlobalLoading();
     }
   };
 
   const handleRemoveAsset = async (publicId) => {
     if (!window.confirm("Bu medyayı silmek istiyor musunuz?")) return;
     try {
+      // Asset silerken de kısa süreli loader göstermek istersen:
+      showGlobalLoading("Siliniyor…");
+
       await api.delete(
         `/journals/${id}/assets/${encodeURIComponent(publicId)}`
       );
@@ -65,6 +84,8 @@ const EditJournal = () => {
     } catch (err) {
       console.error("DELETE asset error:", err?.response?.data || err);
       showToast(err?.response?.data?.message || "Medya silinemedi.", "error");
+    } finally {
+      hideGlobalLoading();
     }
   };
 

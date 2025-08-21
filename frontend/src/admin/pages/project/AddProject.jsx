@@ -4,7 +4,18 @@ import ProjectForm from "../../components/ProjectForm";
 import api from "../../../api";
 import ToastAlert from "../../components/ToastAlert";
 import { useState } from "react";
-const AddProject = () => {
+
+// Global loader helper'larını LoadingToast'tan al
+import {
+  mountGlobalLoadingToast,
+  showGlobalLoading,
+  hideGlobalLoading,
+} from "../../components/LoadingToast";
+
+// Modül yüklenirken bir kez global loader'ı body'ye tak
+mountGlobalLoadingToast();
+
+const AddProject = ({ onRequestClose }) => {
   const navigate = useNavigate();
 
   // toast state
@@ -14,14 +25,23 @@ const AddProject = () => {
 
   const handleSubmit = async (formData) => {
     try {
+      // Global mini loader’ı aç
+      showGlobalLoading("Kaydediliyor…");
+
+      // Eğer modal içindeyse, burada kapat (unmount olsa da loader kalır)
+      if (typeof onRequestClose === "function") {
+        try { onRequestClose(); } catch {}
+      }
+
       // Content-Type başlığını ELLE set etme!
       await api.post("/projects", formData);
       showToast("Proje eklendi", "success");
       setTimeout(() => navigate("/admin/projects"), 300);
     } catch (err) {
-
       console.error("Create /projects error:", err?.response?.data || err);
       showToast(err?.response?.data?.message || "Proje eklenemedi.", "error");
+    } finally {
+      hideGlobalLoading(); // Global mini loader’ı kapat
     }
   };
 

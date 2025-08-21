@@ -1,34 +1,57 @@
-// frontend/src/admin/pages/AddBlog.jsx
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 import BlogForm from "../../components/BlogForm";
-import ToastAlert from "../../components/ToastAlert";
 import api from "../../../api";
+import ToastAlert from "../../components/ToastAlert";
 
-const AddBlog = () => {
+// Global loader'ı mount et ve helper'ları al (YENİ DOSYA YOK)
+import {
+  mountGlobalLoadingToast,
+  showGlobalLoading,
+  hideGlobalLoading,
+} from "../../components/LoadingToast";
+
+// Modül yüklenirken bir kez global loader'ı body'ye takar
+mountGlobalLoadingToast();
+
+function AddBlog({ onRequestClose }) {
   const navigate = useNavigate();
-
-  // Toast state
   const [toast, setToast] = useState(null);
+
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
 
   const handleSubmit = async (fd) => {
     try {
-      await api.post("/blogs", fd); // FormData — Content-Type elle set etme
-      showToast("Blog eklendi", "success");
-      // Toast görünsün diye ufak gecikme
-      setTimeout(() => navigate("/admin/blogs"), 600);
+      // Global mini loader’ı aç
+      showGlobalLoading("Kaydediliyor…");
+
+      // Modal kullanıyorsan burada kapat (component unmount olsa da loader kalır)
+      if (typeof onRequestClose === "function") {
+        try {
+          onRequestClose();
+        } catch {}
+      }
+
+      await api.post("/blogs", fd);
+      showToast("Blog eklendi.", "success");
+      navigate("/admin/blogs");
     } catch (e) {
       console.error("POST /blogs error:", e?.response?.data || e);
       showToast(e?.response?.data?.message || "Blog eklenemedi.", "error");
+    } finally {
+      hideGlobalLoading();
     }
   };
+
+  // Modalı submit içinde kapattığımız için burada tetiklemiyoruz
+  const handleStartSubmit = undefined;
 
   return (
     <div className="p-4 md:p-6">
       <h2 className="mb-4 text-2xl font-semibold">Yeni Blog</h2>
-      <BlogForm onSubmit={handleSubmit} />
+
+      <BlogForm onSubmit={handleSubmit} onStartSubmit={handleStartSubmit} />
 
       {toast && (
         <ToastAlert
@@ -40,6 +63,6 @@ const AddBlog = () => {
       )}
     </div>
   );
-};
+}
 
 export default AddBlog;
