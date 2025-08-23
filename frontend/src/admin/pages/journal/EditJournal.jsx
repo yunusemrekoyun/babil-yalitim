@@ -5,14 +5,12 @@ import JournalForm from "../../components/JournalForm.jsx";
 import ToastAlert from "../../components/ToastAlert";
 import api from "../../../api.js";
 
-// Global loader helper'larını LoadingToast'tan al
 import {
   mountGlobalLoadingToast,
   showGlobalLoading,
   hideGlobalLoading,
 } from "../../components/LoadingToast";
 
-// Modül yüklenirken bir kez global loader'ı body'ye tak
 mountGlobalLoadingToast();
 
 const EditJournal = () => {
@@ -21,7 +19,6 @@ const EditJournal = () => {
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Toast state
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
@@ -45,9 +42,7 @@ const EditJournal = () => {
 
   const handleSubmit = async (fd) => {
     try {
-      // Global mini loader’ı aç
       showGlobalLoading("Güncelleniyor…");
-
       await api.put(`/journals/${id}`, fd);
       showToast("Haber güncellendi", "success");
       setTimeout(() => navigate("/admin/journals"), 600);
@@ -55,7 +50,6 @@ const EditJournal = () => {
       console.error("PUT /journals/:id error:", err?.response?.data || err);
       showToast(err?.response?.data?.message || "Güncellenemedi.", "error");
     } finally {
-      // Global mini loader’ı kapat
       hideGlobalLoading();
     }
   };
@@ -63,21 +57,14 @@ const EditJournal = () => {
   const handleRemoveAsset = async (publicId) => {
     if (!window.confirm("Bu medyayı silmek istiyor musunuz?")) return;
     try {
-      // Asset silerken de kısa süreli loader göstermek istersen:
       showGlobalLoading("Siliniyor…");
-
-      await api.delete(
-        `/journals/${id}/assets/${encodeURIComponent(publicId)}`
-      );
+      await api.delete(`/journals/${id}/assets/${encodeURIComponent(publicId)}`);
       showToast("Medya silindi", "success");
-      // local state güncelle
       setInitialData((prev) =>
         prev
           ? {
               ...prev,
-              assets: (prev.assets || []).filter(
-                (a) => a.publicId !== publicId
-              ),
+              assets: (prev.assets || []).filter((a) => a.publicId !== publicId),
             }
           : prev
       );
@@ -90,26 +77,28 @@ const EditJournal = () => {
   };
 
   if (loading) return <div className="p-4">Yükleniyor…</div>;
-  if (!initialData)
-    return <div className="p-4 text-red-600">Haber bulunamadı.</div>;
+  if (!initialData) return <div className="p-4 text-red-600">Haber bulunamadı.</div>;
 
   return (
-    <div className="p-4 md:p-6">
-      <h2 className="mb-4 text-2xl font-semibold">Haberi Düzenle</h2>
-      <JournalForm
-        initialData={initialData}
-        onSubmit={handleSubmit}
-        onRemoveAsset={handleRemoveAsset}
-      />
+    <div className="p-4 md:p-6 overflow-x-hidden">
+      <div className="mx-auto w-full max-w-[820px] px-2 sm:px-4">
+        <h2 className="mb-4 text-2xl font-semibold">Haberi Düzenle</h2>
 
-      {toast && (
-        <ToastAlert
-          msg={toast.msg}
-          type={toast.type}
-          duration={toast.duration}
-          onClose={() => setToast(null)}
+        <JournalForm
+          initialData={initialData}
+          onSubmit={handleSubmit}
+          onRemoveAsset={handleRemoveAsset}
         />
-      )}
+
+        {toast && (
+          <ToastAlert
+            msg={toast.msg}
+            type={toast.type}
+            duration={toast.duration}
+            onClose={() => setToast(null)}
+          />
+        )}
+      </div>
     </div>
   );
 };

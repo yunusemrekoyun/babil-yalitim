@@ -1,18 +1,24 @@
+// src/admin/pages/blog/EditBlog.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import BlogForm from "../../components/BlogForm";
 import api from "../../../api";
 import ToastAlert from "../../components/ToastAlert";
 
-// Global loader'ı mount et ve helper'ları al
 import {
   mountGlobalLoadingToast,
   showGlobalLoading,
   hideGlobalLoading,
 } from "../../components/LoadingToast";
 
-// Modül yüklenirken bir kez global loader'ı body'ye takar
-mountGlobalLoadingToast();
+function ensureGlobalLoaderMounted() {
+  if (typeof window !== "undefined" && !window.__GLT_MOUNTED__) {
+    try {
+      mountGlobalLoadingToast();
+      window.__GLT_MOUNTED__ = true;
+    } catch {}
+  }
+}
 
 function EditBlog({ onRequestClose }) {
   const { id } = useParams();
@@ -22,12 +28,15 @@ function EditBlog({ onRequestClose }) {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
+  useEffect(() => {
+    ensureGlobalLoaderMounted();
+  }, []);
+
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
 
   useEffect(() => {
     let ignore = false;
-
     (async () => {
       try {
         setLoading(true);
@@ -40,7 +49,6 @@ function EditBlog({ onRequestClose }) {
         if (!ignore) setLoading(false);
       }
     })();
-
     return () => {
       ignore = true;
     };
@@ -48,10 +56,8 @@ function EditBlog({ onRequestClose }) {
 
   const handleSubmit = async (fd) => {
     try {
-      // Global mini loader’ı aç
       showGlobalLoading("Güncelleniyor…");
 
-      // Modal kullanıyorsan burada kapat
       if (typeof onRequestClose === "function") {
         try {
           onRequestClose();
@@ -69,30 +75,25 @@ function EditBlog({ onRequestClose }) {
     }
   };
 
-  // Modalı submit içinde kapattığımız için burada tetiklemiyoruz
-  const handleStartSubmit = undefined;
-
   if (loading) return <div className="p-4">Yükleniyor…</div>;
   if (!initialData) return <div className="p-4">Kayıt bulunamadı.</div>;
 
   return (
-    <div className="p-4 md:p-6">
-      <h2 className="mb-4 text-2xl font-semibold">Blogu Düzenle</h2>
+    <div className="p-4 md:p-6 overflow-x-hidden">
+      <div className="mx-auto max-w-3xl px-3 sm:px-4 md:px-6">
+        <h2 className="mb-4 text-2xl font-semibold">Blogu Düzenle</h2>
 
-      <BlogForm
-        initialData={initialData}
-        onSubmit={handleSubmit}
-        onStartSubmit={handleStartSubmit}
-      />
+        <BlogForm initialData={initialData} onSubmit={handleSubmit} />
 
-      {toast && (
-        <ToastAlert
-          msg={toast.msg}
-          type={toast.type}
-          duration={toast.duration}
-          onClose={() => setToast(null)}
-        />
-      )}
+        {toast && (
+          <ToastAlert
+            msg={toast.msg}
+            type={toast.type}
+            duration={toast.duration}
+            onClose={() => setToast(null)}
+          />
+        )}
+      </div>
     </div>
   );
 }

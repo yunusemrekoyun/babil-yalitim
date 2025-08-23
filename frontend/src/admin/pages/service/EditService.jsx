@@ -4,15 +4,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import api from "../../../api";
 import ServiceForm from "../../components/ServiceForm";
 import ToastAlert from "../../components/ToastAlert";
-
-// Global loader helper'ları
 import {
   mountGlobalLoadingToast,
   showGlobalLoading,
   hideGlobalLoading,
 } from "../../components/LoadingToast";
 
-// Modül yüklenirken global loader'ı body'ye bir kez tak
 mountGlobalLoadingToast();
 
 const EditService = () => {
@@ -22,7 +19,6 @@ const EditService = () => {
   const [serviceData, setServiceData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // toast state
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
@@ -44,10 +40,7 @@ const EditService = () => {
 
   const handleSubmit = async (formData) => {
     try {
-      // Global mini loader’ı aç
       showGlobalLoading("Güncelleniyor…");
-
-      // Content-Type'ı ELLE set etme; interceptor halleder
       await api.put(`/services/${id}`, formData);
       showToast("Hizmet güncellendi", "success");
       navigate("/admin/services");
@@ -55,7 +48,6 @@ const EditService = () => {
       console.error("PUT /services/:id error:", err?.response?.data || err);
       showToast(err?.response?.data?.message || "Güncelleme başarısız.", "error");
     } finally {
-      // Global mini loader’ı kapat
       hideGlobalLoading();
     }
   };
@@ -64,9 +56,11 @@ const EditService = () => {
   if (!serviceData) return <p className="p-4 text-red-600">Hizmet bulunamadı.</p>;
 
   return (
-    <div className="p-4 md:p-6">
-      <h1 className="text-xl font-bold mb-6">Hizmet Düzenle</h1>
-      <ServiceForm initialData={serviceData} onSubmit={handleSubmit} />
+    <div className="p-4 md:p-6 overflow-x-hidden">
+      <div className="mx-auto w-full max-w-[820px] px-2 sm:px-4">
+        <h1 className="text-xl font-bold mb-6">Hizmet Düzenle</h1>
+        <ServiceForm initialData={serviceData} onSubmit={handleSubmit} />
+      </div>
 
       {toast && (
         <ToastAlert

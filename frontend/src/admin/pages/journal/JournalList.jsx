@@ -1,9 +1,16 @@
-// frontend/src/admin/pages/JournalList.jsx
+// src/admin/pages/journal/JournalList.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../../api.js";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmModal from "../../components/ConfirmDialog.jsx";
+
+const clamp2 = {
+  display: "-webkit-box",
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: "vertical",
+  overflow: "hidden",
+};
 
 const JournalList = () => {
   const [journals, setJournals] = useState([]);
@@ -11,12 +18,10 @@ const JournalList = () => {
   const [q, setQ] = useState("");
   const [err, setErr] = useState("");
 
-  // Toast state
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
 
-  // Confirm state
   const [confirm, setConfirm] = useState({
     open: false,
     title: "",
@@ -43,13 +48,10 @@ const JournalList = () => {
     }
   };
 
-  useEffect(
-    () => {
-      fetchAll();
-    },
+  useEffect(() => {
+    fetchAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
+  }, []);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -84,95 +86,157 @@ const JournalList = () => {
   if (err) return <p className="p-4 text-red-600">{err}</p>;
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="p-4 md:p-6 overflow-x-hidden">
       {/* başlık + aksiyonlar */}
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <h2 className="text-2xl font-semibold">Haberler</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full gap-2 md:w-auto">
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Ara (başlık/içerik)"
-            className="w-60 rounded-md border px-3 py-2 text-sm"
+            className="min-w-0 w-full sm:w-60 rounded-md border px-3 py-2 text-sm"
           />
           <Link
             to="/admin/journals/add"
-            className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-white text-sm hover:bg-indigo-700"
+            className="inline-flex shrink-0 items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-white text-sm hover:bg-indigo-700"
           >
             + Yeni Haber
           </Link>
         </div>
       </div>
 
-      {/* grid/table */}
       {filtered.length === 0 ? (
         <div className="rounded-md border p-6 text-center text-gray-500">
           Kayıt bulunamadı.
         </div>
       ) : (
-        <table className="w-full border-collapse overflow-hidden rounded-lg border border-gray-200 text-sm">
-          <thead>
-            <tr className="bg-gray-50 text-left">
-              <th className="border p-2">Kapak</th>
-              <th className="border p-2">Başlık</th>
-              <th className="border p-2">Tarih</th>
-              <th className="border p-2">Beğeni</th>
-              <th className="border p-2 w-40">İşlemler</th>
-            </tr>
-          </thead>
-          <tbody>
+        <>
+          {/* Mobil: kart görünümü */}
+          <div className="grid gap-3 sm:hidden">
             {filtered.map((j) => (
-              <tr key={j._id} className="align-top">
-                <td className="border p-2">
+              <div key={j._id} className="rounded-xl border bg-white p-3">
+                <div className="flex items-start gap-3">
                   {j.cover?.url ? (
                     <img
                       src={j.cover.url}
                       alt={j.title}
-                      className="h-16 w-24 object-cover rounded-md"
+                      className="h-16 w-24 object-cover rounded-md border shrink-0"
                     />
                   ) : (
-                    "-"
+                    <div className="h-16 w-24 rounded-md border bg-gray-50 grid place-items-center text-xs text-gray-400 shrink-0">
+                      Kapak yok
+                    </div>
                   )}
-                </td>
-                <td className="border p-2">
-                  <div className="font-medium">{j.title}</div>
-                  <div className="mt-1 line-clamp-2 text-gray-500 max-w-[40ch]">
-                    {j.content}
-                  </div>
-                </td>
-                <td className="border p-2">
-                  {j.createdAt
-                    ? new Date(j.createdAt).toLocaleDateString("tr-TR", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })
-                    : "-"}
-                </td>
-                <td className="border p-2">{j.likesCount ?? 0}</td>
-                <td className="border p-2">
-                  <div className="flex gap-2">
-                    <Link
-                      to={`/admin/journals/edit/${j._id}`}
-                      className="inline-flex items-center rounded-md bg-yellow-500 px-3 py-1.5 text-white hover:bg-yellow-600"
+
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className="font-medium text-gray-900 leading-snug break-words"
+                      style={clamp2}
+                      title={j.title}
                     >
-                      Düzenle
-                    </Link>
-                    <button
-                      onClick={() => handleDeleteClick(j._id, j.title)}
-                      className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
+                      {j.title}
+                    </div>
+                    <div
+                      className="mt-1 text-xs text-gray-500 break-words"
+                      style={clamp2}
+                      title={j.content}
                     >
-                      Sil
-                    </button>
+                      {j.content}
+                    </div>
+                    <div className="mt-1 text-[11px] text-gray-500">
+                      {j.createdAt
+                        ? new Date(j.createdAt).toLocaleDateString("tr-TR")
+                        : "-"}{" "}
+                      • Beğeni: {j.likesCount ?? 0}
+                    </div>
                   </div>
-                </td>
-              </tr>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    to={`/admin/journals/edit/${j._id}`}
+                    className="inline-flex items-center rounded-md bg-yellow-500 px-3 py-1.5 text-white hover:bg-yellow-600 text-xs"
+                  >
+                    Düzenle
+                  </Link>
+                  <button
+                    onClick={() => handleDeleteClick(j._id, j.title)}
+                    className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700 text-xs"
+                  >
+                    Sil
+                  </button>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+
+          {/* ≥SM: tablo (kendi içinde kaydırmalı) */}
+          <div className="-mx-4 sm:mx-0 overflow-x-auto hidden sm:block">
+            <table className="min-w-[900px] w-full border-collapse overflow-hidden rounded-lg border border-gray-200 text-sm">
+              <thead>
+                <tr className="bg-gray-50 text-left">
+                  <th className="border p-2">Kapak</th>
+                  <th className="border p-2">Başlık</th>
+                  <th className="border p-2">Tarih</th>
+                  <th className="border p-2">Beğeni</th>
+                  <th className="border p-2 w-40">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((j) => (
+                  <tr key={j._id} className="align-top">
+                    <td className="border p-2">
+                      {j.cover?.url ? (
+                        <img
+                          src={j.cover.url}
+                          alt={j.title}
+                          className="h-16 w-24 object-cover rounded-md"
+                        />
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="border p-2">
+                      <div className="font-medium">{j.title}</div>
+                      <div className="mt-1 text-gray-500 max-w-[40ch] line-clamp-2">
+                        {j.content}
+                      </div>
+                    </td>
+                    <td className="border p-2 whitespace-nowrap">
+                      {j.createdAt
+                        ? new Date(j.createdAt).toLocaleDateString("tr-TR", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        : "-"}
+                    </td>
+                    <td className="border p-2">{j.likesCount ?? 0}</td>
+                    <td className="border p-2">
+                      <div className="flex gap-2">
+                        <Link
+                          to={`/admin/journals/edit/${j._id}`}
+                          className="inline-flex items-center rounded-md bg-yellow-500 px-3 py-1.5 text-white hover:bg-yellow-600"
+                        >
+                          Düzenle
+                        </Link>
+                        <button
+                          onClick={() => handleDeleteClick(j._id, j.title)}
+                          className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
+                        >
+                          Sil
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
-      {/* Confirm & Toast */}
       <ConfirmModal
         open={confirm.open}
         title={confirm.title}

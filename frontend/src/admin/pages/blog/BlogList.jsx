@@ -1,8 +1,17 @@
+// src/admin/pages/blog/BlogList.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import api from "../../../api";
+
+// 2 satırlık çok satır ellipsis (Tailwind plugin gerektirmez)
+const clamp2 = {
+  display: "-webkit-box",
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: "vertical",
+  overflow: "hidden",
+};
 
 const BlogList = () => {
   const [blogs, setBlogs] = useState([]);
@@ -70,14 +79,10 @@ const BlogList = () => {
       setBlogs((prev) => prev.filter((b) => b._id !== id));
     } catch (e) {
       console.error("DELETE /blogs/:id error:", e?.response?.data || e);
-      showToast(
-        e?.response?.data?.message || "Silme işlemi başarısız.",
-        "error"
-      );
+      showToast(e?.response?.data?.message || "Silme işlemi başarısız.", "error");
     }
   };
 
-  // Confirm "Vazgeç"
   const cancelDelete = () => {
     setConfirmOpen(false);
     setConfirmTargetId(null);
@@ -87,19 +92,21 @@ const BlogList = () => {
   if (err) return <div className="p-6 text-red-600">{err}</div>;
 
   return (
-    <div className="p-4 md:p-6">
+    // overflow-x-hidden: olası 1-2px taşmaları kes
+    <div className="p-4 md:p-6 overflow-x-hidden">
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <h2 className="text-2xl font-semibold">Bloglar</h2>
-        <div className="flex gap-2">
+
+        <div className="flex w-full gap-2 md:w-auto">
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Ara (başlık/içerik/etiket)"
-            className="w-full sm:w-72 rounded-md border px-3 py-2 text-sm"
+            className="min-w-0 w-full sm:w-72 rounded-md border px-3 py-2 text-sm"
           />
           <Link
             to="/admin/blogs/add"
-            className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-white text-sm hover:bg-indigo-700"
+            className="inline-flex shrink-0 items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-white text-sm hover:bg-indigo-700"
           >
             + Yeni Blog
           </Link>
@@ -111,81 +118,166 @@ const BlogList = () => {
           Kayıt bulunamadı.
         </div>
       ) : (
-        <table className="w-full border-collapse overflow-hidden rounded-lg border border-gray-200 text-sm">
-          <thead>
-            <tr className="bg-gray-50 text-left">
-              <th className="border p-2">Kapak</th>
-              <th className="border p-2">Başlık</th>
-              <th className="border p-2">Etiketler</th>
-              <th className="border p-2">Yorum</th>
-              <th className="border p-2">Tarih</th>
-              <th className="border p-2 w-52">İşlemler</th>
-            </tr>
-          </thead>
-          <tbody>
+        <>
+          {/* --- XS: Kart görünümü (scroll yok) --- */}
+          <div className="grid gap-3 sm:hidden">
             {filtered.map((b) => (
-              <tr key={b._id} className="align-top">
-                <td className="border p-2">
+              <div key={b._id} className="rounded-xl border bg-white p-3">
+                <div className="flex items-start gap-3">
                   {b.cover?.url ? (
                     <img
                       src={b.cover.url}
                       alt={b.title}
-                      className="h-16 w-24 rounded-md object-cover"
+                      className="h-16 w-24 rounded-md object-cover border shrink-0"
                     />
                   ) : (
-                    "-"
+                    <div className="h-16 w-24 rounded-md border bg-gray-50 grid place-items-center text-xs text-gray-400 shrink-0">
+                      Kapak yok
+                    </div>
                   )}
-                </td>
-                <td className="border p-2">
-                  <div className="font-medium">{b.title}</div>
-                </td>
-                <td className="border p-2">
-                  {(b.tags || []).slice(0, 3).map((t) => (
-                    <span
-                      key={t}
-                      className="mr-1 inline-block rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600"
+
+                  {/* min-w-0: içeriğin kırılıp sarmasına izin ver */}
+                  <div className="min-w-0 flex-1">
+                    {/* BAŞLIK: artık 'truncate' yok; 2 satıra kadar sarıyor */}
+                    <div
+                      className="font-medium text-gray-900 leading-snug break-words"
+                      style={clamp2}
+                      title={b.title}
                     >
-                      {t}
-                    </span>
-                  ))}
-                  {(b.tags || []).length > 3 && (
-                    <span className="text-[11px] text-gray-400">
-                      +{b.tags.length - 3}
-                    </span>
-                  )}
-                </td>
-                <td className="border p-2">
-                  {typeof b.commentsCount === "number" ? b.commentsCount : "-"}
-                </td>
-                <td className="border p-2">
-                  {new Date(b.createdAt).toLocaleDateString("tr-TR")}
-                </td>
-                <td className="border p-2">
-                  <div className="flex flex-wrap gap-2">
-                    <Link
-                      to={`/admin/blogs/edit/${b._id}`}
-                      className="inline-flex items-center rounded-md bg-yellow-500 px-3 py-1.5 text-white hover:bg-yellow-600"
-                    >
-                      Düzenle
-                    </Link>
-                    <Link
-                      to={`/admin/blogs/${b._id}/comments`}
-                      className="inline-flex items-center rounded-md bg-sky-600 px-3 py-1.5 text-white hover:bg-sky-700"
-                    >
-                      Yorumlar
-                    </Link>
-                    <button
-                      onClick={() => askDelete(b._id)}
-                      className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
-                    >
-                      Sil
-                    </button>
+                      {b.title}
+                    </div>
+
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {(b.tags || []).slice(0, 3).map((t) => (
+                        <span
+                          key={t}
+                          className="inline-block rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                      {(b.tags || []).length > 3 && (
+                        <span className="text-[11px] text-gray-400">
+                          +{b.tags.length - 3}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-1 text-[11px] text-gray-500">
+                      {new Date(b.createdAt).toLocaleDateString("tr-TR")} •{" "}
+                      Yorum:{" "}
+                      {typeof b.commentsCount === "number"
+                        ? b.commentsCount
+                        : "-"}
+                    </div>
                   </div>
-                </td>
-              </tr>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    to={`/admin/blogs/edit/${b._id}`}
+                    className="inline-flex items-center rounded-md bg-yellow-500 px-3 py-1.5 text-white hover:bg-yellow-600 text-xs"
+                  >
+                    Düzenle
+                  </Link>
+                  <Link
+                    to={`/admin/blogs/${b._id}/comments`}
+                    className="inline-flex items-center rounded-md bg-sky-600 px-3 py-1.5 text-white hover:bg-sky-700 text-xs"
+                  >
+                    Yorumlar
+                  </Link>
+                  <button
+                    onClick={() => askDelete(b._id)}
+                    className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700 text-xs"
+                  >
+                    Sil
+                  </button>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+
+          {/* --- SM ve üstü: Tablo (kendi içinde yatay kaydırmalı) --- */}
+          <div className="-mx-4 sm:mx-0 overflow-x-auto hidden sm:block">
+            <table className="min-w-[900px] w-full border-collapse overflow-hidden rounded-lg border border-gray-200 text-sm">
+              <thead>
+                <tr className="bg-gray-50 text-left">
+                  <th className="border p-2">Kapak</th>
+                  <th className="border p-2">Başlık</th>
+                  <th className="border p-2">Etiketler</th>
+                  <th className="border p-2">Yorum</th>
+                  <th className="border p-2">Tarih</th>
+                  <th className="border p-2 w-56">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((b) => (
+                  <tr key={b._id} className="align-top">
+                    <td className="border p-2">
+                      {b.cover?.url ? (
+                        <img
+                          src={b.cover.url}
+                          alt={b.title}
+                          className="h-16 w-24 rounded-md object-cover"
+                        />
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="border p-2">
+                      <div className="font-medium">{b.title}</div>
+                    </td>
+                    <td className="border p-2">
+                      {(b.tags || []).slice(0, 3).map((t) => (
+                        <span
+                          key={t}
+                          className="mr-1 inline-block rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                      {(b.tags || []).length > 3 && (
+                        <span className="text-[11px] text-gray-400">
+                          +{b.tags.length - 3}
+                        </span>
+                      )}
+                    </td>
+                    <td className="border p-2">
+                      {typeof b.commentsCount === "number"
+                        ? b.commentsCount
+                        : "-"}
+                    </td>
+                    <td className="border p-2 whitespace-nowrap">
+                      {new Date(b.createdAt).toLocaleDateString("tr-TR")}
+                    </td>
+                    <td className="border p-2">
+                      <div className="flex flex-wrap gap-2">
+                        <Link
+                          to={`/admin/blogs/edit/${b._id}`}
+                          className="inline-flex items-center rounded-md bg-yellow-500 px-3 py-1.5 text-white hover:bg-yellow-600"
+                        >
+                          Düzenle
+                        </Link>
+                        <Link
+                          to={`/admin/blogs/${b._id}/comments`}
+                          className="inline-flex items-center rounded-md bg-sky-600 px-3 py-1.5 text-white hover:bg-sky-700"
+                        >
+                          Yorumlar
+                        </Link>
+                        <button
+                          onClick={() => askDelete(b._id)}
+                          className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
+                        >
+                          Sil
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Toast */}

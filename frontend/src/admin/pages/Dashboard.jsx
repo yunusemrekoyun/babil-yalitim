@@ -1,3 +1,4 @@
+// src/admin/pages/Dashboard.jsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../../api";
 import PropTypes from "prop-types";
@@ -17,13 +18,14 @@ import {
   Cell,
 } from "recharts";
 
-/** ---------- Basit yardımcılar ---------- */
+/** ---------- Yardımcılar ---------- */
 const fmtDate = (d) => {
   if (!d) return "";
   const x = new Date(d);
   if (Number.isNaN(x.getTime())) return "";
   return x.toLocaleDateString("tr-TR");
 };
+
 // Detay rotaları önce, liste rotaları sonra (sıra ÖNEMLİ)
 const TR_PATH_MAP = [
   { test: /^\/$/, label: "Ana Sayfa" },
@@ -58,6 +60,7 @@ const trPathLabel = (path = "") => {
   }
   return path || "-";
 };
+
 const toQuery = (filters) => {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => {
@@ -66,14 +69,7 @@ const toQuery = (filters) => {
   return params.toString();
 };
 
-const PIE_COLORS = [
-  "#2563eb",
-  "#16a34a",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#06b6d4",
-];
+const PIE_COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
 
 /** ---------- Dashboard ---------- */
 const Dashboard = () => {
@@ -121,12 +117,8 @@ const Dashboard = () => {
         total: summaryRes.data?.total || 0,
         avgDuration: summaryRes.data?.avgDuration || 0,
         avgScroll: summaryRes.data?.avgScroll || 0,
-        bySection: Array.isArray(summaryRes.data?.bySection)
-          ? summaryRes.data.bySection
-          : [],
-        byDevice: Array.isArray(summaryRes.data?.byDevice)
-          ? summaryRes.data.byDevice
-          : [],
+        bySection: Array.isArray(summaryRes.data?.bySection) ? summaryRes.data.bySection : [],
+        byDevice: Array.isArray(summaryRes.data?.byDevice) ? summaryRes.data.byDevice : [],
       });
 
       setTopPages(Array.isArray(topRes.data) ? topRes.data : []);
@@ -159,21 +151,17 @@ const Dashboard = () => {
 
   // Pie chart dataları normalize
   const pieSectionData = useMemo(
-    () =>
-      summary.bySection.map((x) => ({
-        name: x._id || "Diğer",
-        value: x.count,
-      })),
+    () => summary.bySection.map((x) => ({ name: x._id || "Diğer", value: x.count })),
     [summary.bySection]
   );
   const pieDeviceData = useMemo(
-    () =>
-      summary.byDevice.map((x) => ({ name: x._id || "Diğer", value: x.count })),
+    () => summary.byDevice.map((x) => ({ name: x._id || "Diğer", value: x.count })),
     [summary.byDevice]
   );
 
   return (
-    <div className="p-6">
+    // overflow-x-hidden: olası 1-2px taşmaları kes
+    <div className="p-4 sm:p-6 overflow-x-hidden">
       <Header />
 
       {/* Filters */}
@@ -184,21 +172,9 @@ const Dashboard = () => {
         device={device}
         country={country}
         path={path}
-        onChange={{
-          setFrom,
-          setTo,
-          setSection,
-          setDevice,
-          setCountry,
-          setPath,
-        }}
+        onChange={{ setFrom, setTo, setSection, setDevice, setCountry, setPath }}
         onClear={() => {
-          setFrom("");
-          setTo("");
-          setSection("");
-          setDevice("");
-          setCountry("");
-          setPath("");
+          setFrom(""); setTo(""); setSection(""); setDevice(""); setCountry(""); setPath("");
         }}
       />
 
@@ -215,9 +191,7 @@ const Dashboard = () => {
             <StatCard title="Ortalama Scroll (%)" value={summary.avgScroll} />
             <StatCard
               title="Aktif Filtre"
-              value={
-                Object.values(filters).some(Boolean) ? "Filtrelenmiş" : "Yok"
-              }
+              value={Object.values(filters).some(Boolean) ? "Filtrelenmiş" : "Yok"}
               subtle
             />
           </div>
@@ -226,7 +200,7 @@ const Dashboard = () => {
           <div className="mt-6 grid gap-6 xl:grid-cols-3">
             {/* Zaman Serisi */}
             <Card title="Ziyaret Zaman Serisi" loading={loading}>
-              <div className="h-72">
+              <div className="h-72 overflow-hidden">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={series}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -249,7 +223,7 @@ const Dashboard = () => {
 
             {/* Section Pie */}
             <Card title="Bölüme Göre Dağılım" loading={loading}>
-              <div className="h-72">
+              <div className="h-72 overflow-hidden">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -258,12 +232,10 @@ const Dashboard = () => {
                       nameKey="name"
                       outerRadius={90}
                       label
+                      labelLine={false}
                     >
                       {pieSectionData.map((_, i) => (
-                        <Cell
-                          key={i}
-                          fill={PIE_COLORS[i % PIE_COLORS.length]}
-                        />
+                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -275,7 +247,7 @@ const Dashboard = () => {
 
             {/* Device Pie */}
             <Card title="Cihaza Göre Dağılım" loading={loading}>
-              <div className="h-72">
+              <div className="h-72 overflow-hidden">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -284,12 +256,10 @@ const Dashboard = () => {
                       nameKey="name"
                       outerRadius={90}
                       label
+                      labelLine={false}
                     >
                       {pieDeviceData.map((_, i) => (
-                        <Cell
-                          key={i}
-                          fill={PIE_COLORS[i % PIE_COLORS.length]}
-                        />
+                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -321,53 +291,30 @@ const Header = () => (
   <div className="mb-4">
     <h1 className="text-2xl md:text-3xl font-bold">Analytics Dashboard</h1>
     <p className="text-gray-600">
-      Ziyaret verilerini filtreleyin, trendleri ve en popüler sayfaları
-      inceleyin.
+      Ziyaret verilerini filtreleyin, trendleri ve en popüler sayfaları inceleyin.
     </p>
   </div>
 );
 
 /** ---------- FilterBar ---------- */
-const FilterBar = ({
-  from,
-  to,
-  section,
-  device,
-  country,
-  path,
-  onChange,
-  onClear,
-}) => {
+const FilterBar = ({ from, to, section, device, country, path, onChange, onClear }) => {
+  const inputCls = "min-w-0 rounded-md border px-3 py-2"; // min-w-0: shrink fix
   return (
     <div className="rounded-xl border bg-white p-4">
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-6">
         <div className="flex flex-col">
-          <label className="text-xs text-gray-500 mb-1">Başlangıç</label>
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => onChange.setFrom(e.target.value)}
-            className="rounded-md border px-3 py-2"
-          />
+          <label className="mb-1 text-xs text-gray-500">Başlangıç</label>
+          <input type="date" value={from} onChange={(e) => onChange.setFrom(e.target.value)} className={inputCls} />
         </div>
 
         <div className="flex flex-col">
-          <label className="text-xs text-gray-500 mb-1">Bitiş</label>
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => onChange.setTo(e.target.value)}
-            className="rounded-md border px-3 py-2"
-          />
+          <label className="mb-1 text-xs text-gray-500">Bitiş</label>
+          <input type="date" value={to} onChange={(e) => onChange.setTo(e.target.value)} className={inputCls} />
         </div>
 
         <div className="flex flex-col">
-          <label className="text-xs text-gray-500 mb-1">Bölüm</label>
-          <select
-            value={section}
-            onChange={(e) => onChange.setSection(e.target.value)}
-            className="rounded-md border px-3 py-2"
-          >
+          <label className="mb-1 text-xs text-gray-500">Bölüm</label>
+          <select value={section} onChange={(e) => onChange.setSection(e.target.value)} className={inputCls}>
             <option value="">Tümü</option>
             <option value="home">Ana Sayfa</option>
             <option value="blog">Blog</option>
@@ -379,12 +326,8 @@ const FilterBar = ({
         </div>
 
         <div className="flex flex-col">
-          <label className="text-xs text-gray-500 mb-1">Cihaz</label>
-          <select
-            value={device}
-            onChange={(e) => onChange.setDevice(e.target.value)}
-            className="rounded-md border px-3 py-2"
-          >
+          <label className="mb-1 text-xs text-gray-500">Cihaz</label>
+          <select value={device} onChange={(e) => onChange.setDevice(e.target.value)} className={inputCls}>
             <option value="">Tümü</option>
             <option value="desktop">Masaüstü</option>
             <option value="mobile">Mobil</option>
@@ -393,22 +336,22 @@ const FilterBar = ({
         </div>
 
         <div className="flex flex-col">
-          <label className="text-xs text-gray-500 mb-1">Ülke (ISO)</label>
+          <label className="mb-1 text-xs text-gray-500">Ülke (ISO)</label>
           <input
             value={country}
             onChange={(e) => onChange.setCountry(e.target.value.toUpperCase())}
             placeholder="Örn: TR"
-            className="rounded-md border px-3 py-2"
+            className={inputCls}
           />
         </div>
 
         <div className="flex flex-col">
-          <label className="text-xs text-gray-500 mb-1">Path</label>
+          <label className="mb-1 text-xs text-gray-500">Path</label>
           <input
             value={path}
             onChange={(e) => onChange.setPath(e.target.value)}
             placeholder="/blog veya /services"
-            className="rounded-md border px-3 py-2"
+            className={inputCls}
           />
         </div>
       </div>
@@ -430,24 +373,17 @@ const FilterBar = ({
 const StatCard = ({ title, value, subtle = false }) => (
   <div className="rounded-xl border bg-white p-4">
     <div className="text-xs text-gray-500">{title}</div>
-    <div
-      className={`mt-1 text-2xl font-bold ${
-        subtle ? "text-gray-700" : "text-blue-700"
-      }`}
-    >
-      {value}
-    </div>
+    <div className={`mt-1 text-2xl font-bold ${subtle ? "text-gray-700" : "text-blue-700"}`}>{value}</div>
   </div>
 );
 
 /** ---------- Card ---------- */
 const Card = ({ title, loading, children }) => (
-  <div className="rounded-xl border bg-white p-4">
+  // overflow-hidden: içerideki svg/label 1-2px taşarsa kes
+  <div className="rounded-xl border bg-white p-4 overflow-hidden">
     <div className="mb-3 flex items-center justify-between">
       <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-      {loading ? (
-        <span className="text-xs text-gray-400">Yükleniyor…</span>
-      ) : null}
+      {loading ? <span className="text-xs text-gray-400">Yükleniyor…</span> : null}
     </div>
     {children}
   </div>
@@ -455,12 +391,11 @@ const Card = ({ title, loading, children }) => (
 
 /** ---------- TopPagesTable ---------- */
 const TopPagesTable = ({ rows }) => {
-  if (!rows?.length) {
-    return <div className="text-sm text-gray-500">Kayıt yok.</div>;
-  }
+  if (!rows?.length) return <div className="text-sm text-gray-500">Kayıt yok.</div>;
   return (
-    <div className="overflow-auto">
-      <table className="min-w-full text-sm">
+    // -mx-4: container padding’ini nötrle; overflow-x sadece tabloda
+    <div className="-mx-4 sm:mx-0 overflow-x-auto">
+      <table className="min-w-[640px] w-full text-sm">
         <thead>
           <tr className="text-left text-gray-500">
             <th className="py-2 pr-3">Path</th>
@@ -484,12 +419,10 @@ const TopPagesTable = ({ rows }) => {
 
 /** ---------- RecentTable ---------- */
 const RecentTable = ({ rows }) => {
-  if (!rows?.length) {
-    return <div className="text-sm text-gray-500">Kayıt yok.</div>;
-  }
+  if (!rows?.length) return <div className="text-sm text-gray-500">Kayıt yok.</div>;
   return (
-    <div className="overflow-auto">
-      <table className="min-w-full text-sm">
+    <div className="-mx-4 sm:mx-0 overflow-x-auto">
+      <table className="min-w-[720px] w-full text-sm">
         <thead>
           <tr className="text-left text-gray-500">
             <th className="py-2 pr-3">Tarih</th>
@@ -503,9 +436,7 @@ const RecentTable = ({ rows }) => {
         <tbody>
           {rows.map((r) => (
             <tr key={r._id} className="border-t">
-              <td className="py-2 pr-3 whitespace-nowrap">
-                {fmtDate(r.createdAt)}
-              </td>
+              <td className="py-2 pr-3 whitespace-nowrap">{fmtDate(r.createdAt)}</td>
               <td className="py-2 pr-3">
                 <span title={r.path}>{trPathLabel(r.path)}</span>
               </td>
@@ -565,8 +496,7 @@ RecentTable.propTypes = {
   rows: PropTypes.arrayOf(
     PropTypes.shape({
       _id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      createdAt: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-        .isRequired,
+      createdAt: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
       path: PropTypes.string,
       device: PropTypes.string,
       country: PropTypes.string,
