@@ -14,23 +14,10 @@ const ProjectGrid = () => {
     const fetchData = async () => {
       try {
         const endpoint = isMobile ? "/projects/covers" : "/projects";
-        console.log("[ProjectGrid] fetching:", endpoint);
+
         const { data } = await api.get(endpoint);
 
         if (Array.isArray(data)) {
-          console.log(
-            `[ProjectGrid] fetched ${data.length} items from ${endpoint}`
-          );
-          // kısa özet log
-          console.table(
-            data.map((p) => ({
-              id: p?._id,
-              title: p?.title,
-              cover: p?.cover?.url,
-              video: p?.video?.url,
-              img0: p?.images?.[0]?.url,
-            }))
-          );
           setProjects(data);
         } else {
           console.error("[ProjectGrid] unexpected payload:", data);
