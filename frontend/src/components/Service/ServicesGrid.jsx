@@ -1,3 +1,4 @@
+// src/components/Service/ServiceGrid.jsx
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -55,7 +56,7 @@ const ServiceGrid = () => {
     return map[slot] || map.center;
   };
 
-  // yalnız merkezde video oynat (DESKTOP davranışı; mobilde de çalışsın ama animasyona dokunmuyoruz)
+  // yalnız merkezde video oynat
   const stopAllVideosExcept = (indexToPlay) => {
     Object.entries(videoRefs.current).forEach(([idxStr, vid]) => {
       const idx = Number(idxStr);
@@ -83,16 +84,23 @@ const ServiceGrid = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, len]);
 
-  // MOBİL: scroll ile index’i güncelle (animasyon yok)
+  // MOBİL: scroll ile index’i güncelle — slide genişliğini gerçek slide’dan ölç
   useEffect(() => {
     if (!isMobile) return;
     const el = scrollRef.current;
     if (!el) return;
+
+    const getSlideW = () => {
+      const slide = el.querySelector(".mobile-slide");
+      return slide ? slide.clientWidth : el.clientWidth;
+    };
+
     const onScroll = () => {
-      const slideW = el.clientWidth; // her kart w-full
-      const i = Math.round(el.scrollLeft / slideW);
+      const slideW = getSlideW();
+      const i = Math.round(el.scrollLeft / Math.max(1, slideW));
       setCurrentIndex((i + len) % len);
     };
+
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, [isMobile, len]);
@@ -165,16 +173,16 @@ const ServiceGrid = () => {
           </button>
         </div>
 
-        {/* MOBİL: tek kart, full genişlik, scroll-snap (ANİMASYON YOK) */}
+        {/* MOBİL: tek kart, full genişlik container; kart genişliği 88vw => yan karttan “peek” */}
         <div
           ref={scrollRef}
-          className="sm:hidden relative w-full h-full overflow-x-auto no-scrollbar snap-x snap-mandatory"
+          className="sm:hidden relative w-full h-full overflow-x-auto no-scrollbar snap-x snap-mandatory px-3"
         >
-          <div className="flex h-full">
+          <div className="flex h-full gap-3">
             {items.map((item, i) => (
               <div
                 key={item?._id || i}
-                className="w-full shrink-0 snap-center px-0 flex items-start justify-center pt-2"
+                className="mobile-slide w-[88vw] shrink-0 snap-center flex items-start justify-center pt-2"
               >
                 <ServiceGridItem
                   item={item}
@@ -189,9 +197,9 @@ const ServiceGrid = () => {
           </div>
         </div>
 
-        {/* Alttaki buton: DESKTOP'ta animasyonlu, MOBİLDE animasyonsuz */}
+        {/* Alttaki buton: DESKTOP'ta biraz DAHA AŞAĞIDA, MOBİLDE animasyonsuz */}
         {isMobile ? (
-          <div className="absolute bottom-0 right-4 sm:bottom-[12px] sm:right-6 z-[45]">
+          <div className="absolute bottom-0 right-4 sm:bottom-[-8px] sm:right-6 z-[45]">
             <a
               href="/services"
               className="flex items-center gap-2 text-sm text-white bg-quaternaryColor px-4 py-2 rounded-full"
@@ -207,7 +215,7 @@ const ServiceGrid = () => {
             viewport={{ once: false, amount: 0.5 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
             whileHover={{ scale: 1.05 }}
-            className="absolute bottom-0 right-4 sm:bottom-[12px] sm:right-6 z-[45]"
+            className="absolute sm:bottom-[-8px] right-4 sm:right-6 z-[45]"
           >
             <a
               href="/services"
