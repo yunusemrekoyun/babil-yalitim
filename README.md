@@ -1,7 +1,3 @@
-Tabii! Aşağıya doğrudan GitHub README.md formatında kullanabileceğin versiyonu hazırladım. Kopyalayıp README.md dosyana yapıştırabilirsin:
-
-# Tailwind React Babil
-
 A modern full-stack project built with **Node.js/Express + MongoDB** for the backend, and **Vite + React + Tailwind CSS** for the frontend.  
 Includes an **admin panel**, content management for **blogs, journals, projects, services**, visitor analytics, and media uploads via **Cloudinary**.
 
