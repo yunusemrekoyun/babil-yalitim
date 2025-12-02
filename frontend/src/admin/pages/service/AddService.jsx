@@ -5,12 +5,11 @@ import ServiceForm from "../../components/ServiceForm";
 import ToastAlert from "../../components/ToastAlert";
 import { useState } from "react";
 import {
-  mountGlobalLoadingToast,
-  showGlobalLoading,
-  hideGlobalLoading,
-} from "../../components/LoadingToast";
-
-mountGlobalLoadingToast();
+  createProgressTask,
+  updateProgressTask,
+  completeProgressTask,
+  failProgressTask,
+} from "../../components/ProgressCenter";
 
 const AddService = () => {
   const navigate = useNavigate();
@@ -19,24 +18,40 @@ const AddService = () => {
     setToast({ msg, type, duration });
 
   const handleSubmit = async (formData) => {
+    const taskId = createProgressTask("Hizmet yükleniyor");
     try {
-      showGlobalLoading("Kaydediliyor…");
-      await api.post("/services", formData);
+      await api.post("/services", formData, {
+        onUploadProgress: (evt) => {
+          if (evt.total) {
+            const pct = Math.round((evt.loaded / evt.total) * 100);
+            updateProgressTask(taskId, pct, "Dosyalar gönderiliyor…");
+          }
+        },
+      });
+      completeProgressTask(taskId, "Hizmet eklendi");
       showToast("Hizmet eklendi", "success");
       navigate("/admin/services");
     } catch (err) {
       console.error("POST /services error:", err?.response?.data || err);
+      failProgressTask(taskId, "Hizmet eklenemedi");
       showToast(err?.response?.data?.message || "Hizmet eklenemedi.", "error");
-    } finally {
-      hideGlobalLoading();
     }
   };
 
   return (
     <div className="p-4 md:p-6 overflow-x-hidden">
-      <div className="mx-auto w-full max-w-[820px] px-2 sm:px-4">
-        <h1 className="text-xl font-bold mb-6">Yeni Hizmet Ekle</h1>
-        <ServiceForm onSubmit={handleSubmit} />
+      <div className="mx-auto w-full max-w-[900px] px-2 sm:px-4">
+        <div className="glass-panel p-6 sm:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                Yeni kayıt
+              </p>
+              <h1 className="text-2xl font-bold text-slate-900">Hizmet Ekle</h1>
+            </div>
+          </div>
+          <ServiceForm onSubmit={handleSubmit} />
+        </div>
       </div>
 
       {toast && (

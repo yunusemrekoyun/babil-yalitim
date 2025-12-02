@@ -4,16 +4,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import ProjectForm from "../../components/ProjectForm";
 import api from "../../../api";
 import ToastAlert from "../../components/ToastAlert";
-
-// Global loader helper'larını LoadingToast'tan al
 import {
-  mountGlobalLoadingToast,
-  showGlobalLoading,
-  hideGlobalLoading,
-} from "../../components/LoadingToast";
-
-// Modül yüklenirken bir kez global loader'ı body'ye tak
-mountGlobalLoadingToast();
+  createProgressTask,
+  updateProgressTask,
+  completeProgressTask,
+  failProgressTask,
+} from "../../components/ProgressCenter";
 
 const EditProject = ({ onRequestClose }) => {
   const { id } = useParams();
@@ -43,24 +39,32 @@ const EditProject = ({ onRequestClose }) => {
   }, [id]);
 
   const handleSubmit = async (formData) => {
+    const taskId = createProgressTask("Proje güncelleniyor");
     try {
-      // Global mini loader’ı aç
-      showGlobalLoading("Güncelleniyor…");
-
-      // Eğer modal içindeyse, burada kapat
       if (typeof onRequestClose === "function") {
-        try { onRequestClose(); } catch {}
+        try {
+          onRequestClose();
+        } catch {}
       }
 
-      // Content-Type başlığını ELLE set etme!
-      await api.put(`/projects/${id}`, formData);
+      await api.put(`/projects/${id}`, formData, {
+        onUploadProgress: (evt) => {
+          if (evt.total) {
+            updateProgressTask(
+              taskId,
+              Math.round((evt.loaded / evt.total) * 100),
+              "Medya yükleniyor…"
+            );
+          }
+        },
+      });
+      completeProgressTask(taskId, "Proje güncellendi");
       showToast("Proje güncellendi", "success");
       setTimeout(() => navigate("/admin/projects"), 300);
     } catch (err) {
       console.error("PUT /projects/:id error:", err?.response?.data || err);
+      failProgressTask(taskId, "Proje güncellenemedi");
       showToast(err?.response?.data?.message || "Güncellenemedi.", "error");
-    } finally {
-      hideGlobalLoading(); // Global mini loader’ı kapat
     }
   };
 
@@ -70,8 +74,21 @@ const EditProject = ({ onRequestClose }) => {
 
   return (
     <div className="p-4 md:p-6">
-      <h2 className="mb-4 text-2xl font-semibold">Projeyi Düzenle</h2>
-      <ProjectForm initialData={initialData} onSubmit={handleSubmit} />
+      <div className="mx-auto max-w-4xl">
+        <div className="glass-panel p-6 sm:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                Güncelle
+              </p>
+              <h2 className="mb-2 text-2xl font-semibold text-slate-900">
+                Projeyi Düzenle
+              </h2>
+            </div>
+          </div>
+          <ProjectForm initialData={initialData} onSubmit={handleSubmit} />
+        </div>
+      </div>
 
       {toast && (
         <ToastAlert

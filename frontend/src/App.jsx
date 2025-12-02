@@ -16,6 +16,7 @@ import CookieConsent from "./components/Consent/CookieConsent.jsx";
 import AnalyticsTracker from "./components/Analytics/AnalyticsTracker.jsx";
 import useConsent from "./hooks/useConsent.js";
 import ScrollToTop from "./components/Common/ScrollToTop.jsx";
+import ProgressCenter from "./admin/components/ProgressCenter.jsx";
 
 const publicRoutes = [
   { path: "/", element: <PublicPages.HomePage /> },
@@ -94,6 +95,7 @@ export default function App() {
   return (
     <Router>
       <ScrollToTop />
+      <ProgressCenter />
       {/* Onay banner'ı */}
       <CookieConsent
         visible={showBanner}

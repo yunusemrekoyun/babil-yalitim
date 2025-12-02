@@ -6,19 +6,11 @@ import api from "../../../api";
 import ToastAlert from "../../components/ToastAlert";
 
 import {
-  mountGlobalLoadingToast,
-  showGlobalLoading,
-  hideGlobalLoading,
-} from "../../components/LoadingToast";
-
-function ensureGlobalLoaderMounted() {
-  if (typeof window !== "undefined" && !window.__GLT_MOUNTED__) {
-    try {
-      mountGlobalLoadingToast();
-      window.__GLT_MOUNTED__ = true;
-    } catch {}
-  }
-}
+  createProgressTask,
+  updateProgressTask,
+  completeProgressTask,
+  failProgressTask,
+} from "../../components/ProgressCenter";
 
 function EditBlog({ onRequestClose }) {
   const { id } = useParams();
@@ -27,10 +19,6 @@ function EditBlog({ onRequestClose }) {
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
-
-  useEffect(() => {
-    ensureGlobalLoaderMounted();
-  }, []);
 
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
@@ -55,23 +43,32 @@ function EditBlog({ onRequestClose }) {
   }, [id]);
 
   const handleSubmit = async (fd) => {
+    const taskId = createProgressTask("Blog güncelleniyor");
     try {
-      showGlobalLoading("Güncelleniyor…");
-
       if (typeof onRequestClose === "function") {
         try {
           onRequestClose();
         } catch {}
       }
 
-      await api.put(`/blogs/${id}`, fd);
+      await api.put(`/blogs/${id}`, fd, {
+        onUploadProgress: (evt) => {
+          if (evt.total) {
+            updateProgressTask(
+              taskId,
+              Math.round((evt.loaded / evt.total) * 100),
+              "İçerik yükleniyor…"
+            );
+          }
+        },
+      });
+      completeProgressTask(taskId, "Blog güncellendi");
       showToast("Blog güncellendi.", "success");
       navigate("/admin/blogs");
     } catch (e) {
       console.error("PUT /blogs/:id error:", e?.response?.data || e);
+      failProgressTask(taskId, "Blog güncellenemedi");
       showToast(e?.response?.data?.message || "Güncelleme başarısız.", "error");
-    } finally {
-      hideGlobalLoading();
     }
   };
 
@@ -80,10 +77,21 @@ function EditBlog({ onRequestClose }) {
 
   return (
     <div className="p-4 md:p-6 overflow-x-hidden">
-      <div className="mx-auto max-w-3xl px-3 sm:px-4 md:px-6">
-        <h2 className="mb-4 text-2xl font-semibold">Blogu Düzenle</h2>
+      <div className="mx-auto max-w-4xl px-3 sm:px-4 md:px-6">
+        <div className="glass-panel p-6 sm:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                Güncelle
+              </p>
+              <h2 className="mb-2 text-2xl font-semibold text-slate-900">
+                Blogu Düzenle
+              </h2>
+            </div>
+          </div>
 
-        <BlogForm initialData={initialData} onSubmit={handleSubmit} />
+          <BlogForm initialData={initialData} onSubmit={handleSubmit} />
+        </div>
 
         {toast && (
           <ToastAlert

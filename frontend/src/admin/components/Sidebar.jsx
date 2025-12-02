@@ -11,6 +11,7 @@ import {
   LogOut,
   X,
   Home,
+  Sparkles,
 } from "lucide-react";
 
 const links = [
@@ -27,23 +28,30 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   const linkClass = ({ isActive }) =>
     [
-      "group flex items-center gap-3 rounded-xl px-3 py-2.5 transition",
+      "group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition border border-transparent",
       isActive
-        ? "bg-slate-800 text-white shadow-sm"
-        : "text-slate-200 hover:bg-white/10 hover:text-white",
+        ? "bg-white text-slate-900 shadow-lg shadow-sky-200/60 border-slate-100"
+        : "text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-100",
     ].join(" ");
 
   return (
     <>
       {/* Desktop */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-72 bg-slate-900 text-white border-r border-white/10">
+      <aside className="hidden lg:flex lg:flex-col lg:w-72 bg-white/80 text-slate-800 border-r border-white/60 backdrop-blur-2xl shadow-xl shadow-slate-200/50 rounded-r-3xl">
         {/* Logo / Başlık */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-white/10 grid place-items-center">
-              <span className="text-sm font-bold">BY</span>
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-sky-400 via-indigo-400 to-blue-500 grid place-items-center text-white shadow-lg shadow-sky-200/70 border border-white/60">
+              <Sparkles size={18} />
             </div>
-            <span className="font-semibold tracking-wide">Admin Panel</span>
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">
+                Babil
+              </p>
+              <span className="font-semibold tracking-wide text-slate-900">
+                Admin Panel
+              </span>
+            </div>
           </div>
         </div>
 
@@ -51,7 +59,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="p-4 border-b border-white/10">
           <NavLink
             to="/"
-            className="w-full inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2.5 text-sm transition"
+            className="w-full inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-400/90 hover:to-emerald-500/90 text-white px-3 py-2.5 text-sm transition shadow-lg shadow-emerald-200/50"
           >
             <Home size={18} />
             Anasayfa
@@ -78,7 +86,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="p-4 border-t border-white/10">
           <button
             onClick={logout}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white px-3 py-2.5 text-sm transition"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-400 to-orange-400 hover:from-rose-400/90 hover:to-orange-400/90 text-white px-3 py-2.5 text-sm transition shadow-lg shadow-rose-200/60"
           >
             <LogOut size={18} />
             Çıkış Yap
@@ -88,15 +96,15 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-80 bg-slate-900 text-white border-r border-white/10 transform transition-transform duration-300 ease-out lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-80 bg-white/90 text-slate-900 border-r border-white/60 transform transition-transform duration-300 ease-out lg:hidden backdrop-blur-2xl shadow-2xl shadow-slate-200/70 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Header */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-white/10 grid place-items-center">
-              <span className="text-sm font-bold">BY</span>
+            <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-indigo-500 to-sky-500 grid place-items-center text-white shadow-lg shadow-indigo-500/40">
+              <Sparkles size={16} />
             </div>
             <span className="font-semibold tracking-wide">Admin Panel</span>
           </div>
@@ -144,7 +152,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               onClose?.();
               logout();
             }}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white px-3 py-2.5 text-sm transition"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-500/90 hover:to-orange-500/90 text-white px-3 py-2.5 text-sm transition shadow-lg shadow-rose-500/20"
           >
             <LogOut size={18} />
             Çıkış Yap

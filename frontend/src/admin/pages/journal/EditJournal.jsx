@@ -6,12 +6,11 @@ import ToastAlert from "../../components/ToastAlert";
 import api from "../../../api.js";
 
 import {
-  mountGlobalLoadingToast,
-  showGlobalLoading,
-  hideGlobalLoading,
-} from "../../components/LoadingToast";
-
-mountGlobalLoadingToast();
+  createProgressTask,
+  updateProgressTask,
+  completeProgressTask,
+  failProgressTask,
+} from "../../components/ProgressCenter";
 
 const EditJournal = () => {
   const { id } = useParams();
@@ -41,24 +40,35 @@ const EditJournal = () => {
   }, [id]);
 
   const handleSubmit = async (fd) => {
+    const taskId = createProgressTask("Haber güncelleniyor");
     try {
-      showGlobalLoading("Güncelleniyor…");
-      await api.put(`/journals/${id}`, fd);
+      await api.put(`/journals/${id}`, fd, {
+        onUploadProgress: (evt) => {
+          if (evt.total) {
+            updateProgressTask(
+              taskId,
+              Math.round((evt.loaded / evt.total) * 100),
+              "Medya yükleniyor…"
+            );
+          }
+        },
+      });
+      completeProgressTask(taskId, "Haber güncellendi");
       showToast("Haber güncellendi", "success");
       setTimeout(() => navigate("/admin/journals"), 600);
     } catch (err) {
       console.error("PUT /journals/:id error:", err?.response?.data || err);
+      failProgressTask(taskId, "Haber güncellenemedi");
       showToast(err?.response?.data?.message || "Güncellenemedi.", "error");
-    } finally {
-      hideGlobalLoading();
     }
   };
 
   const handleRemoveAsset = async (publicId) => {
     if (!window.confirm("Bu medyayı silmek istiyor musunuz?")) return;
+    const taskId = createProgressTask("Medya siliniyor");
     try {
-      showGlobalLoading("Siliniyor…");
       await api.delete(`/journals/${id}/assets/${encodeURIComponent(publicId)}`);
+      completeProgressTask(taskId, "Medya silindi");
       showToast("Medya silindi", "success");
       setInitialData((prev) =>
         prev
@@ -70,9 +80,8 @@ const EditJournal = () => {
       );
     } catch (err) {
       console.error("DELETE asset error:", err?.response?.data || err);
+      failProgressTask(taskId, "Medya silinemedi");
       showToast(err?.response?.data?.message || "Medya silinemedi.", "error");
-    } finally {
-      hideGlobalLoading();
     }
   };
 
@@ -81,14 +90,25 @@ const EditJournal = () => {
 
   return (
     <div className="p-4 md:p-6 overflow-x-hidden">
-      <div className="mx-auto w-full max-w-[820px] px-2 sm:px-4">
-        <h2 className="mb-4 text-2xl font-semibold">Haberi Düzenle</h2>
+      <div className="mx-auto w-full max-w-[900px] px-2 sm:px-4">
+        <div className="glass-panel p-6 sm:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                Güncelle
+              </p>
+              <h2 className="mb-2 text-2xl font-semibold text-slate-900">
+                Haberi Düzenle
+              </h2>
+            </div>
+          </div>
 
-        <JournalForm
-          initialData={initialData}
-          onSubmit={handleSubmit}
-          onRemoveAsset={handleRemoveAsset}
-        />
+          <JournalForm
+            initialData={initialData}
+            onSubmit={handleSubmit}
+            onRemoveAsset={handleRemoveAsset}
+          />
+        </div>
 
         {toast && (
           <ToastAlert

@@ -5,12 +5,11 @@ import api from "../../../api";
 import ServiceForm from "../../components/ServiceForm";
 import ToastAlert from "../../components/ToastAlert";
 import {
-  mountGlobalLoadingToast,
-  showGlobalLoading,
-  hideGlobalLoading,
-} from "../../components/LoadingToast";
-
-mountGlobalLoadingToast();
+  createProgressTask,
+  updateProgressTask,
+  completeProgressTask,
+  failProgressTask,
+} from "../../components/ProgressCenter";
 
 const EditService = () => {
   const { id } = useParams();
@@ -39,16 +38,26 @@ const EditService = () => {
   }, [id]);
 
   const handleSubmit = async (formData) => {
+    const taskId = createProgressTask("Hizmet güncelleniyor");
     try {
-      showGlobalLoading("Güncelleniyor…");
-      await api.put(`/services/${id}`, formData);
+      await api.put(`/services/${id}`, formData, {
+        onUploadProgress: (evt) => {
+          if (evt.total) {
+            updateProgressTask(
+              taskId,
+              Math.round((evt.loaded / evt.total) * 100),
+              "Dosyalar yükleniyor…"
+            );
+          }
+        },
+      });
+      completeProgressTask(taskId, "Hizmet güncellendi");
       showToast("Hizmet güncellendi", "success");
       navigate("/admin/services");
     } catch (err) {
       console.error("PUT /services/:id error:", err?.response?.data || err);
+      failProgressTask(taskId, "Hizmet güncellenemedi");
       showToast(err?.response?.data?.message || "Güncelleme başarısız.", "error");
-    } finally {
-      hideGlobalLoading();
     }
   };
 
@@ -57,9 +66,20 @@ const EditService = () => {
 
   return (
     <div className="p-4 md:p-6 overflow-x-hidden">
-      <div className="mx-auto w-full max-w-[820px] px-2 sm:px-4">
-        <h1 className="text-xl font-bold mb-6">Hizmet Düzenle</h1>
-        <ServiceForm initialData={serviceData} onSubmit={handleSubmit} />
+      <div className="mx-auto w-full max-w-[900px] px-2 sm:px-4">
+        <div className="glass-panel p-6 sm:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                Güncelle
+              </p>
+              <h1 className="text-2xl font-bold text-slate-900">
+                Hizmeti Düzenle
+              </h1>
+            </div>
+          </div>
+          <ServiceForm initialData={serviceData} onSubmit={handleSubmit} />
+        </div>
       </div>
 
       {toast && (
