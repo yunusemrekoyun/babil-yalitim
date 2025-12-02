@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useContext, useEffect } from "react";
+import { createContext, useState, useContext, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import api from "../api.js";
 
@@ -20,6 +20,33 @@ function getCookie(name) {
 export const AuthProvider = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const refreshTimer = useRef(null);
+
+  const clearRefreshTimer = () => {
+    if (refreshTimer.current) {
+      clearTimeout(refreshTimer.current);
+      refreshTimer.current = null;
+    }
+  };
+
+  const scheduleRefresh = (exp) => {
+    if (!exp) return;
+    const msUntilExp = exp * 1000 - Date.now();
+    const refreshIn = Math.max(msUntilExp - 2 * 60 * 1000, 15 * 1000); // exp - 2dk
+    clearRefreshTimer();
+    refreshTimer.current = setTimeout(async () => {
+      try {
+        const { data } = await api.post("/auth/refresh");
+        const csrf = data?.csrfToken || getCookie("csrfToken");
+        if (csrf) localStorage.setItem("csrfToken", csrf);
+        if (data?.exp) scheduleRefresh(data.exp);
+      } catch {
+        clearRefreshTimer();
+        setIsAdmin(false);
+        window.location.href = "/admin";
+      }
+    }, refreshIn);
+  };
 
   /** Login: cookie tabanlı akış; backend { csrfToken } döner */
   const login = async (username, password) => {
@@ -29,6 +56,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("csrfToken", csrf);
       // Header’ı sürekli set etmeye gerek yok; api.js her istekte localStorage’dan okuyor.
     }
+    if (data?.exp) scheduleRefresh(data.exp);
     setIsAdmin(true);
     return data; // Login.jsx gerekirse csrfToken’ı buradan da kullanabilir
   };
@@ -37,12 +65,12 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await api.post("/auth/logout");
-
     }
      catch (_) {
       // Ignore
     } finally {
       localStorage.removeItem("csrfToken");
+      clearRefreshTimer();
       setIsAdmin(false);
       window.location.href = "/admin";
     }
@@ -57,6 +85,7 @@ export const AuthProvider = ({ children }) => {
         const { data } = await api.get("/auth/me");
         if (!mounted) return;
         setIsAdmin(!!data?.user);
+        if (data?.exp) scheduleRefresh(data.exp);
       } catch {
         if (!mounted) return;
         setIsAdmin(false);
@@ -72,6 +101,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     return () => {
+      clearRefreshTimer();
       mounted = false;
     };
   }, []);

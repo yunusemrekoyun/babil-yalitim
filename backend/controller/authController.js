@@ -33,6 +33,16 @@ async function verifyPassword(plain, { plainEnv, hashEnv }) {
   return false;
 }
 
+function issueTokens(username) {
+  const accessToken = jwt.sign({ username, role: "admin" }, JWT_SECRET, {
+    expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+  });
+  const csrfToken = crypto.randomBytes(24).toString("hex");
+  const payload = jwt.decode(accessToken);
+  const exp = payload?.exp || null;
+  return { accessToken, csrfToken, exp };
+}
+
 exports.login = async (req, res) => {
   try {
     if (!ADMIN_USER || !JWT_SECRET) {
@@ -58,13 +68,8 @@ exports.login = async (req, res) => {
         .json({ message: "Kullanıcı adı veya şifre hatalı" });
     }
 
-    // JWT üret
-    const accessToken = jwt.sign({ username, role: "admin" }, JWT_SECRET, {
-      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
-    });
-
-    // CSRF token üret ve ayrı cookie'ye yaz
-    const csrfToken = crypto.randomBytes(24).toString("hex");
+    // JWT + CSRF üret
+    const { accessToken, csrfToken, exp } = issueTokens(username);
 
     // JWT -> httpOnly cookie
     res.cookie("accessToken", accessToken, {
@@ -82,8 +87,8 @@ exports.login = async (req, res) => {
       maxAge: 1000 * 60 * 60 * 12,
     });
 
-    // Body’de yalnızca csrfToken dönüyoruz (token dönmüyoruz)
-    return res.json({ csrfToken });
+    // Body’de csrfToken + exp dönüyoruz (token dönmüyoruz)
+    return res.json({ csrfToken, exp });
   } catch (err) {
     return res
       .status(500)
@@ -93,7 +98,7 @@ exports.login = async (req, res) => {
 
 exports.me = async (req, res) => {
   // verifyToken geçmişse req.user dolu olur
-  return res.json({ user: req.user || null });
+  return res.json({ user: req.user || null, exp: req.user?.exp || null });
 };
 
 exports.logout = async (req, res) => {
@@ -108,4 +113,34 @@ exports.logout = async (req, res) => {
     domain: COOKIE_OPTIONS.domain,
   });
   return res.json({ ok: true });
+};
+
+exports.refresh = async (req, res) => {
+  try {
+    const username = req.user?.username;
+    if (!username) {
+      return res.status(401).json({ message: "Kimlik doğrulaması gerekiyor" });
+    }
+
+    const { accessToken, csrfToken, exp } = issueTokens(username);
+
+    res.cookie("accessToken", accessToken, {
+      ...COOKIE_OPTIONS,
+      maxAge: 1000 * 60 * 60 * 12,
+    });
+
+    res.cookie("csrfToken", csrfToken, {
+      secure: COOKIE_OPTIONS.secure,
+      sameSite: COOKIE_OPTIONS.sameSite,
+      path: "/",
+      domain: COOKIE_OPTIONS.domain,
+      maxAge: 1000 * 60 * 60 * 12,
+    });
+
+    return res.json({ csrfToken, exp });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: err.message || "Oturum yenileme başarısız" });
+  }
 };

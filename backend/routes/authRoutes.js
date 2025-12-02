@@ -1,7 +1,7 @@
 // backend/routes/authRoutes.js
 const express = require("express");
 const rateLimit = require("express-rate-limit");
-const { login, me, logout } = require("../controller/authController");
+const { login, me, logout, refresh } = require("../controller/authController");
 const verifyToken = require("../middleware/verifyToken");
 const router = express.Router();
 
@@ -15,5 +15,6 @@ const loginLimiter = rateLimit({
 router.post("/login", loginLimiter, login);
 router.get("/me", verifyToken, me);
 router.post("/logout", verifyToken, logout);
+router.post("/refresh", verifyToken, refresh);
 
 module.exports = router;

@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../middleware/verifyToken");
-const upload = require("../middleware/uploadMedia"); // disk tmp, image+video kabul eder
+const { upload, compressIfNeeded } = require("../middleware/uploadMedia"); // disk tmp, image+video kabul eder
 
 const {
   getBlogs,
@@ -34,6 +34,7 @@ router.post(
     { name: "cover", maxCount: 1 }, // zorunlu (image)
     { name: "assets", maxCount: 30 }, // opsiyonel (image|video karışık)
   ]),
+  compressIfNeeded,
   createBlog
 );
 
@@ -44,6 +45,7 @@ router.put(
     { name: "cover", maxCount: 1 },
     { name: "assets", maxCount: 30 },
   ]),
+  compressIfNeeded,
   updateBlog
 );
 

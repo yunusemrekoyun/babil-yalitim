@@ -4,7 +4,7 @@ const router = express.Router();
 const verifyToken = require("../middleware/verifyToken");
 // Not: Projede hem diskStorage hem memoryStorage varyantların var.
 // Bu controller hem buffer hem path ile çalışır; mevcut “uploadMedia” (image|video izinli) işini görür.
-const upload = require("../middleware/uploadMedia");
+const { upload, compressIfNeeded } = require("../middleware/uploadMedia");
 
 const {
   getJournals,
@@ -31,6 +31,7 @@ router.post(
     { name: "cover", maxCount: 1 }, // zorunlu (image)
     { name: "assets", maxCount: 20 }, // opsiyonel (image|video çoklu)
   ]),
+  compressIfNeeded,
   createJournal
 );
 
@@ -41,6 +42,7 @@ router.put(
     { name: "cover", maxCount: 1 }, // REPLACE
     { name: "assets", maxCount: 20 }, // APPEND
   ]),
+  compressIfNeeded,
   updateJournal
 );
 

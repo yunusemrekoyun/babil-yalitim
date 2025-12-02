@@ -4,6 +4,8 @@ import axios from "axios";
 // Local fallback: aynı origin + /api
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || `${window.location.origin}/api`;
+const UPLOAD_TIMEOUT_MS =
+  Number(import.meta.env.VITE_UPLOAD_TIMEOUT_MS) || 120000;
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -23,6 +25,11 @@ api.interceptors.request.use(
       typeof FormData !== "undefined" && config.data instanceof FormData;
 
     if (isFormData) {
+      // Upload’larda daha uzun timeout tanı
+      if (!config.timeout || config.timeout < UPLOAD_TIMEOUT_MS) {
+        config.timeout = UPLOAD_TIMEOUT_MS;
+      }
+
       // boundary için Content-Type elle set ETME
       if (config.headers?.["Content-Type"]) {
         delete config.headers["Content-Type"];

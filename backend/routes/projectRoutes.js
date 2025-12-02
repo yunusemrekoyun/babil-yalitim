@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../middleware/verifyToken");
-const upload = require("../middleware/uploadMedia");
+const { upload, compressIfNeeded } = require("../middleware/uploadMedia");
 
 const {
   getProjects,
@@ -27,6 +27,7 @@ router.post(
     { name: "video", maxCount: 1 },
     { name: "images", maxCount: 4 },
   ]),
+  compressIfNeeded,
   createProject
 );
 
@@ -38,6 +39,7 @@ router.put(
     { name: "video", maxCount: 1 },
     { name: "images", maxCount: 4 },
   ]),
+  compressIfNeeded,
   updateProject
 );
 

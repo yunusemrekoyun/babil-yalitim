@@ -4,8 +4,10 @@ import PropTypes from "prop-types";
 
 /** Admin paneli koruması: /admin/* */
 const PrivateRoute = ({ children }) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, loading } = useAuth();
   const location = useLocation();
+
+  if (loading) return null; // ilk auth kontrolü bitmeden karar verme
 
   if (!isAdmin) {
     // Giriş yoksa login sayfasına, mevcut konumu koru
