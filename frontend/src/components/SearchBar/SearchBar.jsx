@@ -61,6 +61,7 @@ const SearchBar = () => {
     if (!query.trim()) {
       setResults([]);
       setHighlightIndex(-1);
+      setDropdownPos(null);
       return;
     }
     const t = setTimeout(() => {
@@ -70,6 +71,7 @@ const SearchBar = () => {
           const arr = Array.isArray(res.data) ? res.data : [];
           setResults(arr);
           setHighlightIndex(arr.length ? 0 : -1);
+          updateDropdownPos(); // veri geldikten sonra pozisyonu güncelle
         })
         .catch((err) => console.error("Arama hatası:", err));
     }, 300);
@@ -81,23 +83,22 @@ const SearchBar = () => {
     const anchor = containerRef.current;
     if (!anchor) return;
     const rect = anchor.getBoundingClientRect();
-    const GAP = 8; // input altına 8px boşluk
+    const GAP = 4; // input altına 4px boşluk (daha yakın dursun)
     setDropdownPos({
-      left: rect.left + window.scrollX,
-      top: rect.bottom + window.scrollY + GAP,
+      left: rect.left,
+      top: rect.bottom + GAP,
       width: rect.width,
     });
   };
 
   useEffect(() => {
-    // results açıldığında ölç
-    if (results.length) updateDropdownPos();
-  }, [results.length]);
-
-  useEffect(() => {
-    // resize/scroll’da yeniden ölç
+    // resize: pozisyonu koru, scroll: dropdown'ı kapat (takılı kalmasın)
     const onResize = () => results.length && updateDropdownPos();
-    const onScroll = () => results.length && updateDropdownPos();
+    const onScroll = () => {
+      if (!results.length) return;
+      setResults([]);
+      setHighlightIndex(-1);
+    };
     window.addEventListener("resize", onResize);
     window.addEventListener("scroll", onScroll, true);
     return () => {
@@ -179,7 +180,7 @@ const SearchBar = () => {
           <ul
             id="global-search-results"
             ref={dropdownRef}
-            className="fixed bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-y-auto z-[99999]"
+            className="fixed z-[99999] max-h-80 overflow-y-auto rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_18px_55px_-30px_rgba(15,23,42,0.4)] backdrop-blur-md"
             style={{
               left: dropdownPos.left,
               top: dropdownPos.top,
@@ -198,13 +199,20 @@ const SearchBar = () => {
                     e.preventDefault(); // blur olmadan çalışsın
                     go(item);
                   }}
-                  className={`px-6 py-3 cursor-pointer text-brandDark text-sm flex justify-between items-center transition ${
-                    active ? "bg-gray-100" : "hover:bg-gray-50"
+                  className={`px-5 py-3 cursor-pointer text-brandDark text-sm flex justify-between items-center transition ${
+                    active
+                      ? "bg-slate-100/90"
+                      : "hover:bg-slate-50"
                   }`}
                 >
-                  <span className="line-clamp-1">{item.title}</span>
-                  <span className="text-gray-400 text-xs">
-                    ({getTypeLabel(item)})
+                  <div className="flex flex-col min-w-0">
+                    <span className="line-clamp-1 text-slate-800 text-sm font-medium">{item.title}</span>
+                    <span className="text-[11px] text-slate-500 line-clamp-1">
+                      {item?.excerpt || item?.description || item?.content || ""}
+                    </span>
+                  </div>
+                  <span className="text-slate-400 text-[11px] shrink-0">
+                    {getTypeLabel(item)}
                   </span>
                 </li>
               );

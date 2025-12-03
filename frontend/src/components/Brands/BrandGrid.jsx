@@ -18,12 +18,12 @@ const brands = [
 ];
 
 const BrandGrid = () => {
-  const fullList = [...brands, ...brands];
+  const fullList = [...brands, ...brands, ...brands];
   return (
     <div id="brands" className="w-full overflow-hidden relative mt-5">
-      <div className="flex whitespace-nowrap animate-[marquee_12s_linear_infinite] sm:animate-[marquee_20s_linear_infinite]">
+      <div className="flex whitespace-nowrap animate-brand-marquee will-change-transform">
         {fullList.map((brand, index) => (
-          <div key={index} className="mx-4 sm:mx-8">
+          <div key={`${brand.id}-${index}`} className="mx-4 sm:mx-8">
             <BrandItem brand={brand} />
           </div>
         ))}

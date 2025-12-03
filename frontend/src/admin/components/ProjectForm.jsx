@@ -3,6 +3,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import ToastAlert from "./ToastAlert";
 
+const inputCls =
+  "w-full rounded-xl border border-slate-200/70 bg-white/60 px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
+
 /** MediaPreview: seçilen dosyayı veya mevcut URL’yi gösterir */
 const MediaPreview = ({ src, type = "image", className = "" }) => {
   if (!src) return null;
@@ -152,62 +155,72 @@ const ProjectForm = ({ initialData, onSubmit }) => {
       {/* Sol: metin alanları */}
       <div className="lg:col-span-3 space-y-4">
         <div>
-          <label className="block text-sm font-medium">Başlık</label>
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Başlık
+          </label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className={`mt-2 ${inputCls}`}
             placeholder="Proje başlığı"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Açıklama</label>
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Açıklama
+          </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={6}
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className={`mt-2 ${inputCls}`}
             placeholder="Proje açıklaması"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Kategori</label>
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Kategori
+          </label>
           <input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className={`mt-2 ${inputCls}`}
             placeholder="Örn: Su Yalıtımı"
           />
         </div>
 
         {/* Başlangıç ve Bitiş tarihi alanları */}
         <div>
-          <label className="block text-sm font-medium">Başlangıç Tarihi</label>
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Başlangıç Tarihi
+          </label>
           <input
             type="date"
             value={startDate ? startDate.split("T")[0] : ""}
             onChange={(e) => setStartDate(e.target.value)}
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className={`mt-2 ${inputCls}`}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Bitiş Tarihi</label>
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Bitiş Tarihi
+          </label>
           <input
             type="date"
             value={endDate ? endDate.split("T")[0] : ""}
             onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className={`mt-2 ${inputCls}`}
           />
         </div>
 
         <div className="pt-1">
           <button
             type="submit"
-            className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+            className="btn-admin-primary"
           >
             Kaydet
           </button>
@@ -218,16 +231,16 @@ const ProjectForm = ({ initialData, onSubmit }) => {
       <div className="lg:col-span-2 space-y-6">
         {/* Kapak */}
         <div>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Kapak Medyası (zorunlu) — Görsel veya Video
           </label>
           <input
             type="file"
             accept="image/*,video/*"
             onChange={handleCoverChange}
-            className="mt-2 w-full"
+            className="mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
           />
-          <div className="mt-2 overflow-hidden rounded-lg border bg-gray-50">
+          <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/70 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
             {coverPreview ? (
               <MediaPreview
                 src={coverPreview}
@@ -246,7 +259,7 @@ const ProjectForm = ({ initialData, onSubmit }) => {
               </div>
             )}
           </div>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             Büyük videolar için .mp4 önerilir. Görseller otomatik optimize
             edilir.
           </p>
@@ -254,16 +267,16 @@ const ProjectForm = ({ initialData, onSubmit }) => {
 
         {/* Opsiyonel tek video */}
         <div>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Opsiyonel Video (tek)
           </label>
           <input
             type="file"
             accept="video/*"
             onChange={handleVideoChange}
-            className="mt-2 w-full"
+            className="mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
           />
-          <div className="mt-2 overflow-hidden rounded-lg border bg-gray-50">
+          <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/70 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
             {videoPreview ? (
               <MediaPreview
                 src={videoPreview}
@@ -286,7 +299,7 @@ const ProjectForm = ({ initialData, onSubmit }) => {
 
         {/* Opsiyonel görseller (max 4 toplam) */}
         <div>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Opsiyonel Görseller (max 4) — Kalan eklenebilir:{" "}
             {remainingImageSlots}
           </label>
@@ -295,7 +308,7 @@ const ProjectForm = ({ initialData, onSubmit }) => {
             accept="image/*"
             multiple
             onChange={handleImagesChange}
-            className="mt-2 w-full"
+            className="mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
             disabled={remainingImageSlots === 0}
           />
           {!!existingImages.length && (
@@ -304,7 +317,7 @@ const ProjectForm = ({ initialData, onSubmit }) => {
                 <img
                   key={i}
                   src={img.url}
-                  className="h-20 w-full rounded-md object-cover border"
+                  className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
                   alt=""
                 />
               ))}
@@ -316,7 +329,7 @@ const ProjectForm = ({ initialData, onSubmit }) => {
                 <img
                   key={i}
                   src={u}
-                  className="h-20 w-full rounded-md object-cover border"
+                  className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
                   alt=""
                 />
               ))}

@@ -49,11 +49,11 @@ export const failProgressTask = (id, message) => {
 
 const statusStyles = {
   active:
-    "from-sky-200/80 via-white to-white text-slate-900 border-sky-200 shadow-sky-200/60",
+    "from-slate-200/60 via-white to-white text-slate-900 border-slate-200 shadow-slate-300/40 dark:from-[#1c1f24] dark:via-[#1a1d22] dark:to-[#171a1f] dark:text-slate-100 dark:border-[#2c2f36]",
   done:
-    "from-emerald-100 via-white to-white text-emerald-900 border-emerald-200 shadow-emerald-200/60",
+    "from-emerald-200/40 via-white to-white text-emerald-900 border-emerald-200/70 shadow-emerald-300/30 dark:from-[#1c2a21] dark:via-[#1a1f22] dark:to-[#16191d] dark:text-emerald-100 dark:border-emerald-500/30",
   error:
-    "from-rose-100 via-white to-white text-rose-900 border-rose-200 shadow-rose-200/60",
+    "from-rose-200/40 via-white to-white text-rose-900 border-rose-200/70 shadow-rose-300/30 dark:from-[#2a1c20] dark:via-[#1a1d22] dark:to-[#16191d] dark:text-rose-100 dark:border-rose-500/30",
 };
 
 const ProgressCenter = () => {
@@ -141,22 +141,22 @@ const ProgressCenter = () => {
             } shadow-xl`}
           >
             <div className="flex items-start gap-2 px-4 py-3">
-              <div className="mt-1 h-2 w-2 rounded-full bg-slate-600 shadow shadow-slate-200" />
+              <div className="mt-1 h-2 w-2 rounded-full bg-slate-600 shadow shadow-slate-200 dark:bg-slate-300 dark:shadow-slate-900" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold leading-tight text-slate-900">
+                  <p className="text-sm font-semibold leading-tight text-slate-900 dark:text-white">
                     {task.label}
                   </p>
-                  <span className="text-xs font-medium text-slate-700">
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-200">
                     {Math.round(task.progress)}%
                   </span>
                 </div>
                 {task.message && (
-                  <p className="mt-1 text-xs text-slate-700 line-clamp-2">
+                  <p className="mt-1 text-xs text-slate-700 dark:text-slate-200 line-clamp-2">
                     {task.message}
                   </p>
                 )}
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                   <div
                     className={`h-full rounded-full ${
                       task.status === "done"

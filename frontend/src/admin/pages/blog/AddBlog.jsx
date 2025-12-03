@@ -52,20 +52,24 @@ function AddBlog({ onRequestClose }) {
   return (
     // overflow-x-hidden: olası taşmaları kes
     <div className="p-4 md:p-6 overflow-x-hidden">
-      <div className="mx-auto max-w-4xl px-3 sm:px-4 md:px-6">
-        <div className="glass-panel p-6 sm:p-8">
-          <div className="flex items-center justify-between mb-6">
+      <div className="mx-auto max-w-5xl px-3 sm:px-4 md:px-6">
+        <div className="admin-section p-6 sm:p-8 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-500/12 via-transparent to-slate-400/10 dark:from-[#2c2f36]/60 dark:via-transparent dark:to-[#1f2227]/50" />
+          <div className="relative flex items-start justify-between gap-3 mb-6">
             <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                Yeni kayıt
-              </p>
-              <h2 className="mb-2 text-2xl font-semibold text-slate-900">
+              <span className="badge-soft">Yeni kayıt</span>
+              <h2 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">
                 Yeni Blog
               </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Alanları koruyarak tamamen yenilenmiş panel görünümü.
+              </p>
             </div>
           </div>
 
-          <BlogForm onSubmit={handleSubmit} />
+          <div className="relative">
+            <BlogForm onSubmit={handleSubmit} />
+          </div>
         </div>
 
         {toast && (

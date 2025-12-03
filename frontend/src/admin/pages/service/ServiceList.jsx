@@ -13,6 +13,8 @@ const ServiceList = () => {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
   const [err, setErr] = useState("");
+  const inputCls =
+    "w-full sm:w-64 rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
 
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
@@ -87,128 +89,157 @@ const ServiceList = () => {
     });
   };
 
-  if (loading) return <p className="p-4">Yükleniyor…</p>;
-  if (err) return <p className="p-4 text-red-600">{err}</p>;
+  if (loading) return <p className="p-4 text-slate-500">Yükleniyor…</p>;
+  if (err) return <p className="p-4 text-red-500">{err}</p>;
 
   return (
-    <div className="p-4 md:p-6 overflow-x-hidden">
-      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h1 className="text-2xl font-semibold">Hizmetler</h1>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Ara (başlık/tür/açıklama)"
-            className="w-full sm:w-64 rounded-md border px-3 py-2 text-sm"
-          />
-          <select
-            value={cat}
-            onChange={(e) => setCat(e.target.value)}
-            className="rounded-md border px-3 py-2 text-sm"
-          >
-            {cats.map((c) => (
-              <option key={c} value={c}>
-                {c === "all" ? "Tüm Kategoriler" : c}
-              </option>
-            ))}
-          </select>
-          <Link
-            to="/admin/services/add"
-            className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-white text-sm hover:bg-indigo-700"
-          >
-            + Yeni Hizmet
-          </Link>
+    <div className="p-4 md:p-6 overflow-x-hidden space-y-5">
+      <div className="admin-section p-4 sm:p-5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-500/12 via-transparent to-slate-400/10 dark:from-[#2c2f36]/60 dark:via-transparent dark:to-[#1f2227]/50" />
+        <div className="relative flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <span className="badge-soft">Hizmetler</span>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">
+              Hizmetler
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Liste ve butonlar koyu/açık temayla uyumlu hale getirildi.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Ara (başlık/tür/açıklama)"
+              className={inputCls}
+            />
+            <select
+              value={cat}
+              onChange={(e) => setCat(e.target.value)}
+              className={`${inputCls} sm:w-40`}
+            >
+              {cats.map((c) => (
+                <option key={c} value={c}>
+                  {c === "all" ? "Tüm Kategoriler" : c}
+                </option>
+              ))}
+            </select>
+            <Link to="/admin/services/add" className="btn-admin-primary shrink-0">
+              + Yeni Hizmet
+            </Link>
+          </div>
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-md border p-6 text-center text-gray-500">
+        <div className="admin-card p-6 text-center text-slate-500 dark:text-slate-300">
           Kayıt bulunamadı.
         </div>
       ) : (
         <div className="-mx-4 sm:mx-0 overflow-x-auto">
-          <table className="min-w-[860px] w-full border-collapse overflow-hidden rounded-lg border border-gray-200 text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-left">
-                <th className="border p-2">Kapak</th>
-                <th className="border p-2">Başlık</th>
-                <th className="border p-2">Tür</th>
-                <th className="border p-2">Kategori</th>
-                <th className="border p-2 w-40">İşlemler</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((s) => (
-                <tr key={s._id} className="align-top">
-                  <td className="border p-2">
-                    {s.cover?.url ? (
-                      <div className="relative">
-                        {s.cover.resourceType === "video" ? (
-                          <>
-                            <video
-                              src={s.cover.url}
-                              className="h-16 w-24 object-cover rounded-md"
-                              muted
-                              playsInline
-                            />
-                            <span className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 rounded bg-black/70 text-white">
-                              video
-                            </span>
-                          </>
-                        ) : (
-                          <img
-                            src={s.cover.url}
-                            alt={s.title}
-                            className="h-16 w-24 object-cover rounded-md"
-                          />
-                        )}
-                      </div>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
-                  <td className="border p-2">
-                    <div className="font-medium">{s.title}</div>
-                    {Array.isArray(s.usageAreas) && s.usageAreas.length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {s.usageAreas.slice(0, 3).map((u) => (
-                          <span
-                            key={u}
-                            className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600"
-                          >
-                            {u}
-                          </span>
-                        ))}
-                        {s.usageAreas.length > 3 && (
-                          <span className="text-[11px] text-gray-400">
-                            +{s.usageAreas.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                  <td className="border p-2">{s.type || "-"}</td>
-                  <td className="border p-2">{s.category || "-"}</td>
-                  <td className="border p-2">
-                    <div className="flex gap-2">
-                      <Link
-                        to={`/admin/services/edit/${s._id}`}
-                        className="inline-flex items-center rounded-md bg-yellow-500 px-3 py-1.5 text-white hover:bg-yellow-600"
-                      >
-                        Düzenle
-                      </Link>
-                      <button
-                        onClick={() => askDelete(s._id, s.title)}
-                        className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
-                      >
-                        Sil
-                      </button>
-                    </div>
-                  </td>
+          <div className="admin-card p-0 overflow-hidden">
+            <table className="min-w-[860px] w-full border-collapse text-sm">
+              <thead className="bg-slate-50/70 text-left text-slate-600 dark:bg-slate-900/50 dark:text-slate-300">
+                <tr>
+                  <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                    Kapak
+                  </th>
+                  <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                    Başlık
+                  </th>
+                  <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                    Tür
+                  </th>
+                  <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                    Kategori
+                  </th>
+                  <th className="border border-slate-200/70 p-3 w-40 dark:border-slate-800/70">
+                    İşlemler
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((s) => (
+                  <tr
+                    key={s._id}
+                    className="align-top transition hover:bg-indigo-50/60 dark:hover:bg-slate-800/40"
+                  >
+                    <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                      {s.cover?.url ? (
+                        <div className="relative">
+                          {s.cover.resourceType === "video" ? (
+                            <>
+                              <video
+                                src={s.cover.url}
+                                className="h-16 w-24 object-cover rounded-md"
+                                muted
+                                playsInline
+                              />
+                              <span className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 rounded bg-black/70 text-white">
+                                video
+                              </span>
+                            </>
+                          ) : (
+                            <img
+                              src={s.cover.url}
+                              alt={s.title}
+                              className="h-16 w-24 object-cover rounded-md"
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                      <div className="font-medium text-slate-800 dark:text-slate-100">
+                        {s.title}
+                      </div>
+                      {Array.isArray(s.usageAreas) && s.usageAreas.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {s.usageAreas.slice(0, 3).map((u) => (
+                            <span
+                              key={u}
+                              className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                            >
+                              {u}
+                            </span>
+                          ))}
+                          {s.usageAreas.length > 3 && (
+                            <span className="text-[11px] text-slate-400">
+                              +{s.usageAreas.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                      {s.type || "-"}
+                    </td>
+                    <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                      {s.category || "-"}
+                    </td>
+                    <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                      <div className="flex gap-2">
+                        <Link
+                          to={`/admin/services/edit/${s._id}`}
+                          className="inline-flex items-center gap-1 rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
+                        >
+                          Düzenle
+                        </Link>
+                        <button
+                          onClick={() => askDelete(s._id, s.title)}
+                          className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
+                        >
+                          Sil
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -226,6 +257,7 @@ const ServiceList = () => {
           open={confirm.open}
           title={confirm.title}
           message={confirm.message}
+          type="danger"
           onCancel={() => setConfirm((c) => ({ ...c, open: false }))}
           onConfirm={confirm.onConfirm}
         />

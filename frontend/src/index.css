@@ -8,7 +8,6 @@
 
 body {
   font-family: "Montserrat", sans-serif;
-
 }
 
 html {
@@ -16,8 +15,48 @@ html {
 }
 
 @layer components {
+  .admin-shell {
+    @apply min-h-screen bg-gradient-to-br from-[#f5f7fa] via-[#fdfeff] to-[#eef2f7] text-slate-800 dark:from-[#111315] dark:via-[#14171c] dark:to-[#0f1115] dark:text-slate-100;
+  }
+
+  .admin-overlay {
+    @apply pointer-events-none absolute inset-0 opacity-60;
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(99, 115, 139, 0.14), transparent 24%),
+      radial-gradient(circle at 82% 12%, rgba(79, 70, 229, 0.12), transparent 20%),
+      radial-gradient(circle at 45% 70%, rgba(45, 212, 191, 0.12), transparent 28%);
+  }
+
+  .admin-card {
+    @apply rounded-3xl border border-slate-200/80 bg-white/85 shadow-[0_16px_60px_-40px_rgba(15,23,42,0.25)] backdrop-blur-2xl transition duration-200 dark:border-slate-800/80 dark:bg-[#1c1f24]/90 dark:shadow-[0_20px_60px_-50px_rgba(0,0,0,0.7)];
+  }
+
+  .admin-section {
+    @apply rounded-[28px] border border-slate-200/60 bg-white/75 shadow-[0_18px_60px_-40px_rgba(15,23,42,0.28)] backdrop-blur-2xl dark:border-slate-800/70 dark:bg-[#191c21]/85 dark:shadow-[0_26px_70px_-55px_rgba(0,0,0,0.75)];
+  }
+
+  .admin-pill {
+    @apply inline-flex items-center gap-1 rounded-full bg-slate-100/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-700 dark:bg-slate-800/70 dark:text-slate-200;
+  }
+
+  .btn-admin-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-slate-700 via-slate-700 to-slate-800 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-600/20 transition hover:-translate-y-[1px] hover:shadow-xl active:translate-y-0;
+  }
+
+  .btn-admin-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/70 bg-white/60 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900 dark:border-slate-800/70 dark:bg-slate-900/50 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:text-white;
+  }
+
+  .btn-admin-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 transition hover:-translate-y-[1px] hover:shadow-xl active:translate-y-0;
+  }
+
+  .badge-soft {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-700 bg-slate-100 dark:bg-slate-800/70 dark:text-slate-200;
+  }
+
   .glass-panel {
-    @apply rounded-3xl border border-slate-100 bg-white/80 shadow-xl shadow-slate-200/60 backdrop-blur-xl;
+    @apply rounded-3xl border border-slate-200/80 bg-white/80 shadow-[0_18px_60px_-40px_rgba(15,23,42,0.3)] backdrop-blur-2xl dark:border-slate-800/80 dark:bg-[#1b1e23]/85 dark:shadow-[0_26px_70px_-55px_rgba(0,0,0,0.75)];
   }
 }
 @layer utilities {
@@ -34,5 +73,18 @@ html {
     display: flex;
     width: max-content;
     animation: scroll-loop 20s linear infinite;
+  }
+
+  @keyframes brand-marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-33.333%);
+    }
+  }
+
+  .animate-brand-marquee {
+    animation: brand-marquee 12s linear infinite;
   }
 }

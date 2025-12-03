@@ -30,15 +30,15 @@ export default function ToastAlert({
   // Tip bazlı stil ve ikon
   const styleMap = {
     success: {
-      bg: "bg-quaternaryColor", // sitenin başarı rengi
+      bg: "from-slate-700 to-emerald-600 shadow-emerald-500/25",
       icon: <FaCheckCircle className="mr-2" />,
     },
     error: {
-      bg: "bg-red-600",
+      bg: "from-rose-600 to-amber-600 shadow-rose-500/25",
       icon: <FaExclamationCircle className="mr-2" />,
     },
     info: {
-      bg: "bg-secondaryColor",
+      bg: "from-slate-700 to-slate-800 shadow-slate-600/25",
       icon: <FaInfoCircle className="mr-2" />,
     },
   };
@@ -46,9 +46,9 @@ export default function ToastAlert({
   const { bg, icon } = styleMap[type] ?? styleMap.info;
 
   return createPortal(
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999]">
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] w-[calc(100vw-2rem)] max-w-lg px-2">
       <div
-        className={`${bg} text-white px-4 py-2 rounded-lg shadow-lg flex items-center animate-slide-down`}
+        className={`bg-gradient-to-r ${bg} text-white px-4 py-3 rounded-2xl shadow-lg flex items-center animate-slide-down backdrop-blur-md border border-white/20`}
       >
         {icon}
         <span className="text-sm font-medium">{msg}</span>

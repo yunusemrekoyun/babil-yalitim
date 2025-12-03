@@ -66,19 +66,23 @@ const EditService = () => {
 
   return (
     <div className="p-4 md:p-6 overflow-x-hidden">
-      <div className="mx-auto w-full max-w-[900px] px-2 sm:px-4">
-        <div className="glass-panel p-6 sm:p-8">
-          <div className="flex items-center justify-between mb-6">
+      <div className="mx-auto w-full max-w-[1000px] px-2 sm:px-4">
+        <div className="admin-section p-6 sm:p-8 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-500/12 via-transparent to-slate-400/10 dark:from-[#2c2f36]/60 dark:via-transparent dark:to-[#1f2227]/50" />
+          <div className="relative flex items-start justify-between gap-3 mb-6">
             <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                Güncelle
-              </p>
-              <h1 className="text-2xl font-bold text-slate-900">
+              <span className="badge-soft">Güncelle</span>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
                 Hizmeti Düzenle
               </h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Aynı alanlar, çok daha koyu ve modern bir panel.
+              </p>
             </div>
           </div>
-          <ServiceForm initialData={serviceData} onSubmit={handleSubmit} />
+          <div className="relative">
+            <ServiceForm initialData={serviceData} onSubmit={handleSubmit} />
+          </div>
         </div>
       </div>
 

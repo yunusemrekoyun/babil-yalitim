@@ -3,6 +3,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import ToastAlert from "./ToastAlert";
 
+const inputCls =
+  "w-full rounded-xl border border-slate-200/70 bg-white/60 px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
+
 /* ------- Küçük yardımcı bileşenler ------- */
 const ImagePreview = ({ src, className = "" }) => {
   if (!src) return null;
@@ -33,12 +36,12 @@ VideoPreview.propTypes = {
 };
 
 const Chip = ({ text, onRemove }) => (
-  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700">
+  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100/80 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-800/60 dark:text-slate-100">
     {text}
     <button
       type="button"
       onClick={onRemove}
-      className="ml-1 rounded-full px-1.5 hover:bg-gray-200"
+      className="ml-1 rounded-full px-1.5 hover:bg-slate-200 dark:hover:bg-slate-700"
       aria-label={`${text} etiketini kaldır`}
       title="Kaldır"
     >
@@ -319,40 +322,46 @@ const ServiceForm = ({ initialData, onSubmit }) => {
       {/* Sol kolon: metin alanları */}
       <div className="lg:col-span-3 space-y-5">
         <div>
-          <label className="block text-sm font-medium">Hizmet Adı *</label>
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Hizmet Adı *
+          </label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className={`mt-2 ${inputCls}`}
             placeholder="Örn: Teras Su Yalıtımı"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Hizmet Türü *</label>
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Hizmet Türü *
+          </label>
           <input
             value={type}
             onChange={(e) => setType(e.target.value)}
             required
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className={`mt-2 ${inputCls}`}
             placeholder="Örn: Su Yalıtımı"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Kategori</label>
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Kategori
+          </label>
           <input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className={`mt-2 ${inputCls}`}
             placeholder="Örn: Çatı, Teras, Temel"
           />
         </div>
 
         {/* Kullanım Alanları (chip/tag) */}
         <div>
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Kullanım Alanları (opsiyonel)
           </label>
           <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -365,35 +374,37 @@ const ServiceForm = ({ initialData, onSubmit }) => {
               value={usageInput}
               onChange={(e) => setUsageInput(e.target.value)}
               onKeyDown={onUsageKeyDown}
-              className="w-full rounded-md border px-3 py-2"
+              className={inputCls}
               placeholder="Bir kullanım alanı yazın ve Enter’a basın"
             />
             <button
               type="button"
               onClick={addUsage}
-              className="rounded-md bg-gray-800 px-4 py-2 text-white hover:bg-gray-900"
+              className="btn-admin-primary"
             >
               Ekle
             </button>
           </div>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             Örn: Temel, perde beton, ıslak hacim, havuz…
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Açıklama</label>
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Açıklama
+          </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={7}
-            className="mt-1 w-full rounded-md border px-3 py-2 leading-relaxed"
+            className={`mt-2 w-full leading-relaxed ${inputCls}`}
             placeholder="Hizmet ile ilgili detaylı açıklama…"
           />
         </div>
 
         {!!mediaError && (
-          <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+          <div className="rounded-xl bg-red-50/80 border border-red-200/80 p-3 text-sm text-red-700 dark:bg-rose-500/10 dark:border-rose-500/40 dark:text-rose-100">
             {mediaError}
           </div>
         )}
@@ -401,7 +412,7 @@ const ServiceForm = ({ initialData, onSubmit }) => {
         <div className="pt-1">
           <button
             type="submit"
-            className="inline-flex items-center rounded-md bg-indigo-600 px-5 py-2 text-white hover:bg-indigo-700"
+            className="btn-admin-primary"
           >
             Kaydet
           </button>
@@ -412,7 +423,7 @@ const ServiceForm = ({ initialData, onSubmit }) => {
       <div className="lg:col-span-2 space-y-6">
         {/* Kapak (image | video) */}
         <div>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Kapak (Dikey image veya video)
             {isEdit ? " — mevcut varsa opsiyonel" : " — zorunlu"}
           </label>
@@ -420,13 +431,13 @@ const ServiceForm = ({ initialData, onSubmit }) => {
             type="file"
             accept="image/*,video/*"
             onChange={handleCoverChange}
-            className="mt-2 w-full"
+            className="mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
           />
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             Öneri: 9:16 (ör. 1080×1920). Minimum en-boy oranı{" "}
             {FRONT_VERTICAL_MIN_RATIO}:1.
           </p>
-          <div className="mt-2 overflow-hidden rounded-lg border bg-gray-50">
+          <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/70 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
             {coverPreview ? (
               coverPreviewIsVideo ? (
                 <VideoPreview
@@ -465,7 +476,7 @@ const ServiceForm = ({ initialData, onSubmit }) => {
 
         {/* Alt medya (çoklu image | video) */}
         <div>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Alt Medya (opsiyonel, çoklu — image/video)
           </label>
           <input
@@ -473,12 +484,12 @@ const ServiceForm = ({ initialData, onSubmit }) => {
             accept="image/*,video/*"
             multiple
             onChange={handleImagesChange}
-            className="mt-2 w-full"
+            className="mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
           />
 
           {!!existingImages.length && (
             <>
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                 Mevcut medya (silme bu ekranda yok; yeniler{" "}
                 <strong>eklenir</strong>)
               </p>
@@ -488,7 +499,7 @@ const ServiceForm = ({ initialData, onSubmit }) => {
                     <video
                       key={i}
                       src={m.url}
-                      className="h-20 w-full rounded-md object-cover border"
+                      className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
                       muted
                       playsInline
                     />
@@ -496,7 +507,7 @@ const ServiceForm = ({ initialData, onSubmit }) => {
                     <img
                       key={i}
                       src={m.url}
-                      className="h-20 w-full rounded-md object-cover border"
+                      className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
                       alt=""
                     />
                   )
@@ -507,7 +518,9 @@ const ServiceForm = ({ initialData, onSubmit }) => {
 
           {!!imagesPreviews.length && (
             <>
-              <p className="mt-3 text-xs text-gray-500">Yeni eklenecekler</p>
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                Yeni eklenecekler
+              </p>
               <div className="mt-2 grid grid-cols-4 gap-2">
                 {imagesPreviews.map((u, i) => {
                   const isVid = (imagesFiles[i]?.type || "").startsWith(
@@ -517,7 +530,7 @@ const ServiceForm = ({ initialData, onSubmit }) => {
                     <video
                       key={i}
                       src={u}
-                      className="h-20 w-full rounded-md object-cover border"
+                      className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
                       muted
                       playsInline
                     />
@@ -525,7 +538,7 @@ const ServiceForm = ({ initialData, onSubmit }) => {
                     <img
                       key={i}
                       src={u}
-                      className="h-20 w-full rounded-md object-cover border"
+                      className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
                       alt=""
                     />
                   );

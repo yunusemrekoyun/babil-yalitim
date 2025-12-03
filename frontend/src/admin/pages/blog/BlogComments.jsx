@@ -6,13 +6,25 @@ import PropTypes from "prop-types";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
-const Pill = ({ children, color = "gray" }) => (
-  <span
-    className={`inline-block rounded-full px-2 py-0.5 text-[11px] bg-${color}-100 text-${color}-700`}
-  >
-    {children}
-  </span>
-);
+const PILL_COLORS = {
+  gray: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+  green: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200",
+  yellow: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-100",
+  red: "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-100",
+  blue: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-100",
+  sky: "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-100",
+  emerald: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-100",
+  amber: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-100",
+};
+
+const Pill = ({ children, color = "gray" }) => {
+  const tone = PILL_COLORS[color] || PILL_COLORS.gray;
+  return (
+    <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] ${tone}`}>
+      {children}
+    </span>
+  );
+};
 Pill.propTypes = {
   children: PropTypes.node.isRequired,
   color: PropTypes.oneOf([
@@ -34,6 +46,8 @@ const BlogComments = () => {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all"); // all | pending | approved
+  const inputCls =
+    "w-full sm:w-72 rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
 
   // Toast state
   const [toast, setToast] = useState(null);
@@ -140,92 +154,108 @@ const BlogComments = () => {
   if (loading) return <div className="p-6">Yükleniyor…</div>;
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-xl md:text-2xl font-semibold">Yorumlar</h2>
-          <p className="text-gray-500 text-sm">
-            Blog: <span className="font-medium">{blog?.title || "-"}</span>
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Ara (ad/e‑posta/içerik)"
-            className="w-full sm:w-72 rounded-md border px-3 py-2 text-sm"
-          />
-          <div className="flex gap-1">
-            {[
-              { k: "all", lbl: "Tümü" },
-              { k: "pending", lbl: "Bekleyen" },
-              { k: "approved", lbl: "Onaylı" },
-            ].map(({ k, lbl }) => (
-              <button
-                key={k}
-                onClick={() => setFilter(k)}
-                className={`px-3 py-2 text-sm rounded-md border ${
-                  filter === k
-                    ? "bg-sky-600 text-white border-sky-600"
-                    : "bg-white hover:bg-gray-50"
-                }`}
-              >
-                {lbl}
-              </button>
-            ))}
+    <div className="p-4 md:p-6 space-y-5">
+      <div className="admin-section p-4 sm:p-5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-500/12 via-transparent to-slate-400/10 dark:from-[#2c2f36]/60 dark:via-transparent dark:to-[#1f2227]/50" />
+        <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <span className="badge-soft">Yorumlar</span>
+            <h2 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">
+              Yorumlar
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Blog: <span className="font-medium text-slate-900 dark:text-white">{blog?.title || "-"}</span>
+            </p>
           </div>
-          <Link
-            to="/admin/blogs"
-            className="inline-flex items-center justify-center rounded-md bg-gray-700 px-4 py-2 text-white text-sm hover:bg-gray-800"
-          >
-            ← Bloglara Dön
-          </Link>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Ara (ad/e‑posta/içerik)"
+              className={inputCls}
+            />
+            <div className="flex gap-1">
+              {[
+                { k: "all", lbl: "Tümü" },
+                { k: "pending", lbl: "Bekleyen" },
+                { k: "approved", lbl: "Onaylı" },
+              ].map(({ k, lbl }) => (
+                <button
+                  key={k}
+                  onClick={() => setFilter(k)}
+                  className={`px-3 py-2 text-sm rounded-xl transition ${
+                    filter === k
+                      ? "bg-slate-700 text-white shadow-sm dark:bg-[#2a2d32]"
+                      : "border border-slate-200/70 bg-white/70 text-slate-700 hover:border-slate-300 dark:border-[#2c2f36] dark:bg-[#202124] dark:text-slate-100"
+                  }`}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+            <Link to="/admin/blogs" className="btn-admin-ghost">
+              ← Bloglara Dön
+            </Link>
+          </div>
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-md border p-6 text-center text-gray-500">
+        <div className="admin-card p-6 text-center text-slate-500 dark:text-slate-300">
           Gösterilecek yorum yok.
         </div>
       ) : (
-        <div className="rounded-lg border border-gray-200 overflow-hidden">
+        <div className="admin-card p-0 overflow-hidden">
           <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-left">
-                <th className="border p-2">Kullanıcı</th>
-                <th className="border p-2">Yorum</th>
-                <th className="border p-2">Durum</th>
-                <th className="border p-2">Tarih</th>
-                <th className="border p-2 w-52">İşlemler</th>
+            <thead className="bg-slate-50/70 text-left text-slate-600 dark:bg-slate-900/50 dark:text-slate-300">
+              <tr>
+                <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                  Kullanıcı
+                </th>
+                <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                  Yorum
+                </th>
+                <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                  Durum
+                </th>
+                <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                  Tarih
+                </th>
+                <th className="border border-slate-200/70 p-3 w-52 dark:border-slate-800/70">
+                  İşlemler
+                </th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((c) => (
-                <tr key={c._id} className="align-top">
-                  <td className="border p-2">
-                    <div className="font-medium">{c.name}</div>
-                    <div className="text-gray-500 text-xs">{c.email}</div>
+                <tr
+                  key={c._id}
+                  className="align-top transition hover:bg-indigo-50/60 dark:hover:bg-slate-800/40"
+                >
+                  <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                    <div className="font-medium text-slate-900 dark:text-white">{c.name}</div>
+                    <div className="text-slate-500 text-xs dark:text-slate-300">{c.email}</div>
                   </td>
-                  <td className="border p-2">
-                    <div className="whitespace-pre-wrap">{c.body}</div>
+                  <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                    <div className="whitespace-pre-wrap text-slate-800 dark:text-slate-100">{c.body}</div>
                   </td>
-                  <td className="border p-2">
+                  <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                     {c.approved ? (
                       <Pill color="green">Onaylı</Pill>
                     ) : (
                       <Pill color="yellow">Bekliyor</Pill>
                     )}
                   </td>
-                  <td className="border p-2">
+                  <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                     {c.createdAt
                       ? new Date(c.createdAt).toLocaleString("tr-TR")
                       : "-"}
                   </td>
-                  <td className="border p-2">
+                  <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => toggleApprove(c._id, !c.approved)}
-                        className={`inline-flex items-center rounded-md px-3 py-1.5 text-white ${
+                        className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm ${
                           c.approved
                             ? "bg-amber-600 hover:bg-amber-700"
                             : "bg-emerald-600 hover:bg-emerald-700"
@@ -235,7 +265,7 @@ const BlogComments = () => {
                       </button>
                       <button
                         onClick={() => handleDeleteClick(c._id)}
-                        className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
+                        className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
                       >
                         Sil
                       </button>
@@ -246,14 +276,12 @@ const BlogComments = () => {
             </tbody>
           </table>
 
-          <div className="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-t">
-            Toplam: {blog?.comments?.length || 0} • Görüntülenen:{" "}
-            {filtered.length}
+          <div className="px-3 py-2 text-xs text-slate-500 bg-slate-50/70 border-t border-slate-200/70 dark:bg-slate-900/50 dark:border-slate-800/70 dark:text-slate-300">
+            Toplam: {blog?.comments?.length || 0} • Görüntülenen: {filtered.length}
           </div>
         </div>
       )}
 
-      {/* Toast */}
       {toast && (
         <ToastAlert
           msg={toast.msg}
@@ -263,14 +291,13 @@ const BlogComments = () => {
         />
       )}
 
-      {/* Silme onayı */}
       <ConfirmDialog
         open={confirmOpen}
         title="Yorumu Sil"
         message="Bu yorumu silmek istediğinize emin misiniz?"
         confirmText="Evet, sil"
         cancelText="Vazgeç"
-        type="error"
+        type="danger"
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />

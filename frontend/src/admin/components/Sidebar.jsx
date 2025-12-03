@@ -28,27 +28,27 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   const linkClass = ({ isActive }) =>
     [
-      "group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition border border-transparent",
+      "group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition border",
       isActive
-        ? "bg-white text-slate-900 shadow-lg shadow-sky-200/60 border-slate-100"
-        : "text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-100",
+        ? "bg-slate-100 text-slate-900 border-slate-200 shadow-sm dark:bg-[#2a2d32] dark:text-white dark:border-[#2c2f36]"
+        : "border-transparent text-slate-700 hover:border-slate-300 hover:bg-white/70 hover:text-slate-900 dark:text-slate-200 dark:hover:border-[#2c2f36] dark:hover:bg-[#1f2227] dark:hover:text-white",
     ].join(" ");
 
   return (
     <>
       {/* Desktop */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-72 bg-white/80 text-slate-800 border-r border-white/60 backdrop-blur-2xl shadow-xl shadow-slate-200/50 rounded-r-3xl">
+      <aside className="hidden lg:flex lg:flex-col lg:w-72 bg-white/85 text-slate-800 border-r border-slate-200/60 backdrop-blur-2xl shadow-[0_24px_70px_-50px_rgba(15,23,42,0.35)] rounded-r-3xl dark:bg-[#202124]/90 dark:text-slate-100 dark:border-[#2c2f36] dark:shadow-black/40">
         {/* Logo / Başlık */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-sky-400 via-indigo-400 to-blue-500 grid place-items-center text-white shadow-lg shadow-sky-200/70 border border-white/60">
+        <div className="relative h-20 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#2c2f36]">
+          <div className="relative flex items-center gap-2">
+            <div className="h-11 w-11 rounded-2xl bg-slate-800 grid place-items-center text-white shadow-md shadow-slate-500/30 border border-white/60 dark:border-[#2c2f36] dark:bg-[#303134]">
               <Sparkles size={18} />
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">
                 Babil
               </p>
-              <span className="font-semibold tracking-wide text-slate-900">
+              <span className="font-semibold tracking-wide text-slate-900 dark:text-white">
                 Admin Panel
               </span>
             </div>
@@ -56,10 +56,10 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         {/* Anasayfa butonu */}
-        <div className="p-4 border-b border-white/10">
+        <div className="p-4 border-b border-slate-200/60 dark:border-[#2c2f36]">
           <NavLink
             to="/"
-            className="w-full inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-400/90 hover:to-emerald-500/90 text-white px-3 py-2.5 text-sm transition shadow-lg shadow-emerald-200/50"
+            className="w-full inline-flex items-center gap-2 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white px-3 py-2.5 text-sm transition shadow shadow-slate-500/30 dark:bg-[#2a2d32] dark:hover:bg-[#34363d]"
           >
             <Home size={18} />
             Anasayfa
@@ -80,30 +80,29 @@ const Sidebar = ({ isOpen, onClose }) => {
               <span className="text-sm">{label}</span>
             </NavLink>
           ))}
-        </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-white/10">
-          <button
-            onClick={logout}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-400 to-orange-400 hover:from-rose-400/90 hover:to-orange-400/90 text-white px-3 py-2.5 text-sm transition shadow-lg shadow-rose-200/60"
-          >
-            <LogOut size={18} />
-            Çıkış Yap
-          </button>
-        </div>
+          <div className="pt-3">
+            <button
+              onClick={logout}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white px-3 py-2.5 text-sm transition shadow shadow-slate-500/30 dark:bg-[#2a2d32] dark:hover:bg-[#34363d]"
+            >
+              <LogOut size={18} />
+              Çıkış Yap
+            </button>
+          </div>
+        </nav>
       </aside>
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-80 bg-white/90 text-slate-900 border-r border-white/60 transform transition-transform duration-300 ease-out lg:hidden backdrop-blur-2xl shadow-2xl shadow-slate-200/70 ${
+        className={`fixed inset-y-0 left-0 z-50 w-80 bg-white/95 text-slate-900 border-r border-slate-200/70 transform transition-transform duration-300 ease-out lg:hidden backdrop-blur-2xl shadow-2xl shadow-slate-200/70 dark:bg-[#202124]/95 dark:text-slate-100 dark:border-[#2c2f36] ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-white/10">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#2c2f36]">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-indigo-500 to-sky-500 grid place-items-center text-white shadow-lg shadow-indigo-500/40">
+            <div className="h-9 w-9 rounded-2xl bg-slate-800 grid place-items-center text-white shadow shadow-slate-500/30">
               <Sparkles size={16} />
             </div>
             <span className="font-semibold tracking-wide">Admin Panel</span>
@@ -111,17 +110,17 @@ const Sidebar = ({ isOpen, onClose }) => {
           <button
             onClick={onClose}
             aria-label="Menüyü kapat"
-            className="rounded-lg p-2 hover:bg-white/10"
+            className="rounded-lg p-2 hover:bg-white/10 dark:hover:bg-slate-800/80"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Anasayfa butonu */}
-        <div className="p-4 border-b border-white/10">
+        <div className="p-4 border-b border-slate-200/60 dark:border-[#2c2f36]">
           <NavLink
             to="/"
-            className="w-full inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2.5 text-sm transition"
+            className="w-full inline-flex items-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white px-3 py-2.5 text-sm transition shadow shadow-slate-500/25"
             onClick={onClose}
           >
             <Home size={18} />
@@ -143,21 +142,21 @@ const Sidebar = ({ isOpen, onClose }) => {
               <span className="text-sm">{label}</span>
             </NavLink>
           ))}
+
+          <div className="pt-3">
+            <button
+              onClick={() => {
+                onClose?.();
+                logout();
+              }}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white px-3 py-2.5 text-sm transition shadow shadow-slate-500/25"
+            >
+              <LogOut size={18} />
+              Çıkış Yap
+            </button>
+          </div>
         </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-white/10">
-          <button
-            onClick={() => {
-              onClose?.();
-              logout();
-            }}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-500/90 hover:to-orange-500/90 text-white px-3 py-2.5 text-sm transition shadow-lg shadow-rose-500/20"
-          >
-            <LogOut size={18} />
-            Çıkış Yap
-          </button>
-        </div>
       </div>
     </>
   );

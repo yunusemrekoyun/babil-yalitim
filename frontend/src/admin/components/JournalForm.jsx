@@ -3,6 +3,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import ToastAlert from "./ToastAlert";
 
+const inputCls =
+  "w-full rounded-xl border border-slate-200/70 bg-white/60 px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
+
 /* Küçük yardımcı */
 const MediaThumb = ({ src, type = "image", className = "" }) => {
   if (!src) return null;
@@ -121,24 +124,28 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset }) => {
       {/* Sol: metin alanları */}
       <div className="lg:col-span-3 space-y-5">
         <div>
-          <label className="block text-sm font-medium">Başlık *</label>
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Başlık *
+          </label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            className="mt-1 w-full rounded-md border px-3 py-2"
+            className={`mt-2 ${inputCls}`}
             placeholder="Örn: X firması ile anlaşma"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">İçerik *</label>
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            İçerik *
+          </label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={8}
             required
-            className="mt-1 w-full rounded-md border px-3 py-2 leading-relaxed"
+            className={`mt-2 leading-relaxed ${inputCls}`}
             placeholder="Habere dair detaylar…"
           />
         </div>
@@ -146,7 +153,7 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset }) => {
         <div className="pt-1">
           <button
             type="submit"
-            className="inline-flex items-center rounded-md bg-indigo-600 px-5 py-2 text-white hover:bg-indigo-700"
+            className="btn-admin-primary"
           >
             Kaydet
           </button>
@@ -157,34 +164,34 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset }) => {
       <div className="lg:col-span-2 space-y-6">
         {/* Kapak */}
         <div>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Kapak Görseli {isEdit ? "(mevcut varsa opsiyonel)" : "(zorunlu)"}
           </label>
           <input
             type="file"
             accept="image/*"
             onChange={handleCoverChange}
-            className="mt-2 w-full"
+            className="mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
           />
-          <div className="mt-2 overflow-hidden rounded-lg border bg-gray-50">
+          <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/70 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
             {coverPreview ? (
               <MediaThumb src={coverPreview} className="w-full" />
             ) : existingCover?.url ? (
               <MediaThumb src={existingCover.url} className="w-full" />
             ) : (
-              <div className="aspect-video grid place-items-center text-xs text-gray-400">
+              <div className="aspect-video grid place-items-center text-xs text-slate-400">
                 Önizleme
               </div>
             )}
           </div>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             Kapak için PNG/JPEG/WEBP önerilir.
           </p>
         </div>
 
         {/* Alt medya (image/video çoklu) */}
         <div>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Alt Medya (opsiyonel, çoklu — resim ya da video)
           </label>
           <input
@@ -192,17 +199,17 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset }) => {
             accept="image/*,video/*"
             multiple
             onChange={handleAssetsChange}
-            className="mt-2 w-full"
+            className="mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
           />
 
           {!!existingAssets.length && (
             <>
-              <p className="mt-2 text-xs text-gray-500">Mevcut medya</p>
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Mevcut medya</p>
               <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {existingAssets.map((m) => (
                   <div
                     key={m.publicId}
-                    className="relative rounded border overflow-hidden"
+                    className="relative rounded-2xl border border-slate-200/70 overflow-hidden shadow-sm dark:border-slate-700 dark:bg-slate-900/40"
                   >
                     <MediaThumb
                       src={m.url}
@@ -213,7 +220,7 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset }) => {
                       <button
                         type="button"
                         onClick={() => onRemoveAsset(m.publicId)}
-                        className="absolute right-1 top-1 rounded bg-red-600/90 px-2 py-0.5 text-xs text-white hover:bg-red-700"
+                        className="absolute right-2 top-2 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-md shadow-rose-500/30 hover:-translate-y-[1px] transition"
                         aria-label="Medyayı sil"
                         title="Medyayı sil"
                       >
@@ -228,13 +235,15 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset }) => {
 
           {!!assetsPreviews.length && (
             <>
-              <p className="mt-3 text-xs text-gray-500">Yeni eklenecekler</p>
+              <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+                Yeni eklenecekler
+              </p>
               <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {assetsPreviews.map((u, i) => (
                   <MediaThumb
                     key={i}
                     src={u}
-                    className="h-28 w-full object-cover rounded border"
+                    className="h-28 w-full object-cover rounded-2xl border border-slate-200/70 dark:border-slate-700"
                   />
                 ))}
               </div>

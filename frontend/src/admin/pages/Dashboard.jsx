@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../../api";
 import PropTypes from "prop-types";
+import { Filter as FilterIcon, Gauge, MousePointer2, Timer } from "lucide-react";
 
 // Recharts
 import {
@@ -16,6 +17,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  Area,
 } from "recharts";
 
 /** ---------- Yardımcılar ---------- */
@@ -95,6 +97,8 @@ const Dashboard = () => {
   const [series, setSeries] = useState([]); // {date, count}
   const [recent, setRecent] = useState([]); // son kayıtlar liste
   const [recentLoading, setRecentLoading] = useState(false);
+  const [recentPage, setRecentPage] = useState(1);
+  const RECENT_PAGE_SIZE = 20;
 
   const filters = useMemo(
     () => ({ from, to, section, device, country, path }),
@@ -134,7 +138,8 @@ const Dashboard = () => {
   const fetchRecent = useCallback(async () => {
     try {
       setRecentLoading(true);
-      const qs = toQuery({ ...filters, limit: 30 });
+      // daha fazla veri çek (pagination + 15 günlük filtre sonrası)
+      const qs = toQuery({ ...filters, limit: 200 });
       const { data } = await api.get(`/visits${qs ? `?${qs}` : ""}`);
       setRecent(Array.isArray(data) ? data : []);
     } catch (e) {
@@ -159,12 +164,37 @@ const Dashboard = () => {
     [summary.byDevice]
   );
 
+  // Son 15 gün filtresi + pagination için veriyi hazırla
+  const recentFiltered = useMemo(() => {
+    const cutoff = Date.now() - 15 * 24 * 60 * 60 * 1000; // 15 gün
+    return (recent || []).filter((r) => {
+      const d = new Date(r.createdAt);
+      return !Number.isNaN(d.getTime()) && d.getTime() >= cutoff;
+    });
+  }, [recent]);
+
+  const recentShowPager = recentFiltered.length > 40;
+  const recentTotalPages = recentShowPager
+    ? Math.max(1, Math.ceil(recentFiltered.length / RECENT_PAGE_SIZE))
+    : 1;
+
+  useEffect(() => {
+    // filtre değiştiğinde sayfayı başa al
+    setRecentPage(1);
+  }, [from, to, section, device, country, path, recentFiltered.length]);
+
+  const safeRecentPage = Math.min(recentPage, recentTotalPages);
+  const recentRows = recentShowPager
+    ? recentFiltered.slice(
+        (safeRecentPage - 1) * RECENT_PAGE_SIZE,
+        safeRecentPage * RECENT_PAGE_SIZE
+      )
+    : recentFiltered;
+
   return (
-    // overflow-x-hidden: olası 1-2px taşmaları kes
-    <div className="p-4 sm:p-6 overflow-x-hidden">
+    <div className="p-4 sm:p-6 overflow-x-hidden space-y-6">
       <Header />
 
-      {/* Filters */}
       <FilterBar
         from={from}
         to={to}
@@ -174,54 +204,89 @@ const Dashboard = () => {
         path={path}
         onChange={{ setFrom, setTo, setSection, setDevice, setCountry, setPath }}
         onClear={() => {
-          setFrom(""); setTo(""); setSection(""); setDevice(""); setCountry(""); setPath("");
+          setFrom("");
+          setTo("");
+          setSection("");
+          setDevice("");
+          setCountry("");
+          setPath("");
         }}
       />
 
-      {/* Top stats */}
       {err ? (
-        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+        <div className="admin-card border-red-200/80 bg-red-50/80 p-4 text-red-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-100">
           {err}
         </div>
       ) : (
         <>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Toplam Ziyaret" value={summary.total} />
-            <StatCard title="Ortalama Süre (sn)" value={summary.avgDuration} />
-            <StatCard title="Ortalama Scroll (%)" value={summary.avgScroll} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Toplam Ziyaret"
+              value={summary.total}
+              tone="indigo"
+              icon={Gauge}
+            />
+            <StatCard
+              title="Ortalama Süre (sn)"
+              value={summary.avgDuration}
+              tone="amber"
+              icon={Timer}
+            />
+            <StatCard
+              title="Ortalama Scroll (%)"
+              value={summary.avgScroll}
+              tone="emerald"
+              icon={MousePointer2}
+            />
             <StatCard
               title="Aktif Filtre"
               value={Object.values(filters).some(Boolean) ? "Filtrelenmiş" : "Yok"}
               subtle
+              tone="slate"
+              icon={FilterIcon}
             />
           </div>
 
-          {/* Charts */}
-          <div className="mt-6 grid gap-6 xl:grid-cols-3">
-            {/* Zaman Serisi */}
+          <div className="grid gap-6 xl:grid-cols-3">
             <Card title="Ziyaret Zaman Serisi" loading={loading}>
               <div className="h-72 overflow-hidden">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={series}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
+                    <defs>
+                      <linearGradient id="visitGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="4 4" stroke="#cbd5e1" opacity={0.35} vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#475569" }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#475569" }} />
+                    <Tooltip
+                      contentStyle={{ background: "#0f172a", color: "#e2e8f0", borderRadius: 12, border: "none" }}
+                      labelStyle={{ color: "#cbd5e1" }}
+                    />
                     <Legend />
                     <Line
                       type="monotone"
                       dataKey="count"
                       name="Ziyaret"
-                      stroke="#2563eb"
-                      strokeWidth={2}
-                      dot={false}
+                      stroke="#6366f1"
+                      strokeWidth={3}
+                      dot={{ r: 4, fill: "#0ea5e9", strokeWidth: 1, stroke: "#fff" }}
+                      activeDot={{ r: 6, fill: "#0ea5e9", strokeWidth: 0 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="count"
+                      stroke="none"
+                      fillOpacity={1}
+                      fill="url(#visitGradient)"
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </Card>
 
-            {/* Section Pie */}
             <Card title="Bölüme Göre Dağılım" loading={loading}>
               <div className="h-72 overflow-hidden">
                 <ResponsiveContainer width="100%" height="100%">
@@ -230,22 +295,27 @@ const Dashboard = () => {
                       data={pieSectionData}
                       dataKey="value"
                       nameKey="name"
-                      outerRadius={90}
-                      label
+                      innerRadius={55}
+                      outerRadius={105}
+                      paddingAngle={3}
+                      cornerRadius={6}
                       labelLine={false}
+                      label={({ percent }) => `${Math.round(percent * 100)}%`}
                     >
                       {pieSectionData.map((_, i) => (
                         <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip
+                      contentStyle={{ background: "#0f172a", color: "#e2e8f0", borderRadius: 12, border: "none" }}
+                      labelStyle={{ color: "#cbd5e1" }}
+                    />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
             </Card>
 
-            {/* Device Pie */}
             <Card title="Cihaza Göre Dağılım" loading={loading}>
               <div className="h-72 overflow-hidden">
                 <ResponsiveContainer width="100%" height="100%">
@@ -254,15 +324,21 @@ const Dashboard = () => {
                       data={pieDeviceData}
                       dataKey="value"
                       nameKey="name"
-                      outerRadius={90}
-                      label
+                      innerRadius={55}
+                      outerRadius={105}
+                      paddingAngle={3}
+                      cornerRadius={6}
                       labelLine={false}
+                      label={({ percent }) => `${Math.round(percent * 100)}%`}
                     >
                       {pieDeviceData.map((_, i) => (
                         <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip
+                      contentStyle={{ background: "#0f172a", color: "#e2e8f0", borderRadius: 12, border: "none" }}
+                      labelStyle={{ color: "#cbd5e1" }}
+                    />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -270,14 +346,44 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Top pages + recent */}
-          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2">
             <Card title="En Popüler Sayfalar" loading={loading}>
               <TopPagesTable rows={topPages} />
             </Card>
 
             <Card title="Son Ziyaretler" loading={recentLoading}>
-              <RecentTable rows={recent} />
+              <RecentTable rows={recentRows} />
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300">
+                <span>
+                  Son 15 gün: {recentFiltered.length} kayıt
+                  {recentShowPager ? " • Sayfalı görünüm" : ""}
+                </span>
+                {recentShowPager && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="px-2.5 py-1 rounded-lg border border-slate-200/70 bg-white/70 text-slate-700 hover:border-slate-300 disabled:opacity-60 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100"
+                      onClick={() => setRecentPage((p) => Math.max(1, p - 1))}
+                      disabled={safeRecentPage === 1}
+                    >
+                      Önceki
+                    </button>
+                    <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                      {safeRecentPage} / {recentTotalPages}
+                    </span>
+                    <button
+                      type="button"
+                      className="px-2.5 py-1 rounded-lg border border-slate-200/70 bg-white/70 text-slate-700 hover:border-slate-300 disabled:opacity-60 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100"
+                      onClick={() =>
+                        setRecentPage((p) => Math.min(recentTotalPages, p + 1))
+                      }
+                      disabled={safeRecentPage === recentTotalPages}
+                    >
+                      Sonraki
+                    </button>
+                  </div>
+                )}
+              </div>
             </Card>
           </div>
         </>
@@ -288,32 +394,52 @@ const Dashboard = () => {
 
 /** ---------- Header ---------- */
 const Header = () => (
-  <div className="mb-4">
-    <h1 className="text-2xl md:text-3xl font-bold">Analytics Dashboard</h1>
-    <p className="text-gray-600">
-      Ziyaret verilerini filtreleyin, trendleri ve en popüler sayfaları inceleyin.
-    </p>
+  <div className="admin-section p-4 sm:p-5 relative overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-r from-slate-500/12 via-transparent to-slate-400/10 dark:from-[#2c2f36]/60 dark:via-transparent dark:to-[#1f2227]/50" />
+    <div className="relative flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <span className="badge-soft">Analytics</span>
+        <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">
+          Kontrol Merkezi
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Ziyaret verilerini filtreleyin, trendleri ve popüler sayfaları inceleyin.
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="admin-pill">Canlı</span>
+        <span className="admin-pill">Grafikler</span>
+      </div>
+    </div>
   </div>
 );
 
 /** ---------- FilterBar ---------- */
 const FilterBar = ({ from, to, section, device, country, path, onChange, onClear }) => {
-  const inputCls = "min-w-0 rounded-md border px-3 py-2"; // min-w-0: shrink fix
+  const inputCls =
+    "min-w-0 rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
+  const hasFilters = [from, to, section, device, country, path].some(Boolean);
   return (
-    <div className="rounded-xl border bg-white p-4">
+    <div className="admin-card p-4 sm:p-5">
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-6">
         <div className="flex flex-col">
-          <label className="mb-1 text-xs text-gray-500">Başlangıç</label>
+          <label className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Başlangıç
+          </label>
           <input type="date" value={from} onChange={(e) => onChange.setFrom(e.target.value)} className={inputCls} />
         </div>
 
         <div className="flex flex-col">
-          <label className="mb-1 text-xs text-gray-500">Bitiş</label>
+          <label className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Bitiş
+          </label>
           <input type="date" value={to} onChange={(e) => onChange.setTo(e.target.value)} className={inputCls} />
         </div>
 
         <div className="flex flex-col">
-          <label className="mb-1 text-xs text-gray-500">Bölüm</label>
+          <label className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Bölüm
+          </label>
           <select value={section} onChange={(e) => onChange.setSection(e.target.value)} className={inputCls}>
             <option value="">Tümü</option>
             <option value="home">Ana Sayfa</option>
@@ -326,7 +452,9 @@ const FilterBar = ({ from, to, section, device, country, path, onChange, onClear
         </div>
 
         <div className="flex flex-col">
-          <label className="mb-1 text-xs text-gray-500">Cihaz</label>
+          <label className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Cihaz
+          </label>
           <select value={device} onChange={(e) => onChange.setDevice(e.target.value)} className={inputCls}>
             <option value="">Tümü</option>
             <option value="desktop">Masaüstü</option>
@@ -336,7 +464,9 @@ const FilterBar = ({ from, to, section, device, country, path, onChange, onClear
         </div>
 
         <div className="flex flex-col">
-          <label className="mb-1 text-xs text-gray-500">Ülke (ISO)</label>
+          <label className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Ülke (ISO)
+          </label>
           <input
             value={country}
             onChange={(e) => onChange.setCountry(e.target.value.toUpperCase())}
@@ -346,7 +476,9 @@ const FilterBar = ({ from, to, section, device, country, path, onChange, onClear
         </div>
 
         <div className="flex flex-col">
-          <label className="mb-1 text-xs text-gray-500">Path</label>
+          <label className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Path
+          </label>
           <input
             value={path}
             onChange={(e) => onChange.setPath(e.target.value)}
@@ -356,34 +488,65 @@ const FilterBar = ({ from, to, section, device, country, path, onChange, onClear
         </div>
       </div>
 
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={onClear}
-          className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
-        >
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button type="button" onClick={onClear} className="btn-admin-ghost">
           Filtreleri Temizle
         </button>
+        {hasFilters && (
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            Aktif filtreler uygulanıyor
+          </span>
+        )}
       </div>
     </div>
   );
 };
 
 /** ---------- StatCard ---------- */
-const StatCard = ({ title, value, subtle = false }) => (
-  <div className="rounded-xl border bg-white p-4">
-    <div className="text-xs text-gray-500">{title}</div>
-    <div className={`mt-1 text-2xl font-bold ${subtle ? "text-gray-700" : "text-blue-700"}`}>{value}</div>
-  </div>
-);
+const StatCard = ({ title, value, subtle = false, tone = "indigo", icon: Icon }) => {
+  const accents = {
+    indigo: "from-slate-200/80 via-white to-white",
+    amber: "from-amber-50 via-white to-white",
+    emerald: "from-emerald-50 via-white to-white",
+    slate: "from-slate-100 via-white to-white",
+  };
+  const bg = accents[tone] || accents.indigo;
+
+  return (
+    <div className="admin-card p-4 relative overflow-hidden">
+      <div className={`absolute inset-0 bg-gradient-to-br ${bg}`} />
+      <div className="relative flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            {title}
+          </div>
+          <div
+            className={`mt-2 text-3xl font-semibold ${
+              subtle ? "text-slate-800 dark:text-white" : "text-slate-900 dark:text-white"
+            }`}
+          >
+            {value}
+          </div>
+        </div>
+        {Icon ? (
+          <div className="h-11 w-11 rounded-2xl bg-white/70 grid place-items-center text-slate-700 shadow-md border border-white/40 dark:bg-slate-900/70 dark:text-slate-100 dark:border-slate-800/60">
+            <Icon size={18} />
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+};
 
 /** ---------- Card ---------- */
 const Card = ({ title, loading, children }) => (
-  // overflow-hidden: içerideki svg/label 1-2px taşarsa kes
-  <div className="rounded-xl border bg-white p-4 overflow-hidden">
-    <div className="mb-3 flex items-center justify-between">
-      <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-      {loading ? <span className="text-xs text-gray-400">Yükleniyor…</span> : null}
+  <div className="admin-card p-4 sm:p-5 overflow-hidden">
+    <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className="h-2 w-2 rounded-full bg-emerald-400 shadow shadow-emerald-400/40" />
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
+      </div>
+      {loading ? <span className="text-xs text-slate-500">Yükleniyor…</span> : null}
     </div>
     {children}
   </div>
@@ -391,24 +554,29 @@ const Card = ({ title, loading, children }) => (
 
 /** ---------- TopPagesTable ---------- */
 const TopPagesTable = ({ rows }) => {
-  if (!rows?.length) return <div className="text-sm text-gray-500">Kayıt yok.</div>;
+  if (!rows?.length) return <div className="text-sm text-slate-500 dark:text-slate-300">Kayıt yok.</div>;
   return (
     // -mx-4: container padding’ini nötrle; overflow-x sadece tabloda
     <div className="-mx-4 sm:mx-0 overflow-x-auto">
       <table className="min-w-[640px] w-full text-sm">
-        <thead>
-          <tr className="text-left text-gray-500">
-            <th className="py-2 pr-3">Path</th>
-            <th className="py-2 pr-3">Ziyaret</th>
+        <thead className="text-left text-slate-500 dark:text-slate-300">
+          <tr className="border-b border-slate-200 dark:border-slate-800">
+            <th className="py-2 pr-3 font-semibold">Path</th>
+            <th className="py-2 pr-3 font-semibold">Ziyaret</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
           {rows.map((r, i) => (
-            <tr key={i} className="border-t">
-              <td className="py-2 pr-3">
+            <tr
+              key={i}
+              className="transition hover:bg-indigo-50/60 dark:hover:bg-slate-800/40"
+            >
+              <td className="py-3 pr-3 text-slate-800 dark:text-slate-100">
                 <span title={r.path}>{trPathLabel(r.path)}</span>
               </td>
-              <td className="py-2 pr-3">{r.count}</td>
+              <td className="py-3 pr-3 text-slate-800 dark:text-slate-100">
+                {r.count}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -419,31 +587,38 @@ const TopPagesTable = ({ rows }) => {
 
 /** ---------- RecentTable ---------- */
 const RecentTable = ({ rows }) => {
-  if (!rows?.length) return <div className="text-sm text-gray-500">Kayıt yok.</div>;
+  if (!rows?.length) return <div className="text-sm text-slate-500 dark:text-slate-300">Kayıt yok.</div>;
   return (
     <div className="-mx-4 sm:mx-0 overflow-x-auto">
       <table className="min-w-[720px] w-full text-sm">
-        <thead>
-          <tr className="text-left text-gray-500">
-            <th className="py-2 pr-3">Tarih</th>
-            <th className="py-2 pr-3">Path</th>
-            <th className="py-2 pr-3">Cihaz</th>
-            <th className="py-2 pr-3">Ülke</th>
-            <th className="py-2 pr-3">Süre (sn)</th>
-            <th className="py-2 pr-3">Scroll (%)</th>
+        <thead className="text-left text-slate-500 dark:text-slate-300">
+          <tr className="border-b border-slate-200 dark:border-slate-800">
+            <th className="py-2 pr-3 font-semibold">Tarih</th>
+            <th className="py-2 pr-3 font-semibold">Path</th>
+            <th className="py-2 pr-3 font-semibold">Cihaz</th>
+            <th className="py-2 pr-3 font-semibold">Ülke</th>
+            <th className="py-2 pr-3 font-semibold">Süre (sn)</th>
+            <th className="py-2 pr-3 font-semibold">Scroll (%)</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
           {rows.map((r) => (
-            <tr key={r._id} className="border-t">
-              <td className="py-2 pr-3 whitespace-nowrap">{fmtDate(r.createdAt)}</td>
-              <td className="py-2 pr-3">
+            <tr
+              key={r._id}
+              className="transition hover:bg-indigo-50/60 dark:hover:bg-slate-800/40"
+            >
+              <td className="py-3 pr-3 whitespace-nowrap text-slate-800 dark:text-slate-100">
+                {fmtDate(r.createdAt)}
+              </td>
+              <td className="py-3 pr-3 text-slate-800 dark:text-slate-100">
                 <span title={r.path}>{trPathLabel(r.path)}</span>
               </td>
-              <td className="py-2 pr-3">{r.device || "-"}</td>
-              <td className="py-2 pr-3">{r.country || "-"}</td>
-              <td className="py-2 pr-3">{Number(r.duration || 0)}</td>
-              <td className="py-2 pr-3">{Number(r.scrollDepth || 0)}</td>
+              <td className="py-3 pr-3 text-slate-800 dark:text-slate-100">{r.device || "-"}</td>
+              <td className="py-3 pr-3 text-slate-800 dark:text-slate-100">{r.country || "-"}</td>
+              <td className="py-3 pr-3 text-slate-800 dark:text-slate-100">{Number(r.duration || 0)}</td>
+              <td className="py-3 pr-3 text-slate-800 dark:text-slate-100">
+                {Number(r.scrollDepth || 0)}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -475,6 +650,8 @@ StatCard.propTypes = {
   title: PropTypes.string.isRequired,
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   subtle: PropTypes.bool,
+  tone: PropTypes.oneOf(["indigo", "amber", "emerald", "slate"]),
+  icon: PropTypes.elementType,
 };
 
 Card.propTypes = {

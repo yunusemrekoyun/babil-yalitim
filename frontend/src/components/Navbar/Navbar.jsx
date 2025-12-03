@@ -11,32 +11,31 @@ const GAP = 28;
 const CLOSE_DELAY = 1200;
 
 /** ---- Variants ---- */
-const chip = (dir) => ({
-  initial: { x: dir === "L" ? 16 : -16, opacity: 0, filter: "blur(3px)" },
-  animate: {
-    x: 0,
+const listVariants = {
+  hidden: { opacity: 0, y: 10, scale: 0.97 },
+  visible: {
     opacity: 1,
-    filter: "blur(0px)",
-    transition: { duration: 0.28, ease: "easeOut" },
-  },
-  exit: {
-    x: dir === "L" ? 16 : -16,
-    opacity: 0,
-    filter: "blur(3px)",
-    transition: { duration: 0.22, ease: "easeIn" },
-  },
-});
-const row = {
-  initial: { opacity: 0 },
-  animate: {
-    opacity: 1,
-    transition: { when: "beforeChildren", staggerChildren: 0.06 },
-  },
-  exit: {
-    opacity: 0,
-    transition: { staggerDirection: -1, staggerChildren: 0.05 },
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.22,
+      ease: [0.25, 0.8, 0.4, 1],
+      when: "beforeChildren",
+      delayChildren: 0.05,
+      staggerChildren: 0.035,
+    },
   },
 };
+
+const chip = (dir) => ({
+  hidden: { x: dir === "L" ? 10 : -10, opacity: 0, scale: 0.96 },
+  visible: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.18, ease: [0.22, 0.68, 0.4, 0.92] },
+  },
+});
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false); // mobil
@@ -104,72 +103,70 @@ export default function Navbar() {
 
           {/* Sol uçan linkler */}
           <div
-            className="absolute pointer-events-none"
+            className="absolute"
             style={leftAnchorStyle}
             onMouseEnter={keepOpen}
             onMouseLeave={delayedClose}
           >
-            <AnimatePresence>
-              {flyout && (
-                <motion.div
-                  variants={row}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  className="flex flex-row-reverse gap-3"
+            <motion.div
+              initial="hidden"
+              animate={flyout ? "visible" : "hidden"}
+              variants={listVariants}
+              style={{ pointerEvents: flyout ? "auto" : "none" }}
+              className="flex flex-row-reverse gap-3 will-change-transform"
+            >
+              {navLeft.map((it) => (
+                <motion.a
+                  key={it.href}
+                  href={it.href}
+                  className={`pointer-events-auto whitespace-nowrap rounded-full border border-white/80 px-4 py-2 text-center transition ${
+                    location.pathname === it.href
+                      ? "bg-white text-black"
+                      : "hover:bg-white/10"
+                  }`}
+                  variants={chip("L")}
+                  initial="hidden"
+                  animate="visible"
+                  style={{ willChange: "transform, opacity" }}
                 >
-                  {navLeft.map((it) => (
-                    <motion.a
-                      key={it.href}
-                      href={it.href}
-                      className={`pointer-events-auto whitespace-nowrap rounded-full border border-white/80 px-4 py-2 text-center transition ${
-                        location.pathname === it.href
-                          ? "bg-white text-black"
-                          : "hover:bg-white/10"
-                      }`}
-                      {...chip("L")}
-                    >
-                      {it.label}
-                    </motion.a>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  {it.label}
+                </motion.a>
+              ))}
+            </motion.div>
           </div>
 
           {/* Sağ uçan linkler */}
           <div
-            className="absolute pointer-events-none"
+            className="absolute"
             style={rightAnchorStyle}
             onMouseEnter={keepOpen}
             onMouseLeave={delayedClose}
           >
-            <AnimatePresence>
-              {flyout && (
-                <motion.div
-                  variants={row}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  className="flex flex-row gap-3"
+            <motion.div
+              initial="hidden"
+              animate={flyout ? "visible" : "hidden"}
+              variants={listVariants}
+              style={{ pointerEvents: flyout ? "auto" : "none" }}
+              className="flex flex-row gap-3 will-change-transform"
+            >
+              {navRight.map((it) => (
+                <motion.a
+                  key={it.href}
+                  href={it.href}
+                  className={`pointer-events-auto whitespace-nowrap rounded-full border border-white/80 px-4 py-2 text-center transition ${
+                    location.pathname === it.href
+                      ? "bg-white text-black"
+                      : "hover:bg-white/10"
+                  }`}
+                  variants={chip("R")}
+                  initial="hidden"
+                  animate="visible"
+                  style={{ willChange: "transform, opacity" }}
                 >
-                  {navRight.map((it) => (
-                    <motion.a
-                      key={it.href}
-                      href={it.href}
-                      className={`pointer-events-auto whitespace-nowrap rounded-full border border-white/80 px-4 py-2 text-center transition ${
-                        location.pathname === it.href
-                          ? "bg-white text-black"
-                          : "hover:bg-white/10"
-                      }`}
-                      {...chip("R")}
-                    >
-                      {it.label}
-                    </motion.a>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  {it.label}
+                </motion.a>
+              ))}
+            </motion.div>
           </div>
         </div>
       </nav>

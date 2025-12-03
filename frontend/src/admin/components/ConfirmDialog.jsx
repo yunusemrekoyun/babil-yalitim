@@ -36,9 +36,9 @@ export default function ConfirmDialog({
   if (!open) return null;
 
   const colorMap = {
-    danger: "bg-red-600 hover:bg-red-700",
-    info: "bg-sky-600 hover:bg-sky-700",
-    success: "bg-emerald-600 hover:bg-emerald-700",
+    danger: "from-rose-500 to-orange-500 shadow-rose-500/25",
+    info: "from-indigo-500 to-sky-500 shadow-indigo-500/25",
+    success: "from-emerald-500 to-teal-500 shadow-emerald-500/25",
   };
   const confirmBtn = colorMap[type] || colorMap.info;
 
@@ -50,26 +50,27 @@ export default function ConfirmDialog({
     >
       {/* backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
         onClick={onCancel}
       />
       {/* modal */}
-      <div className="relative z-10 w-[92vw] max-w-md rounded-2xl border border-white/30 bg-white/90 backdrop-blur-xl shadow-xl p-5">
-        <h3 className="text-lg font-semibold text-brandDark">{title}</h3>
-        <div className="mt-2 text-sm text-gray-700">{message}</div>
+      <div className="relative z-10 w-[92vw] max-w-md admin-card p-6">
+        <div className="absolute inset-x-6 top-2 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-slate-500/60" />
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h3>
+        <div className="mt-2 text-sm text-slate-600 dark:text-slate-200/90">{message}</div>
 
         <div className="mt-5 flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50"
+            className="btn-admin-ghost"
           >
             {cancelText}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className={`rounded-md px-4 py-2 text-sm text-white ${confirmBtn}`}
+            className={`inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-[1px] active:translate-y-0 ${confirmBtn}`}
           >
             {confirmText}
           </button>
