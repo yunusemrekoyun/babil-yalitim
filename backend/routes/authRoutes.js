@@ -10,6 +10,10 @@ const loginLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  message: { message: "Too many login attempts, please try again later." },
+  validate: {
+    trustProxy: false,
+  },
 });
 
 router.post("/login", loginLimiter, login);

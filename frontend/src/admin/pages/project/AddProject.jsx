@@ -9,6 +9,7 @@ import {
   updateProgressTask,
   completeProgressTask,
   failProgressTask,
+  clampProgress,
 } from "../../components/ProgressCenter";
 
 const AddProject = ({ onRequestClose }) => {
@@ -16,12 +17,14 @@ const AddProject = ({ onRequestClose }) => {
 
   // toast state
   const [toast, setToast] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
 
   const handleSubmit = async (formData) => {
     const taskId = createProgressTask("Proje yükleniyor");
     try {
+      setSubmitting(true);
       if (typeof onRequestClose === "function") {
         try {
           onRequestClose();
@@ -33,7 +36,7 @@ const AddProject = ({ onRequestClose }) => {
           if (evt.total) {
             updateProgressTask(
               taskId,
-              Math.round((evt.loaded / evt.total) * 100),
+              clampProgress((evt.loaded / evt.total) * 100),
               "Yükleniyor…"
             );
           }
@@ -46,6 +49,8 @@ const AddProject = ({ onRequestClose }) => {
       console.error("Create /projects error:", err?.response?.data || err);
       failProgressTask(taskId, "Proje eklenemedi");
       showToast(err?.response?.data?.message || "Proje eklenemedi.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -66,8 +71,8 @@ const AddProject = ({ onRequestClose }) => {
             </div>
           </div>
           <div className="relative">
-            <ProjectForm onSubmit={handleSubmit} />
-          </div>
+          <ProjectForm onSubmit={handleSubmit} submitting={submitting} />
+        </div>
         </div>
       </div>
 

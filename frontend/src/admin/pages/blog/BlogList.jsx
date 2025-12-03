@@ -30,6 +30,7 @@ const BlogList = () => {
   // confirm
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTargetId, setConfirmTargetId] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   useEffect(() => {
     const fetchBlogs = async () => {
@@ -72,17 +73,20 @@ const BlogList = () => {
   // Confirm "Evet"
   const confirmDelete = async () => {
     const id = confirmTargetId;
-    setConfirmOpen(false);
-    setConfirmTargetId(null);
     if (!id) return;
 
     try {
+      setConfirmLoading(true);
       await api.delete(`/blogs/${id}`);
       showToast("Blog silindi", "success");
       setBlogs((prev) => prev.filter((b) => b._id !== id));
     } catch (e) {
       console.error("DELETE /blogs/:id error:", e?.response?.data || e);
       showToast(e?.response?.data?.message || "Silme işlemi başarısız.", "error");
+    } finally {
+      setConfirmLoading(false);
+      setConfirmOpen(false);
+      setConfirmTargetId(null);
     }
   };
 
@@ -319,7 +323,11 @@ const BlogList = () => {
         cancelText="Vazgeç"
         type="danger"
         onConfirm={confirmDelete}
-        onCancel={cancelDelete}
+        onCancel={() => {
+          if (confirmLoading) return;
+          cancelDelete();
+        }}
+        loading={confirmLoading}
       />
     </div>
   );

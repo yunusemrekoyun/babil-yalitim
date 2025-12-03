@@ -134,7 +134,7 @@ const checkPortrait = (file, minRatio = FRONT_VERTICAL_MIN_RATIO) =>
   });
 
 /* ------------- Ana Form ------------- */
-const ServiceForm = ({ initialData, onSubmit }) => {
+const ServiceForm = ({ initialData, onSubmit, submitting }) => {
   const isEdit = Boolean(initialData?._id);
 
   // Mevcut medya (görüntüleme)
@@ -412,9 +412,10 @@ const ServiceForm = ({ initialData, onSubmit }) => {
         <div className="pt-1">
           <button
             type="submit"
-            className="btn-admin-primary"
+            disabled={submitting}
+            className="btn-admin-primary disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Kaydet
+            {submitting ? "Kaydediliyor…" : "Kaydet"}
           </button>
         </div>
       </div>
@@ -584,6 +585,7 @@ ServiceForm.propTypes = {
     ),
   }),
   onSubmit: PropTypes.func.isRequired,
+  submitting: PropTypes.bool,
 };
 
 export default ServiceForm;

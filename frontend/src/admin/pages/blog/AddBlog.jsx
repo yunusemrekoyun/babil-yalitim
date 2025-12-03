@@ -10,11 +10,13 @@ import {
   updateProgressTask,
   completeProgressTask,
   failProgressTask,
+  clampProgress,
 } from "../../components/ProgressCenter";
 
 function AddBlog({ onRequestClose }) {
   const navigate = useNavigate();
   const [toast, setToast] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
@@ -22,6 +24,7 @@ function AddBlog({ onRequestClose }) {
   const handleSubmit = async (fd) => {
     const taskId = createProgressTask("Blog yükleniyor");
     try {
+      setSubmitting(true);
       if (typeof onRequestClose === "function") {
         try {
           onRequestClose();
@@ -33,7 +36,7 @@ function AddBlog({ onRequestClose }) {
           if (evt.total) {
             updateProgressTask(
               taskId,
-              Math.round((evt.loaded / evt.total) * 100),
+              clampProgress((evt.loaded / evt.total) * 100),
               "İçerik yükleniyor…"
             );
           }
@@ -46,6 +49,8 @@ function AddBlog({ onRequestClose }) {
       console.error("POST /blogs error:", e?.response?.data || e);
       failProgressTask(taskId, "Blog eklenemedi");
       showToast(e?.response?.data?.message || "Blog eklenemedi.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -68,7 +73,7 @@ function AddBlog({ onRequestClose }) {
           </div>
 
           <div className="relative">
-            <BlogForm onSubmit={handleSubmit} />
+          <BlogForm onSubmit={handleSubmit} submitting={submitting} />
           </div>
         </div>
 

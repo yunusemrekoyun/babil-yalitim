@@ -5,6 +5,7 @@ const verifyToken = require("../middleware/verifyToken");
 // Not: Projede hem diskStorage hem memoryStorage varyantların var.
 // Bu controller hem buffer hem path ile çalışır; mevcut “uploadMedia” (image|video izinli) işini görür.
 const { upload, compressIfNeeded } = require("../middleware/uploadMedia");
+const rateLimit = require("express-rate-limit");
 
 const {
   getJournals,
@@ -17,11 +18,18 @@ const {
   getLikesCount,
 } = require("../controller/journalController");
 
+const likeLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // public
 router.get("/", getJournals);
 router.get("/:id", getJournalById);
 router.get("/:id/likes", getLikesCount);
-router.post("/:id/like", likeJournal);
+router.post("/:id/like", likeLimiter, likeJournal);
 
 // admin (multipart)
 router.post(

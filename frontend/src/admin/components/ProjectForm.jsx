@@ -22,7 +22,7 @@ MediaPreview.propTypes = {
   className: PropTypes.string,
 };
 
-const ProjectForm = ({ initialData, onSubmit }) => {
+const ProjectForm = ({ initialData, onSubmit, submitting }) => {
   // toast
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
@@ -220,9 +220,10 @@ const ProjectForm = ({ initialData, onSubmit }) => {
         <div className="pt-1">
           <button
             type="submit"
-            className="btn-admin-primary"
+            disabled={submitting}
+            className="btn-admin-primary disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Kaydet
+            {submitting ? "İşleniyor…" : "Kaydet"}
           </button>
         </div>
       </div>
@@ -374,6 +375,7 @@ ProjectForm.propTypes = {
     ),
   }),
   onSubmit: PropTypes.func.isRequired,
+  submitting: PropTypes.bool,
 };
 
 export default ProjectForm;

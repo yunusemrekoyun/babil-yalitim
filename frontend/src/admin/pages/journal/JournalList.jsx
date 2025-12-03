@@ -27,11 +27,12 @@ const JournalList = () => {
     title: "",
     desc: "",
     onConfirm: null,
+    loading: false,
   });
   const inputCls =
     "w-full sm:w-72 rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
   const openConfirm = (title, desc, onConfirm) =>
-    setConfirm({ open: true, title, desc, onConfirm });
+    setConfirm({ open: true, title, desc, onConfirm, loading: false });
   const closeConfirm = () =>
     setConfirm((c) => ({ ...c, open: false, onConfirm: null }));
 
@@ -71,6 +72,7 @@ const JournalList = () => {
       `“${title || "Adsız"}” başlıklı haberi silmek istiyor musunuz?`,
       async () => {
         try {
+          setConfirm((c) => ({ ...c, loading: true }));
           await api.delete(`/journals/${id}`);
           setJournals((prev) => prev.filter((j) => j._id !== id));
           showToast("Haber silindi", "success");
@@ -269,8 +271,12 @@ const JournalList = () => {
         message={confirm.desc}
         confirmText="Evet, sil"
         cancelText="Vazgeç"
+        loading={confirm.loading}
         onConfirm={confirm.onConfirm || (() => {})}
-        onCancel={closeConfirm}
+        onCancel={() => {
+          if (confirm.loading) return;
+          closeConfirm();
+        }}
         onClose={closeConfirm}
       />
 

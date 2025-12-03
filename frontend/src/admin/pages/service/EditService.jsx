@@ -9,6 +9,7 @@ import {
   updateProgressTask,
   completeProgressTask,
   failProgressTask,
+  clampProgress,
 } from "../../components/ProgressCenter";
 
 const EditService = () => {
@@ -19,6 +20,7 @@ const EditService = () => {
   const [loading, setLoading] = useState(true);
 
   const [toast, setToast] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
 
@@ -40,12 +42,13 @@ const EditService = () => {
   const handleSubmit = async (formData) => {
     const taskId = createProgressTask("Hizmet güncelleniyor");
     try {
+      setSubmitting(true);
       await api.put(`/services/${id}`, formData, {
         onUploadProgress: (evt) => {
           if (evt.total) {
             updateProgressTask(
               taskId,
-              Math.round((evt.loaded / evt.total) * 100),
+              clampProgress((evt.loaded / evt.total) * 100),
               "Dosyalar yükleniyor…"
             );
           }
@@ -58,6 +61,8 @@ const EditService = () => {
       console.error("PUT /services/:id error:", err?.response?.data || err);
       failProgressTask(taskId, "Hizmet güncellenemedi");
       showToast(err?.response?.data?.message || "Güncelleme başarısız.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -81,8 +86,8 @@ const EditService = () => {
             </div>
           </div>
           <div className="relative">
-            <ServiceForm initialData={serviceData} onSubmit={handleSubmit} />
-          </div>
+          <ServiceForm initialData={serviceData} onSubmit={handleSubmit} submitting={submitting} />
+        </div>
         </div>
       </div>
 

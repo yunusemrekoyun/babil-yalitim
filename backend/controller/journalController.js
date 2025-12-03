@@ -2,6 +2,7 @@
 const crypto = require("crypto");
 const Journal = require("../models/Journal");
 const cloudinary = require("../config/cloudinary");
+const sanitizeHtml = require("../utils/sanitizeHtml");
 
 // ---- helpers ----
 const toMediaDoc = (cldRes) => ({
@@ -89,7 +90,7 @@ exports.createJournal = async (req, res) => {
 
     const created = await Journal.create({
       title,
-      content,
+      content: content ? sanitizeHtml(content) : content,
       cover,
       assets,
     });
@@ -116,7 +117,7 @@ exports.updateJournal = async (req, res) => {
     const folder = process.env.CLOUDINARY_JOURNAL_FOLDER || "babil/journals";
 
     if (title !== undefined) item.title = title;
-    if (content !== undefined) item.content = content;
+    if (content !== undefined) item.content = content ? sanitizeHtml(content) : content;
 
     if (files.cover?.[0]) {
       await destroyIfExists(item.cover);

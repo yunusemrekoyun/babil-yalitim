@@ -1,6 +1,7 @@
 const fs = require("fs/promises");
 const Blog = require("../models/Blog");
 const cloudinary = require("../config/cloudinary");
+const sanitizeHtml = require("../utils/sanitizeHtml");
 
 /* ------------ helpers ------------ */
 const normalizeTags = (val) => {
@@ -125,6 +126,7 @@ exports.createBlog = async (req, res) => {
   try {
     const { title, content } = req.body;
     const tags = normalizeTags(req.body.tags);
+    const safeContent = sanitizeHtml(content);
     const coverFile = req.files?.cover?.[0];
 
     if (!coverFile) {
@@ -143,7 +145,7 @@ exports.createBlog = async (req, res) => {
 
     const created = await Blog.create({
       title,
-      content,
+      content: safeContent,
       tags,
       cover,
       assets,
@@ -164,7 +166,7 @@ exports.updateBlog = async (req, res) => {
     const tagsProvided = req.body.tags !== undefined;
 
     if (title !== undefined) blog.title = title;
-    if (content !== undefined) blog.content = content;
+    if (content !== undefined) blog.content = sanitizeHtml(content);
     if (tagsProvided) blog.tags = normalizeTags(req.body.tags);
 
     const folder = process.env.CLOUDINARY_BLOGS_FOLDER || "blogs";

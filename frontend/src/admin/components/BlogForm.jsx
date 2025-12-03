@@ -110,8 +110,12 @@ function BlogForm({ initialData, onSubmit, onStartSubmit }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <button type="submit" className="btn-admin-primary">
-          Kaydet
+        <button
+          type="submit"
+          disabled={submitting}
+          className="btn-admin-primary disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {submitting ? "İşleniyor…" : "Kaydet"}
         </button>
       </div>
     </form>
@@ -138,6 +142,7 @@ BlogForm.propTypes = {
   onSubmit: PropTypes.func.isRequired,
   // Modalı submit başında kapatmak için (opsiyonel)
   onStartSubmit: PropTypes.func,
+  submitting: PropTypes.bool,
 };
 
 export default BlogForm;

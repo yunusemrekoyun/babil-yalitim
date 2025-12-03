@@ -57,6 +57,7 @@ const BlogComments = () => {
   // Confirm state (silme için)
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const fetchAll = async () => {
     try {
@@ -129,20 +130,23 @@ const BlogComments = () => {
   // Onay verilince gerçekten sil
   const confirmDelete = async () => {
     const commentId = pendingDeleteId;
-    setConfirmOpen(false);
-    setPendingDeleteId(null);
     if (!commentId) return;
 
     try {
+      setConfirmLoading(true);
       await api.delete(`/blogs/${id}/comments/${commentId}`);
       setBlog((prev) => ({
         ...prev,
-        comments: prev.comments.filter((c) => c._id !== commentId),
+        comments: (prev.comments || []).filter((c) => c._id !== commentId),
       }));
       showToast("Yorum silindi.", "success");
     } catch (e) {
       console.error("DELETE comment error:", e?.response?.data || e);
       showToast(e?.response?.data?.message || "Silinemedi.", "error");
+    } finally {
+      setConfirmLoading(false);
+      setConfirmOpen(false);
+      setPendingDeleteId(null);
     }
   };
 
@@ -298,8 +302,12 @@ const BlogComments = () => {
         confirmText="Evet, sil"
         cancelText="Vazgeç"
         type="danger"
+        loading={confirmLoading}
         onConfirm={confirmDelete}
-        onCancel={cancelDelete}
+        onCancel={() => {
+          if (confirmLoading) return;
+          cancelDelete();
+        }}
       />
     </div>
   );

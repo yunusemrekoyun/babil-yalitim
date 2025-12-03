@@ -10,6 +10,7 @@ import {
   updateProgressTask,
   completeProgressTask,
   failProgressTask,
+  clampProgress,
 } from "../../components/ProgressCenter";
 
 function EditBlog({ onRequestClose }) {
@@ -18,6 +19,7 @@ function EditBlog({ onRequestClose }) {
 
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
 
   const showToast = (msg, type = "info", duration = 4000) =>
@@ -45,6 +47,7 @@ function EditBlog({ onRequestClose }) {
   const handleSubmit = async (fd) => {
     const taskId = createProgressTask("Blog güncelleniyor");
     try {
+      setSubmitting(true);
       if (typeof onRequestClose === "function") {
         try {
           onRequestClose();
@@ -56,7 +59,7 @@ function EditBlog({ onRequestClose }) {
           if (evt.total) {
             updateProgressTask(
               taskId,
-              Math.round((evt.loaded / evt.total) * 100),
+              clampProgress((evt.loaded / evt.total) * 100),
               "İçerik yükleniyor…"
             );
           }
@@ -69,6 +72,8 @@ function EditBlog({ onRequestClose }) {
       console.error("PUT /blogs/:id error:", e?.response?.data || e);
       failProgressTask(taskId, "Blog güncellenemedi");
       showToast(e?.response?.data?.message || "Güncelleme başarısız.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -93,7 +98,7 @@ function EditBlog({ onRequestClose }) {
           </div>
 
           <div className="relative">
-            <BlogForm initialData={initialData} onSubmit={handleSubmit} />
+          <BlogForm initialData={initialData} onSubmit={handleSubmit} submitting={submitting} />
           </div>
         </div>
 

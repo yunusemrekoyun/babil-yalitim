@@ -25,6 +25,7 @@ const ServiceList = () => {
     title: "",
     message: "",
     onConfirm: null,
+    loading: false,
   });
 
   useEffect(() => {
@@ -71,7 +72,9 @@ const ServiceList = () => {
       open: true,
       title: "Hizmeti Sil",
       message: `"${title || "Bu hizmet"}" silinsin mi? Bu işlem geri alınamaz.`,
+      loading: false,
       onConfirm: async () => {
+        setConfirm((c) => ({ ...c, loading: true }));
         try {
           await api.delete(`/services/${id}`);
           setServices((prev) => prev.filter((s) => s._id !== id));
@@ -83,7 +86,7 @@ const ServiceList = () => {
             "error"
           );
         } finally {
-          setConfirm((c) => ({ ...c, open: false }));
+          setConfirm((c) => ({ ...c, open: false, loading: false }));
         }
       },
     });
@@ -260,6 +263,7 @@ const ServiceList = () => {
           type="danger"
           onCancel={() => setConfirm((c) => ({ ...c, open: false }))}
           onConfirm={confirm.onConfirm}
+          loading={confirm.loading}
         />
       )}
     </div>

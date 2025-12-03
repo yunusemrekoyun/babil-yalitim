@@ -30,8 +30,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     [
       "group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition border",
       isActive
-        ? "bg-slate-100 text-slate-900 border-slate-200 shadow-sm dark:bg-[#2a2d32] dark:text-white dark:border-[#2c2f36]"
-        : "border-transparent text-slate-700 hover:border-slate-300 hover:bg-white/70 hover:text-slate-900 dark:text-slate-200 dark:hover:border-[#2c2f36] dark:hover:bg-[#1f2227] dark:hover:text-white",
+        ? "bg-white text-slate-900 border-slate-200 shadow-lg shadow-sky-100"
+        : "border-transparent text-slate-700 hover:border-slate-200 hover:bg-white hover:text-slate-900",
     ].join(" ");
 
   return (
@@ -102,7 +102,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#2c2f36]">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-2xl bg-slate-800 grid place-items-center text-white shadow shadow-slate-500/30">
+            <div className="h-9 w-9 rounded-2xl bg-slate-800 grid place-items-center text-white shadow shadow-slate-500/30 dark:bg-[#303134]">
               <Sparkles size={16} />
             </div>
             <span className="font-semibold tracking-wide">Admin Panel</span>
@@ -117,7 +117,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         {/* Anasayfa butonu */}
-        <div className="p-4 border-b border-slate-200/60 dark:border-[#2c2f36]">
+        <div className="p-4 border-b border-slate-200/60">
           <NavLink
             to="/"
             className="w-full inline-flex items-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white px-3 py-2.5 text-sm transition shadow shadow-slate-500/25"

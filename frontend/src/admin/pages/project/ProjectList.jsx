@@ -259,13 +259,17 @@ const ProjectList = () => {
           confirmText={confirm.confirmText || "Onayla"}
           cancelText={confirm.cancelText || "Vazgeç"}
           type={confirm.type}
+          loading={confirm.loading}
           onClose={() => setConfirm(null)}
           onConfirm={async () => {
+            if (confirm.loading) return;
+            setConfirm((c) => ({ ...c, loading: true }));
             const fn = confirm.onConfirm;
-            setConfirm(null);
             await fn?.();
+            setConfirm(null);
           }}
           onCancel={() => {
+            if (confirm.loading) return;
             confirm.onCancel?.();
             setConfirm(null);
           }}

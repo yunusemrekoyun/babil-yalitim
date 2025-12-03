@@ -9,6 +9,7 @@ import {
   updateProgressTask,
   completeProgressTask,
   failProgressTask,
+  clampProgress,
 } from "../../components/ProgressCenter";
 
 const EditProject = ({ onRequestClose }) => {
@@ -17,6 +18,7 @@ const EditProject = ({ onRequestClose }) => {
 
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   // toast state
   const [toast, setToast] = useState(null);
@@ -41,6 +43,7 @@ const EditProject = ({ onRequestClose }) => {
   const handleSubmit = async (formData) => {
     const taskId = createProgressTask("Proje güncelleniyor");
     try {
+      setSubmitting(true);
       if (typeof onRequestClose === "function") {
         try {
           onRequestClose();
@@ -52,7 +55,7 @@ const EditProject = ({ onRequestClose }) => {
           if (evt.total) {
             updateProgressTask(
               taskId,
-              Math.round((evt.loaded / evt.total) * 100),
+              clampProgress((evt.loaded / evt.total) * 100),
               "Medya yükleniyor…"
             );
           }
@@ -65,6 +68,8 @@ const EditProject = ({ onRequestClose }) => {
       console.error("PUT /projects/:id error:", err?.response?.data || err);
       failProgressTask(taskId, "Proje güncellenemedi");
       showToast(err?.response?.data?.message || "Güncellenemedi.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -89,8 +94,8 @@ const EditProject = ({ onRequestClose }) => {
             </div>
           </div>
           <div className="relative">
-            <ProjectForm initialData={initialData} onSubmit={handleSubmit} />
-          </div>
+          <ProjectForm initialData={initialData} onSubmit={handleSubmit} submitting={submitting} />
+        </div>
         </div>
       </div>
 

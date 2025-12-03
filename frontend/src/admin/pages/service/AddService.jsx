@@ -9,21 +9,24 @@ import {
   updateProgressTask,
   completeProgressTask,
   failProgressTask,
+  clampProgress,
 } from "../../components/ProgressCenter";
 
 const AddService = () => {
   const navigate = useNavigate();
   const [toast, setToast] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
 
   const handleSubmit = async (formData) => {
     const taskId = createProgressTask("Hizmet yükleniyor");
     try {
+      setSubmitting(true);
       await api.post("/services", formData, {
         onUploadProgress: (evt) => {
           if (evt.total) {
-            const pct = Math.round((evt.loaded / evt.total) * 100);
+            const pct = clampProgress((evt.loaded / evt.total) * 100);
             updateProgressTask(taskId, pct, "Dosyalar gönderiliyor…");
           }
         },
@@ -35,6 +38,9 @@ const AddService = () => {
       console.error("POST /services error:", err?.response?.data || err);
       failProgressTask(taskId, "Hizmet eklenemedi");
       showToast(err?.response?.data?.message || "Hizmet eklenemedi.", "error");
+    }
+    finally {
+      setSubmitting(false);
     }
   };
 
@@ -55,8 +61,8 @@ const AddService = () => {
             </div>
           </div>
           <div className="relative">
-            <ServiceForm onSubmit={handleSubmit} />
-          </div>
+          <ServiceForm onSubmit={handleSubmit} submitting={submitting} />
+        </div>
         </div>
       </div>
 

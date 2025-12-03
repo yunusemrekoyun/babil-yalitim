@@ -29,7 +29,7 @@ MediaThumb.propTypes = {
   className: PropTypes.string,
 };
 
-const JournalForm = ({ initialData, onSubmit, onRemoveAsset }) => {
+const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
   const isEdit = Boolean(initialData?._id);
 
   // metin alanları
@@ -153,9 +153,10 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset }) => {
         <div className="pt-1">
           <button
             type="submit"
-            className="btn-admin-primary"
+            disabled={submitting}
+            className="btn-admin-primary disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Kaydet
+            {submitting ? "İşleniyor…" : "Kaydet"}
           </button>
         </div>
       </div>
@@ -282,6 +283,7 @@ JournalForm.propTypes = {
   }),
   onSubmit: PropTypes.func.isRequired,
   onRemoveAsset: PropTypes.func, // sadece edit ekranında kullanılıyor (ConfirmModal parent'ta)
+  submitting: PropTypes.bool,
 };
 
 export default JournalForm;

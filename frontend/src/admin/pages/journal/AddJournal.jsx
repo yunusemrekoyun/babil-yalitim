@@ -10,24 +10,27 @@ import {
   updateProgressTask,
   completeProgressTask,
   failProgressTask,
+  clampProgress,
 } from "../../components/ProgressCenter";
 
 const AddJournal = () => {
   const navigate = useNavigate();
 
   const [toast, setToast] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
 
   const handleSubmit = async (fd) => {
     const taskId = createProgressTask("Haber yükleniyor");
     try {
+      setSubmitting(true);
       await api.post("/journals", fd, {
         onUploadProgress: (evt) => {
           if (evt.total) {
             updateProgressTask(
               taskId,
-              Math.round((evt.loaded / evt.total) * 100),
+              clampProgress((evt.loaded / evt.total) * 100),
               "Yükleniyor…"
             );
           }
@@ -40,6 +43,8 @@ const AddJournal = () => {
       console.error("POST /journals error:", err?.response?.data || err);
       failProgressTask(taskId, "Haber eklenemedi");
       showToast(err?.response?.data?.message || "Haber eklenemedi.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -62,7 +67,7 @@ const AddJournal = () => {
           </div>
 
           <div className="relative">
-            <JournalForm onSubmit={handleSubmit} />
+          <JournalForm onSubmit={handleSubmit} submitting={submitting} />
           </div>
         </div>
 

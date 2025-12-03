@@ -13,7 +13,7 @@ export const createProgressTask = (label = "İşlem") => {
   if (typeof window !== "undefined") {
     window.dispatchEvent(
       new CustomEvent(EVENT, {
-        detail: { id, label, progress: 0, status: "active" },
+        detail: { id, label, progress: 5, status: "active" },
       })
     );
   }
@@ -45,6 +45,11 @@ export const failProgressTask = (id, message) => {
       detail: { id, status: "error", message },
     })
   );
+};
+
+export const clampProgress = (p) => {
+  if (!Number.isFinite(p)) return 5;
+  return Math.min(95, Math.max(5, Math.round(p)));
 };
 
 const statusStyles = {

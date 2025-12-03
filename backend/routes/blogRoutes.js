@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const verifyToken = require("../middleware/verifyToken");
 const { upload, compressIfNeeded } = require("../middleware/uploadMedia"); // disk tmp, image+video kabul eder
+const rateLimit = require("express-rate-limit");
 
 const {
   getBlogs,
@@ -18,13 +19,20 @@ const {
   deleteComment,
 } = require("../controller/blogController");
 
+const commentLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /* -------- public -------- */
 router.get("/", getBlogs);
 router.get("/:id", getBlogById);
 
 // public comments
 router.get("/:id/comments", getApprovedComments);
-router.post("/:id/comments", createComment);
+router.post("/:id/comments", commentLimiter, createComment);
 
 /* -------- protected (admin) -------- */
 router.post(

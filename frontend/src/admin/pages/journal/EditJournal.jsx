@@ -10,6 +10,7 @@ import {
   updateProgressTask,
   completeProgressTask,
   failProgressTask,
+  clampProgress,
 } from "../../components/ProgressCenter";
 
 const EditJournal = () => {
@@ -17,6 +18,7 @@ const EditJournal = () => {
   const navigate = useNavigate();
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
@@ -42,12 +44,13 @@ const EditJournal = () => {
   const handleSubmit = async (fd) => {
     const taskId = createProgressTask("Haber güncelleniyor");
     try {
+      setSubmitting(true);
       await api.put(`/journals/${id}`, fd, {
         onUploadProgress: (evt) => {
           if (evt.total) {
             updateProgressTask(
               taskId,
-              Math.round((evt.loaded / evt.total) * 100),
+              clampProgress((evt.loaded / evt.total) * 100),
               "Medya yükleniyor…"
             );
           }
@@ -60,6 +63,8 @@ const EditJournal = () => {
       console.error("PUT /journals/:id error:", err?.response?.data || err);
       failProgressTask(taskId, "Haber güncellenemedi");
       showToast(err?.response?.data?.message || "Güncellenemedi.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -82,6 +87,8 @@ const EditJournal = () => {
       console.error("DELETE asset error:", err?.response?.data || err);
       failProgressTask(taskId, "Medya silinemedi");
       showToast(err?.response?.data?.message || "Medya silinemedi.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -106,11 +113,12 @@ const EditJournal = () => {
           </div>
 
           <div className="relative">
-            <JournalForm
-              initialData={initialData}
-              onSubmit={handleSubmit}
-              onRemoveAsset={handleRemoveAsset}
-            />
+          <JournalForm
+            initialData={initialData}
+            onSubmit={handleSubmit}
+            onRemoveAsset={handleRemoveAsset}
+            submitting={submitting}
+          />
           </div>
         </div>
 

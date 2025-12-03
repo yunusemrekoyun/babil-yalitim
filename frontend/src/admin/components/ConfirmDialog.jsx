@@ -24,6 +24,7 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
   type = "danger",
+  loading = false,
 }) {
   // ESC kapatma
   useEffect(() => {
@@ -63,16 +64,18 @@ export default function ConfirmDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="btn-admin-ghost"
+            className="btn-admin-ghost disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled={loading}
           >
             {cancelText}
           </button>
           <button
             type="button"
-            onClick={onConfirm}
-            className={`inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-[1px] active:translate-y-0 ${confirmBtn}`}
+            onClick={loading ? undefined : onConfirm}
+            disabled={loading}
+            className={`inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-[1px] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed ${confirmBtn}`}
           >
-            {confirmText}
+            {loading ? "İşleniyor…" : confirmText}
           </button>
         </div>
       </div>
@@ -90,4 +93,5 @@ ConfirmDialog.propTypes = {
   onConfirm: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
   type: PropTypes.oneOf(["danger", "info", "success"]),
+  loading: PropTypes.bool,
 };

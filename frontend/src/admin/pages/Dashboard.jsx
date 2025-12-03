@@ -504,32 +504,47 @@ const FilterBar = ({ from, to, section, device, country, path, onChange, onClear
 
 /** ---------- StatCard ---------- */
 const StatCard = ({ title, value, subtle = false, tone = "indigo", icon: Icon }) => {
-  const accents = {
-    indigo: "from-slate-200/80 via-white to-white",
-    amber: "from-amber-50 via-white to-white",
-    emerald: "from-emerald-50 via-white to-white",
-    slate: "from-slate-100 via-white to-white",
+  const palette = {
+    indigo: {
+      light: "from-indigo-500/90 via-sky-400/90 to-blue-400/90",
+      dark: "from-indigo-500/60 via-sky-500/60 to-blue-500/60",
+    },
+    amber: {
+      light: "from-amber-400/90 via-orange-400/90 to-amber-300/90",
+      dark: "from-amber-500/70 via-orange-500/70 to-amber-400/70",
+    },
+    emerald: {
+      light: "from-emerald-400/90 via-teal-400/90 to-emerald-300/90",
+      dark: "from-emerald-500/70 via-teal-500/70 to-emerald-400/70",
+    },
+    slate: {
+      light: "from-slate-100 via-white to-white",
+      dark: "from-[#1c1f24] via-[#1a1d22] to-[#171a1f]",
+    },
   };
-  const bg = accents[tone] || accents.indigo;
+  const bg = palette[tone] || palette.slate;
 
   return (
     <div className="admin-card p-4 relative overflow-hidden">
-      <div className={`absolute inset-0 bg-gradient-to-br ${bg}`} />
-      <div className="relative flex items-start justify-between gap-3">
+      <div
+        className={`absolute inset-0 bg-gradient-to-br ${bg.light} dark:${bg.dark}`}
+      />
+      <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_20%_20%,white,transparent_28%),radial-gradient(circle_at_80%_0%,white,transparent_25%)] dark:opacity-10" />
+      <div className="relative flex items-start justify-between gap-3 text-slate-900 dark:text-slate-50">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
             {title}
           </div>
           <div
             className={`mt-2 text-3xl font-semibold ${
-              subtle ? "text-slate-800 dark:text-white" : "text-slate-900 dark:text-white"
+              subtle ? "text-slate-800 dark:text-slate-50" : "text-slate-900 dark:text-white"
             }`}
           >
             {value}
           </div>
         </div>
         {Icon ? (
-          <div className="h-11 w-11 rounded-2xl bg-white/70 grid place-items-center text-slate-700 shadow-md border border-white/40 dark:bg-slate-900/70 dark:text-slate-100 dark:border-slate-800/60">
+          <div className="h-11 w-11 rounded-2xl bg-white/80 grid place-items-center text-slate-700 shadow-md border border-white/60 dark:bg-slate-900/70 dark:text-slate-100 dark:border-slate-800/60">
             <Icon size={18} />
           </div>
         ) : null}
