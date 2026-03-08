@@ -1,6 +1,12 @@
-/* eslint-disable no-unused-vars */
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useContext, useEffect, useRef } from "react";
+import {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import PropTypes from "prop-types";
 import api from "../api.js";
 
@@ -22,14 +28,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const refreshTimer = useRef(null);
 
-  const clearRefreshTimer = () => {
+  const clearRefreshTimer = useCallback(() => {
     if (refreshTimer.current) {
       clearTimeout(refreshTimer.current);
       refreshTimer.current = null;
     }
-  };
+  }, []);
 
-  const scheduleRefresh = (exp) => {
+  const scheduleRefresh = useCallback((exp) => {
     if (!exp) return;
     const msUntilExp = exp * 1000 - Date.now();
     const refreshIn = Math.max(msUntilExp - 2 * 60 * 1000, 15 * 1000); // exp - 2dk
@@ -40,13 +46,14 @@ export const AuthProvider = ({ children }) => {
         const csrf = data?.csrfToken || getCookie("csrfToken");
         if (csrf) localStorage.setItem("csrfToken", csrf);
         if (data?.exp) scheduleRefresh(data.exp);
-      } catch {
+      } catch (error) {
+        console.error("Auth refresh failed:", error?.response?.data || error);
         clearRefreshTimer();
         setIsAdmin(false);
         window.location.href = "/admin";
       }
     }, refreshIn);
-  };
+  }, [clearRefreshTimer]);
 
   /** Login: cookie tabanlı akış; backend { csrfToken } döner */
   const login = async (username, password) => {
@@ -65,8 +72,8 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await api.post("/auth/logout");
-    }
-     catch (_) {
+    } catch (error) {
+      console.error("Logout failed:", error?.response?.data || error);
       // Ignore
     } finally {
       localStorage.removeItem("csrfToken");
@@ -104,7 +111,7 @@ export const AuthProvider = ({ children }) => {
       clearRefreshTimer();
       mounted = false;
     };
-  }, []);
+  }, [clearRefreshTimer, scheduleRefresh]);
 
   return (
     <AuthContext.Provider value={{ isAdmin, login, logout, loading }}>

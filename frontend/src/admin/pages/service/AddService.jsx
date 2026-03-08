@@ -10,7 +10,7 @@ import {
   completeProgressTask,
   failProgressTask,
   clampProgress,
-} from "../../components/ProgressCenter";
+} from "../../utils/progressBus";
 
 const AddService = () => {
   const navigate = useNavigate();

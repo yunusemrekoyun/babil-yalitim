@@ -1,4 +1,5 @@
 // src/App.jsx
+import { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,47 +9,87 @@ import {
 import { AnimatePresence } from "framer-motion";
 import GuestRoute from "./context/GuestRoute.jsx";
 import PrivateRoute from "./context/PrivateRoute.jsx";
-import Login from "./admin/pages/Login";
 import AdminLayout from "./admin/components/AdminLayout";
-import * as PublicPages from "../src/pages/index.jsx";
-import * as AdminPages from "../src/admin/pages/index.jsx";
 import CookieConsent from "./components/Consent/CookieConsent.jsx";
 import AnalyticsTracker from "./components/Analytics/AnalyticsTracker.jsx";
 import useConsent from "./hooks/useConsent.js";
 import ScrollToTop from "./components/Common/ScrollToTop.jsx";
 import ProgressCenter from "./admin/components/ProgressCenter.jsx";
+import SeoManager from "./components/SEO/SeoManager.jsx";
+
+const HomePage = lazy(() => import("./pages/HomePage.jsx"));
+const ProjectsPage = lazy(() => import("./pages/ProjectsPage.jsx"));
+const ProjectDetailPage = lazy(() => import("./pages/ProjectDetailPage.jsx"));
+const ServicePage = lazy(() => import("./pages/ServicePage.jsx"));
+const ServiceDetailsPage = lazy(() => import("./pages/ServiceDetailsPage.jsx"));
+const JournalPage = lazy(() => import("./pages/JournalPage.jsx"));
+const JournalDetailPage = lazy(() => import("./pages/JournalDetailPage.jsx"));
+const WhyUsPage = lazy(() => import("./pages/WhyUsPage.jsx"));
+const AboutPage = lazy(() => import("./pages/AboutPage.jsx"));
+const BlogPage = lazy(() => import("./pages/BlogPage.jsx"));
+const BlogDetailPage = lazy(() => import("./pages/BlogDetailPage.jsx"));
+const ContactPage = lazy(() => import("./pages/ContactPage.jsx"));
+const KvkkPage = lazy(() => import("./pages/KVKKPage.jsx"));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
+const LoginPage = lazy(() => import("./admin/pages/Login.jsx"));
+const DashboardPage = lazy(() => import("./admin/pages/Dashboard.jsx"));
+const BlogListPage = lazy(() => import("./admin/pages/blog/BlogList.jsx"));
+const AddBlogPage = lazy(() => import("./admin/pages/blog/AddBlog.jsx"));
+const EditBlogPage = lazy(() => import("./admin/pages/blog/EditBlog.jsx"));
+const BlogCommentsPage = lazy(() => import("./admin/pages/blog/BlogComments.jsx"));
+const JournalListPage = lazy(() => import("./admin/pages/journal/JournalList.jsx"));
+const AddJournalPage = lazy(() => import("./admin/pages/journal/AddJournal.jsx"));
+const EditJournalPage = lazy(() => import("./admin/pages/journal/EditJournal.jsx"));
+const ProjectListPage = lazy(() => import("./admin/pages/project/ProjectList.jsx"));
+const AddProjectPage = lazy(() => import("./admin/pages/project/AddProject.jsx"));
+const EditProjectPage = lazy(() => import("./admin/pages/project/EditProject.jsx"));
+const ServiceListPage = lazy(() => import("./admin/pages/service/ServiceList.jsx"));
+const AddServicePage = lazy(() => import("./admin/pages/service/AddService.jsx"));
+const EditServicePage = lazy(() => import("./admin/pages/service/EditService.jsx"));
+
+const PageFallback = () => (
+  <div className="grid min-h-screen place-items-center bg-white text-slate-500">
+    Yukleniyor...
+  </div>
+);
+
+const wrapLazy = (Component) => (
+  <Suspense fallback={<PageFallback />}>
+    <Component />
+  </Suspense>
+);
 
 const publicRoutes = [
-  { path: "/", element: <PublicPages.HomePage /> },
-  { path: "/projects", element: <PublicPages.ProjectsPage /> },
-  { path: "/project-detail/:id", element: <PublicPages.ProjectDetailPage /> },
-  { path: "/services", element: <PublicPages.ServicePage /> },
-  { path: "/services/:id", element: <PublicPages.ServiceDetailsPage /> },
-  { path: "/journal", element: <PublicPages.JournalPage /> },
-  { path: "/journals/:id", element: <PublicPages.JournalDetailPage /> },
-  { path: "/whyus", element: <PublicPages.WhyUsPage /> },
-  { path: "/about", element: <PublicPages.AboutPage /> },
-  { path: "/blog", element: <PublicPages.BlogPage /> },
-  { path: "/blog/:id", element: <PublicPages.BlogDetailPage /> },
-  { path: "/iletisim", element: <PublicPages.ContactPage /> },
-  { path: "/kvkk", element: <PublicPages.KvkkPage /> },
+  { path: "/", element: wrapLazy(HomePage) },
+  { path: "/projects", element: wrapLazy(ProjectsPage) },
+  { path: "/project-detail/:id", element: wrapLazy(ProjectDetailPage) },
+  { path: "/services", element: wrapLazy(ServicePage) },
+  { path: "/services/:id", element: wrapLazy(ServiceDetailsPage) },
+  { path: "/journal", element: wrapLazy(JournalPage) },
+  { path: "/journals/:id", element: wrapLazy(JournalDetailPage) },
+  { path: "/whyus", element: wrapLazy(WhyUsPage) },
+  { path: "/about", element: wrapLazy(AboutPage) },
+  { path: "/blog", element: wrapLazy(BlogPage) },
+  { path: "/blog/:id", element: wrapLazy(BlogDetailPage) },
+  { path: "/iletisim", element: wrapLazy(ContactPage) },
+  { path: "/kvkk", element: wrapLazy(KvkkPage) },
 ];
 
 const adminRoutes = [
-  { path: "dashboard", element: <AdminPages.Dashboard /> },
-  { path: "blogs", element: <AdminPages.BlogList /> },
-  { path: "blogs/add", element: <AdminPages.AddBlog /> },
-  { path: "blogs/edit/:id", element: <AdminPages.EditBlog /> },
-  { path: "blogs/:id/comments", element: <AdminPages.BlogComments /> },
-  { path: "journals", element: <AdminPages.JournalList /> },
-  { path: "journals/add", element: <AdminPages.AddJournal /> },
-  { path: "journals/edit/:id", element: <AdminPages.EditJournal /> },
-  { path: "projects", element: <AdminPages.ProjectList /> },
-  { path: "projects/add", element: <AdminPages.AddProject /> },
-  { path: "projects/edit/:id", element: <AdminPages.EditProject /> },
-  { path: "services", element: <AdminPages.ServiceList /> },
-  { path: "services/add", element: <AdminPages.AddService /> },
-  { path: "services/edit/:id", element: <AdminPages.EditService /> },
+  { path: "dashboard", element: wrapLazy(DashboardPage) },
+  { path: "blogs", element: wrapLazy(BlogListPage) },
+  { path: "blogs/add", element: wrapLazy(AddBlogPage) },
+  { path: "blogs/edit/:id", element: wrapLazy(EditBlogPage) },
+  { path: "blogs/:id/comments", element: wrapLazy(BlogCommentsPage) },
+  { path: "journals", element: wrapLazy(JournalListPage) },
+  { path: "journals/add", element: wrapLazy(AddJournalPage) },
+  { path: "journals/edit/:id", element: wrapLazy(EditJournalPage) },
+  { path: "projects", element: wrapLazy(ProjectListPage) },
+  { path: "projects/add", element: wrapLazy(AddProjectPage) },
+  { path: "projects/edit/:id", element: wrapLazy(EditProjectPage) },
+  { path: "services", element: wrapLazy(ServiceListPage) },
+  { path: "services/add", element: wrapLazy(AddServicePage) },
+  { path: "services/edit/:id", element: wrapLazy(EditServicePage) },
 ];
 
 const AppRoutes = () => {
@@ -67,7 +108,7 @@ const AppRoutes = () => {
           path="/admin"
           element={
             <GuestRoute>
-              <Login />
+              {wrapLazy(LoginPage)}
             </GuestRoute>
           }
         />
@@ -83,6 +124,8 @@ const AppRoutes = () => {
             }
           />
         ))}
+
+        <Route path="*" element={wrapLazy(NotFoundPage)} />
       </Routes>
     </AnimatePresence>
   );
@@ -96,6 +139,7 @@ export default function App() {
     <Router>
       <ScrollToTop />
       <ProgressCenter />
+      <SeoManager />
       {/* Onay banner'ı */}
       <CookieConsent
         visible={showBanner}

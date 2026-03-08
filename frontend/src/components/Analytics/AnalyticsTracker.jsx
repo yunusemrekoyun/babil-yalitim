@@ -1,7 +1,7 @@
 // src/components/Analytics/AnalyticsTracker.jsx
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import api from "../../api";
+import api, { getApiUrl } from "../../api";
 import useConsent from "../../hooks/useConsent";
 import useSessionId from "../../hooks/useSessionId";
 
@@ -21,6 +21,31 @@ const AnalyticsTracker = () => {
 
   // Admin rotalarını tamamen ignore et
   const isAdmin = pathname.startsWith("/admin");
+
+  const sendVisit = useCallback((payload, { keepalive = false } = {}) => {
+    const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "x-analytics-consent": "true",
+      ...(sessionId ? { "x-session-id": sessionId } : {}),
+    };
+
+    if (keepalive && typeof window !== "undefined" && window.fetch) {
+      return window.fetch(getApiUrl("/visits"), {
+        method: "POST",
+        credentials: "include",
+        keepalive: true,
+        headers,
+        body: JSON.stringify({
+          ...payload,
+          consent: "true",
+          sessionId: sessionId || undefined,
+        }),
+      });
+    }
+
+    return api.post("/visits", payload, { headers });
+  }, [sessionId]);
 
   useEffect(() => {
     if (isAdmin) return;
@@ -55,22 +80,11 @@ const AnalyticsTracker = () => {
 
     // Önceki public sayfa için kayıt gönder (ilk girişte prevPath===currPath olabilir)
     if (prevPath && consent === "true") {
-      api
-        .post(
-          "/visits",
-          {
-            path: prevPath,
-            duration: durationSec,
-            scrollDepth: maxScrollRef.current,
-            // section göndermesek de controller guessSection ile atıyor
-          },
-          {
-            headers: {
-              "x-analytics-consent": "true",
-              ...(sessionId ? { "x-session-id": sessionId } : {}),
-            },
-          }
-        )
+      sendVisit({
+        path: prevPath,
+        duration: durationSec,
+        scrollDepth: maxScrollRef.current,
+      })
         .catch(() => {});
     }
 
@@ -78,7 +92,7 @@ const AnalyticsTracker = () => {
     startTimeRef.current = now;
     maxScrollRef.current = 0;
     lastPathRef.current = pathname;
-  }, [pathname, consent, sessionId, isAdmin]);
+  }, [pathname, consent, isAdmin, sendVisit]);
 
   // Sayfadan ayrılırken (tab kapatma / reload) son sayfayı gönder
   useEffect(() => {
@@ -89,24 +103,19 @@ const AnalyticsTracker = () => {
       const durationSec = Math.round((now - startTimeRef.current) / 1000);
       const path = lastPathRef.current || window.location.pathname;
 
-      navigator.sendBeacon?.(
-        `${import.meta.env.VITE_API_BASE_URL}/visits`,
-        new Blob(
-          [
-            JSON.stringify({
-              path,
-              duration: durationSec,
-              scrollDepth: maxScrollRef.current,
-            }),
-          ],
-          { type: "application/json" }
-        )
-      );
+      sendVisit(
+        {
+          path,
+          duration: durationSec,
+          scrollDepth: maxScrollRef.current,
+        },
+        { keepalive: true }
+      ).catch(() => {});
     };
 
     window.addEventListener("beforeunload", beforeUnload);
     return () => window.removeEventListener("beforeunload", beforeUnload);
-  }, [consent, isAdmin]);
+  }, [consent, isAdmin, sendVisit]);
 
   return null;
 };

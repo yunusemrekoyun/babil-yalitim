@@ -1,5 +1,12 @@
 import Logo from "../../assets/logo.png";
+import { Link } from "react-router-dom";
 import { Facebook, Instagram, Mail, Phone, MapPin } from "lucide-react";
+import {
+  CONTACT_ADDRESS,
+  CONTACT_EMAIL,
+  CONTACT_PHONE_DISPLAY,
+  CONTACT_PHONE_LINK,
+} from "../../config/site";
 
 const Footer = () => {
   return (
@@ -21,36 +28,36 @@ const Footer = () => {
           </h4>
           <ul className="space-y-2">
             <li>
-              <a
-                href="#about"
+              <Link
+                to="/about"
                 className="text-secondaryColor hover:text-quaternaryColor transition"
               >
                 Hakkımızda
-              </a>
+              </Link>
             </li>
             <li>
-              <a
-                href="#Service"
+              <Link
+                to="/projects"
                 className="text-secondaryColor hover:text-quaternaryColor transition"
               >
                 Projeler
-              </a>
+              </Link>
             </li>
             <li>
-              <a
-                href="#journal"
+              <Link
+                to="/blog"
                 className="text-secondaryColor hover:text-quaternaryColor transition"
               >
                 Blog
-              </a>
+              </Link>
             </li>
             <li>
-              <a
-                href="#search"
+              <Link
+                to="/iletisim"
                 className="text-secondaryColor hover:text-quaternaryColor transition"
               >
-                Arama
-              </a>
+                İletişim
+              </Link>
             </li>
           </ul>
         </div>
@@ -62,25 +69,24 @@ const Footer = () => {
           </h4>
           <ul className="space-y-3 text-sm">
             <li className="flex items-center gap-2 ">
-              <MapPin size={18} className="text-secondaryColor" /> Kütahya,
-              Türkiye
+              <MapPin size={18} className="text-secondaryColor" /> {CONTACT_ADDRESS}
             </li>
             <li className="flex items-center gap-2 ">
               <Phone size={18} className="text-secondaryColor" />{" "}
               <a
-                href="tel:+905551234567"
+                href={`tel:${CONTACT_PHONE_LINK}`}
                 className="hover:text-quaternaryColor transition"
               >
-                +90 555 123 45 67
+                {CONTACT_PHONE_DISPLAY}
               </a>
             </li>
             <li className="flex items-center gap-2 ">
               <Mail size={18} className="text-secondaryColor" />{" "}
               <a
-                href="mailto:babilyalitim@gmail.com"
+                href={`mailto:${CONTACT_EMAIL}`}
                 className="hover:text-quaternaryColor transition"
               >
-                babilyalitim@gmail.com
+                {CONTACT_EMAIL}
               </a>
             </li>
           </ul>

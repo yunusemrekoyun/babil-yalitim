@@ -1,6 +1,12 @@
 // backend/models/Visit.js
 const mongoose = require("mongoose");
 
+const retentionDays = Math.max(
+  30,
+  Number(process.env.ANALYTICS_RETENTION_DAYS || 180)
+);
+const expireAfterSeconds = retentionDays * 24 * 60 * 60;
+
 const visitSchema = new mongoose.Schema(
   {
     sessionId: { type: String, index: true },
@@ -25,8 +31,8 @@ const visitSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Zaman bazlı raporlar için createdAt index'i
-visitSchema.index({ createdAt: -1 });
+// TTL ile otomatik veri temizleme + zaman bazlı raporlar
+visitSchema.index({ createdAt: 1 }, { expireAfterSeconds });
 // En sık yapılan rapor kombinasyonları:
 visitSchema.index({ section: 1, createdAt: -1 });
 visitSchema.index({ path: 1, createdAt: -1 });

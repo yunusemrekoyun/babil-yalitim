@@ -1,6 +1,7 @@
 // src/admin/pages/project/EditProject.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import PropTypes from "prop-types";
 import ProjectForm from "../../components/ProjectForm";
 import api from "../../../api";
 import ToastAlert from "../../components/ToastAlert";
@@ -10,7 +11,7 @@ import {
   completeProgressTask,
   failProgressTask,
   clampProgress,
-} from "../../components/ProgressCenter";
+} from "../../utils/progressBus";
 
 const EditProject = ({ onRequestClose }) => {
   const { id } = useParams();
@@ -47,7 +48,9 @@ const EditProject = ({ onRequestClose }) => {
       if (typeof onRequestClose === "function") {
         try {
           onRequestClose();
-        } catch {}
+        } catch (closeError) {
+          console.warn("onRequestClose failed:", closeError);
+        }
       }
 
       await api.put(`/projects/${id}`, formData, {
@@ -94,8 +97,12 @@ const EditProject = ({ onRequestClose }) => {
             </div>
           </div>
           <div className="relative">
-          <ProjectForm initialData={initialData} onSubmit={handleSubmit} submitting={submitting} />
-        </div>
+            <ProjectForm
+              initialData={initialData}
+              onSubmit={handleSubmit}
+              submitting={submitting}
+            />
+          </div>
         </div>
       </div>
 
@@ -112,3 +119,7 @@ const EditProject = ({ onRequestClose }) => {
 };
 
 export default EditProject;
+
+EditProject.propTypes = {
+  onRequestClose: PropTypes.func,
+};

@@ -2,33 +2,11 @@ const fs = require("fs/promises");
 const Blog = require("../models/Blog");
 const cloudinary = require("../config/cloudinary");
 const sanitizeHtml = require("../utils/sanitizeHtml");
-
-/* ------------ helpers ------------ */
-const normalizeTags = (val) => {
-  if (Array.isArray(val))
-    return val
-      .map(String)
-      .map((s) => s.trim())
-      .filter(Boolean);
-  if (typeof val === "string") {
-    try {
-      const parsed = JSON.parse(val);
-      if (Array.isArray(parsed)) {
-        return parsed
-          .map(String)
-          .map((s) => s.trim())
-          .filter(Boolean);
-      }
-    } catch {
-      /* JSON değilse CSV say */
-    }
-    return val
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }
-  return [];
-};
+const {
+  resolveTags,
+  sanitizeCommentInput,
+  toPublicComment,
+} = require("../utils/blog");
 
 const uploadOne = async (file, folder) => {
   const isVideo = /^video\//i.test(file?.mimetype || "");
@@ -102,7 +80,9 @@ exports.getBlogById = async (req, res) => {
     const b = await Blog.findById(req.params.id);
     if (!b) return res.status(404).json({ message: "Blog bulunamadı" });
     // public: SADECE onaylı yorumlar
-    const approvedComments = (b.comments || []).filter((c) => c.approved);
+    const approvedComments = (b.comments || [])
+      .filter((c) => c.approved)
+      .map(toPublicComment);
     res.json({
       _id: b._id,
       title: b.title,
@@ -125,8 +105,11 @@ exports.getBlogById = async (req, res) => {
 exports.createBlog = async (req, res) => {
   try {
     const { title, content } = req.body;
-    const tags = normalizeTags(req.body.tags);
     const safeContent = sanitizeHtml(content);
+    const tags = resolveTags(req.body.tags, {
+      title,
+      content: safeContent,
+    });
     const coverFile = req.files?.cover?.[0];
 
     if (!coverFile) {
@@ -164,10 +147,23 @@ exports.updateBlog = async (req, res) => {
 
     const { title, content } = req.body;
     const tagsProvided = req.body.tags !== undefined;
+    const nextTitle = title !== undefined ? title : blog.title;
+    const nextContent =
+      content !== undefined ? sanitizeHtml(content) : blog.content;
 
     if (title !== undefined) blog.title = title;
-    if (content !== undefined) blog.content = sanitizeHtml(content);
-    if (tagsProvided) blog.tags = normalizeTags(req.body.tags);
+    if (content !== undefined) blog.content = nextContent;
+    if (tagsProvided) {
+      blog.tags = resolveTags(req.body.tags, {
+        title: nextTitle,
+        content: nextContent,
+      });
+    } else if (!Array.isArray(blog.tags) || blog.tags.length === 0) {
+      blog.tags = resolveTags(undefined, {
+        title: nextTitle,
+        content: nextContent,
+      });
+    }
 
     const folder = process.env.CLOUDINARY_BLOGS_FOLDER || "blogs";
 
@@ -240,7 +236,9 @@ exports.getApprovedComments = async (req, res) => {
   try {
     const b = await Blog.findById(req.params.id).select("comments");
     if (!b) return res.status(404).json({ message: "Blog bulunamadı" });
-    const approved = (b.comments || []).filter((c) => c.approved);
+    const approved = (b.comments || [])
+      .filter((c) => c.approved)
+      .map(toPublicComment);
     res.json(approved);
   } catch (err) {
     res.status(500).json({ message: "Yorumlar alınamadı", error: err.message });
@@ -250,21 +248,18 @@ exports.getApprovedComments = async (req, res) => {
 // public: yorum gönder (ad, email, body) -> approved:false
 exports.createComment = async (req, res) => {
   try {
-    const { name, email, body } = req.body;
-    if (!name || !email || !body) {
-      return res
-        .status(400)
-        .json({ message: "Ad, e-posta ve yorum alanları zorunludur." });
-    }
+    const safeComment = sanitizeCommentInput(req.body);
     const blog = await Blog.findById(req.params.id);
     if (!blog) return res.status(404).json({ message: "Blog bulunamadı" });
 
-    blog.comments.push({ name, email, body, approved: false });
+    blog.comments.push({ ...safeComment, approved: false });
     await blog.save();
 
     res.status(201).json({ message: "Yorum alındı, onay bekliyor." });
   } catch (err) {
-    res.status(400).json({ message: "Yorum eklenemedi", error: err.message });
+    res
+      .status(err.status || 400)
+      .json({ message: "Yorum eklenemedi", error: err.message });
   }
 };
 
@@ -273,7 +268,19 @@ exports.getAllComments = async (req, res) => {
   try {
     const b = await Blog.findById(req.params.id).select("comments title");
     if (!b) return res.status(404).json({ message: "Blog bulunamadı" });
-    res.json({ blogId: b._id, title: b.title, comments: b.comments || [] });
+    res.json({
+      blogId: b._id,
+      title: b.title,
+      comments: (b.comments || []).map((comment) => ({
+        _id: comment._id,
+        name: comment.name,
+        body: comment.body,
+        approved: comment.approved,
+        createdAt: comment.createdAt,
+        updatedAt: comment.updatedAt,
+        emailMasked: comment.emailMasked || "",
+      })),
+    });
   } catch (err) {
     res.status(500).json({ message: "Yorumlar alınamadı", error: err.message });
   }

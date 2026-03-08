@@ -4,6 +4,33 @@ const geoip = require("geoip-lite");
 const UAParser = require("ua-parser-js");
 const { v4: uuidv4 } = require("uuid");
 
+function hasAnalyticsConsent(req) {
+  const headerConsent = String(
+    req.headers["x-analytics-consent"] || ""
+  ).toLowerCase();
+  if (headerConsent === "true") return true;
+
+  const bodyConsent = String(req.body?.consent || "").toLowerCase();
+  if (bodyConsent === "true") return true;
+
+  const queryConsent = String(req.query?.consent || "").toLowerCase();
+  return queryConsent === "true";
+}
+
+function getSessionId(req) {
+  return (
+    req.headers["x-session-id"] ||
+    req.body?.sessionId ||
+    req.query?.sessionId ||
+    uuidv4()
+  );
+}
+
+function toSafeNumber(value, fallback = 0) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
 function guessSection(path = "") {
   if (!path) return "other";
   if (path.startsWith("/blog")) return "blog";
@@ -24,13 +51,9 @@ function extractClientIp(req) {
 
 const recordVisit = async (req, res) => {
   try {
-    const consent = String(
-      req.headers["x-analytics-consent"] || ""
-    ).toLowerCase();
-    if (consent !== "true") return res.status(204).end();
+    if (!hasAnalyticsConsent(req)) return res.status(204).end();
 
-    let sessionId = req.headers["x-session-id"];
-    if (!sessionId) sessionId = uuidv4();
+    const sessionId = getSessionId(req);
 
     const { path, duration, scrollDepth, section, userId } = req.body;
     const ip = extractClientIp(req);
@@ -50,8 +73,8 @@ const recordVisit = async (req, res) => {
       browser: ua.browser?.name || null,
       os: ua.os?.name || null,
       device: ua.device?.type || "desktop",
-      duration: Number.isFinite(duration) ? duration : 0,
-      scrollDepth: Number.isFinite(scrollDepth) ? scrollDepth : 0,
+      duration: toSafeNumber(duration, 0),
+      scrollDepth: toSafeNumber(scrollDepth, 0),
       section: section || guessSection(path),
     });
 
@@ -238,4 +261,6 @@ module.exports = {
   getSummary,
   getTopPages,
   getTimeseries,
+  hasAnalyticsConsent,
+  getSessionId,
 };

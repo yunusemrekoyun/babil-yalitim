@@ -52,7 +52,7 @@ const TR_PATH_MAP = [
   { test: /^\/blog(?:\/|$)/i, label: "Blog" },
   { test: /^\/journals?(?:\/|$)/i, label: "Haberler" },
   { test: /^\/services?(?:\/|$)/i, label: "Hizmetler" },
-  { test: /^\/contact(?:\/|$)/i, label: "İletişim" },
+  { test: /^\/(?:contact|iletisim)(?:\/|$)/i, label: "İletişim" },
   { test: /^\/about(?:\/|$)/i, label: "Hakkımızda" },
 ];
 
@@ -72,6 +72,14 @@ const toQuery = (filters) => {
 };
 
 const PIE_COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
+
+const toIsoDay = (date) => {
+  const x = new Date(date);
+  const year = x.getFullYear();
+  const month = String(x.getMonth() + 1).padStart(2, "0");
+  const day = String(x.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 /** ---------- Dashboard ---------- */
 const Dashboard = () => {
@@ -138,8 +146,8 @@ const Dashboard = () => {
   const fetchRecent = useCallback(async () => {
     try {
       setRecentLoading(true);
-      // daha fazla veri çek (pagination + 15 günlük filtre sonrası)
-      const qs = toQuery({ ...filters, limit: 200 });
+      const defaultFrom = filters.from || toIsoDay(Date.now() - 15 * 24 * 60 * 60 * 1000);
+      const qs = toQuery({ ...filters, from: defaultFrom, limit: 1000 });
       const { data } = await api.get(`/visits${qs ? `?${qs}` : ""}`);
       setRecent(Array.isArray(data) ? data : []);
     } catch (e) {

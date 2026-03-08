@@ -134,10 +134,8 @@ const ProjectItem = ({ project, index }) => {
       const otherId = e?.detail?.id;
       if (!otherId || otherId === selfId.current) return;
       if (videoRef.current && !videoRef.current.paused) {
-        try {
-          videoRef.current.pause();
-          setIsPlayingTouch(false);
-        } catch {}
+        videoRef.current.pause();
+        setIsPlayingTouch(false);
       }
     };
     window.addEventListener(GRID_PLAY_EVENT, handler);
@@ -161,7 +159,9 @@ const ProjectItem = ({ project, index }) => {
           );
           await videoRef.current.play();
           setIsPlayingTouch(true);
-        } catch {}
+        } catch {
+          setIsPlayingTouch(false);
+        }
       });
       return;
     }
@@ -171,7 +171,10 @@ const ProjectItem = ({ project, index }) => {
         window.dispatchEvent(
           new CustomEvent(GRID_PLAY_EVENT, { detail: { id: selfId.current } })
         );
-        videoRef.current.play().then(() => setIsPlayingTouch(true)).catch(() => {});
+        videoRef.current
+          .play()
+          .then(() => setIsPlayingTouch(true))
+          .catch(() => setIsPlayingTouch(false));
       } else {
         videoRef.current.pause();
         setIsPlayingTouch(false);

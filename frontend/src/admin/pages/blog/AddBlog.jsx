@@ -1,6 +1,6 @@
-// src/admin/pages/blog/AddBlog.jsx
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
 import BlogForm from "../../components/BlogForm";
 import api from "../../../api";
 import ToastAlert from "../../components/ToastAlert";
@@ -11,7 +11,7 @@ import {
   completeProgressTask,
   failProgressTask,
   clampProgress,
-} from "../../components/ProgressCenter";
+} from "../../utils/progressBus";
 
 function AddBlog({ onRequestClose }) {
   const navigate = useNavigate();
@@ -28,7 +28,9 @@ function AddBlog({ onRequestClose }) {
       if (typeof onRequestClose === "function") {
         try {
           onRequestClose();
-        } catch {}
+        } catch (closeError) {
+          console.warn("onRequestClose failed:", closeError);
+        }
       }
 
       await api.post("/blogs", fd, {
@@ -73,7 +75,7 @@ function AddBlog({ onRequestClose }) {
           </div>
 
           <div className="relative">
-          <BlogForm onSubmit={handleSubmit} submitting={submitting} />
+            <BlogForm onSubmit={handleSubmit} submitting={submitting} />
           </div>
         </div>
 
@@ -91,3 +93,7 @@ function AddBlog({ onRequestClose }) {
 }
 
 export default AddBlog;
+
+AddBlog.propTypes = {
+  onRequestClose: PropTypes.func,
+};

@@ -11,7 +11,7 @@ import {
   completeProgressTask,
   failProgressTask,
   clampProgress,
-} from "../../components/ProgressCenter";
+} from "../../utils/progressBus";
 
 const EditJournal = () => {
   const { id } = useParams();

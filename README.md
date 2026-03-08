@@ -79,17 +79,53 @@ Backend (.env)
 PORT=5000
 MONGO_URI=your_mongo_connection_string
 JWT_SECRET=your_jwt_secret
+ADMIN_USER=admin
+ADMIN_PASS=change_me
+ADMIN_PASS_HASH=
+ACCESS_TOKEN_EXPIRES_IN=1h
+COOKIE_DOMAIN=
+CROSS_SITE_COOKIES=0
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+LIKE_SALT=change_me
+COMMENT_EMAIL_SALT=change_me
+MAX_VIDEO_SIZE_MB=200
+VERTICAL_MIN_RATIO=1.5
+ANALYTICS_RETENTION_DAYS=180
 FRONTEND_ORIGIN=https://yourfrontend.com
 EXTRA_ALLOWED_ORIGINS=https://admin.yoursite.com,https://staging.yoursite.com
 BASE_URL=https://yourbackend.com
 VERCEL_PREVIEW_ALLOWED=1
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=1
+SMTP_USER=your-gmail@gmail.com
+SMTP_PASS=your-gmail-app-password
+CONTACT_TO_EMAIL=your-gmail@gmail.com
+CONTACT_FROM_EMAIL=your-gmail@gmail.com
 
 Frontend (.env)
 
 VITE_API_BASE_URL=https://yourbackend.com/api
+VITE_UPLOAD_TIMEOUT_MS=120000
+VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
+VITE_HERO_PUBLIC_ID=desktop-hero
+VITE_HERO_MOBILE_PUBLIC_ID=mobile-hero
+VITE_HERO_POSTER_PUBLIC_ID=hero-poster
+VITE_SITE_NAME=Babil Yalitim
+VITE_SITE_TITLE=Babil Yalitim
+VITE_SITE_DESCRIPTION=Su yalitimi, izolasyon ve proje icerikleri.
+VITE_CONTACT_PHONE_DISPLAY=+90 555 123 45 67
+VITE_CONTACT_PHONE_LINK=+905551234567
+VITE_CONTACT_EMAIL=info@example.com
+VITE_CONTACT_ADDRESS=Canakkale, Turkiye
+VITE_CONTACT_HOURS=Hafta ici 09:00 - 18:00
+VITE_CONTACT_MAP_URL=https://www.google.com/maps/embed?pb=
+
+Use the committed templates as a starting point:
+- `backend/.env.example`
+- `frontend/.env.example`
 
 
 ⸻

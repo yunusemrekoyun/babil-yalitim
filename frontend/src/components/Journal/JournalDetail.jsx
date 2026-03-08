@@ -28,6 +28,9 @@ const JournalDetail = () => {
   const [liking, setLiking] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(0);
+  const [likeEmail, setLikeEmail] = useState("");
+  const [likeFormOpen, setLikeFormOpen] = useState(false);
+  const [likeStatus, setLikeStatus] = useState(null);
 
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -79,22 +82,32 @@ const JournalDetail = () => {
     );
   }, [item]);
 
-  const handleLike = async () => {
-    if (!id || liking) return;
-    const email = window.prompt("Beğenmek için e‑posta adresinizi girin:");
-    if (!email) return;
+  const submitLike = async () => {
+    if (!id || liking || !likeEmail.trim()) return;
     try {
       setLiking(true);
-      const { data } = await api.post(`/journals/${id}/like`, { email });
+      setLikeStatus(null);
+      const { data } = await api.post(`/journals/${id}/like`, {
+        email: likeEmail.trim(),
+      });
       setLikes(data?.likesCount ?? likes + 1);
       setLiked(true);
+      setLikeStatus({ type: "success", text: "Begeni kaydedildi." });
+      setLikeFormOpen(false);
+      setLikeEmail("");
     } catch (e) {
       if (e?.response?.status === 409) {
         setLiked(true);
         setLikes(e?.response?.data?.likesCount ?? likes);
-        alert("Bu haberi zaten beğenmişsiniz.");
+        setLikeStatus({
+          type: "info",
+          text: "Bu haberi zaten begenmissiniz.",
+        });
       } else {
-        alert(e?.response?.data?.message || "Beğeni eklenemedi.");
+        setLikeStatus({
+          type: "error",
+          text: e?.response?.data?.message || "Begeni eklenemedi.",
+        });
       }
     } finally {
       setLiking(false);
@@ -188,7 +201,7 @@ const JournalDetail = () => {
                 <CalendarDays size={18} /> {dateText || "—"}
               </span>
               <button
-                onClick={handleLike}
+                onClick={() => setLikeFormOpen((prev) => !prev)}
                 disabled={liking}
                 className={`inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full border transition ${
                   liked
@@ -202,6 +215,43 @@ const JournalDetail = () => {
                 {likes}
               </button>
             </div>
+            {likeFormOpen && !liked && (
+              <div className="mt-4 max-w-sm rounded-2xl border border-white/30 bg-white/10 p-3 backdrop-blur">
+                <label className="mb-2 block text-xs font-medium text-white/85">
+                  Haberi begendiginizi kaydetmek icin e-posta adresiniz
+                </label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="email"
+                    value={likeEmail}
+                    onChange={(e) => setLikeEmail(e.target.value)}
+                    placeholder="ornek@mail.com"
+                    className="w-full rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-sm text-slate-800 outline-none focus:border-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={submitLike}
+                    disabled={liking || !likeEmail.trim()}
+                    className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-60"
+                  >
+                    {liking ? "Kaydediliyor..." : "Gonder"}
+                  </button>
+                </div>
+              </div>
+            )}
+            {likeStatus && (
+              <div
+                className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                  likeStatus.type === "success"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : likeStatus.type === "info"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-rose-100 text-rose-700"
+                }`}
+              >
+                {likeStatus.text}
+              </div>
+            )}
           </div>
         </motion.div>
       </div>

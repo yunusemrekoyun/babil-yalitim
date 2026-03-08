@@ -1,5 +1,6 @@
 // backend/routes/searchRoutes.js
 const express = require("express");
+const rateLimit = require("express-rate-limit");
 const router = express.Router();
 
 // ✅ Linux case-sensitive: model dosya adları büyük harfle
@@ -7,10 +8,22 @@ const Blog = require("../models/Blog");
 const Journal = require("../models/Journal");
 const Project = require("../models/Project");
 const Service = require("../models/Service");
+const { buildSearchRegex, normalizeSearchQuery } = require("../utils/search");
 
-router.get("/", async (req, res) => {
-  const query = (req.query.q || "").trim();
-  const regex = new RegExp(query, "i");
+const searchLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.get("/", searchLimiter, async (req, res) => {
+  const query = normalizeSearchQuery(req.query.q || "");
+  const regex = buildSearchRegex(query);
+
+  if (!regex) {
+    return res.json([]);
+  }
 
   try {
     const [blogs, journals, projects, services] = await Promise.all([

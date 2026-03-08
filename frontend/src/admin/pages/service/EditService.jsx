@@ -10,7 +10,7 @@ import {
   completeProgressTask,
   failProgressTask,
   clampProgress,
-} from "../../components/ProgressCenter";
+} from "../../utils/progressBus";
 
 const EditService = () => {
   const { id } = useParams();

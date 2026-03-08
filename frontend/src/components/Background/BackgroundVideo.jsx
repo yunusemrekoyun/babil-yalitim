@@ -16,9 +16,16 @@ const cldPoster = (publicId) =>
     ? `https://res.cloudinary.com/${CLOUD}/video/upload/so_0,f_jpg,q_auto/${publicId}.jpg`
     : "";
 
+const cldImage = (publicId) =>
+  CLOUD && publicId
+    ? `https://res.cloudinary.com/${CLOUD}/image/upload/f_auto,q_auto/${publicId}`
+    : "";
+
 export default function BackgroundVideo({
   desktopPublicId,
+  mobilePublicId = "",
   posterPublicId = "",
+  fallbackSrc = "/fallback-hero.svg",
   className = "",
 }) {
   const vA = useRef(null);
@@ -33,6 +40,10 @@ export default function BackgroundVideo({
   const posterUrl = useMemo(
     () => cldPoster(posterPublicId || desktopPublicId || ""),
     [posterPublicId, desktopPublicId]
+  );
+  const mobileImageUrl = useMemo(
+    () => cldImage(mobilePublicId || ""),
+    [mobilePublicId]
   );
 
   const [isMobile, setIsMobile] = useState(
@@ -107,10 +118,10 @@ export default function BackgroundVideo({
     <div
       className={`fixed inset-0 w-full h-full -z-10 overflow-hidden ${className}`}
     >
-      {isMobile ? (
+      {isMobile || !desktopUrl ? (
         // 🔹 MOBİL: SADECE GÖRSEL (video yok)
         <img
-          src={posterUrl || "/fallback-hero.jpg"}
+          src={mobileImageUrl || posterUrl || fallbackSrc}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
           loading="eager"
@@ -146,6 +157,8 @@ export default function BackgroundVideo({
 
 BackgroundVideo.propTypes = {
   desktopPublicId: PropTypes.string.isRequired,
+  mobilePublicId: PropTypes.string,
   posterPublicId: PropTypes.string,
+  fallbackSrc: PropTypes.string,
   className: PropTypes.string,
 };

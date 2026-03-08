@@ -83,7 +83,6 @@ const LinksSection = () => {
       el.scrollLeft = clampScroll(offset);
     }
     updateArrowState();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Scroll ve resize’ta butonları güncelle

@@ -1,6 +1,6 @@
-// src/admin/pages/blog/EditBlog.jsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import PropTypes from "prop-types";
 import BlogForm from "../../components/BlogForm";
 import api from "../../../api";
 import ToastAlert from "../../components/ToastAlert";
@@ -11,7 +11,7 @@ import {
   completeProgressTask,
   failProgressTask,
   clampProgress,
-} from "../../components/ProgressCenter";
+} from "../../utils/progressBus";
 
 function EditBlog({ onRequestClose }) {
   const { id } = useParams();
@@ -51,7 +51,9 @@ function EditBlog({ onRequestClose }) {
       if (typeof onRequestClose === "function") {
         try {
           onRequestClose();
-        } catch {}
+        } catch (closeError) {
+          console.warn("onRequestClose failed:", closeError);
+        }
       }
 
       await api.put(`/blogs/${id}`, fd, {
@@ -98,7 +100,11 @@ function EditBlog({ onRequestClose }) {
           </div>
 
           <div className="relative">
-          <BlogForm initialData={initialData} onSubmit={handleSubmit} submitting={submitting} />
+            <BlogForm
+              initialData={initialData}
+              onSubmit={handleSubmit}
+              submitting={submitting}
+            />
           </div>
         </div>
 
@@ -116,3 +122,7 @@ function EditBlog({ onRequestClose }) {
 }
 
 export default EditBlog;
+
+EditBlog.propTypes = {
+  onRequestClose: PropTypes.func,
+};

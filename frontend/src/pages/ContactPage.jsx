@@ -19,7 +19,7 @@ const ContactPage = () => {
 
         {/* Breadcrumb */}
         <section className="max-w-7xl mx-auto px-4 md:px-8 pt-8">
-          <Breadcrumb titleMap={{ contact: "İletişim" }} />
+          <Breadcrumb titleMap={{ iletisim: "İletişim" }} />
         </section>
 
         <Contact />

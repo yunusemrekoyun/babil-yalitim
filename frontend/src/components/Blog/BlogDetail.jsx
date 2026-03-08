@@ -146,6 +146,7 @@ const BlogDetail = () => {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [sending, setSending] = useState(false);
+  const [commentStatus, setCommentStatus] = useState(null);
   const [form, setForm] = useState({ name: "", email: "", body: "" });
 
   // okuma ilerleme
@@ -487,12 +488,22 @@ const BlogDetail = () => {
             e.preventDefault();
             try {
               setSending(true);
+              setCommentStatus(null);
               await api.post(`/blogs/${id}/comments`, form);
-              alert("Yorum alındı, onay bekliyor.");
+              setCommentStatus({
+                type: "success",
+                text: "Yorum alindi, onay bekliyor.",
+              });
               setForm({ name: "", email: "", body: "" });
             } catch (e2) {
               console.error(e2);
-              alert("Yorum gönderilemedi.");
+              setCommentStatus({
+                type: "error",
+                text:
+                  e2?.response?.data?.error ||
+                  e2?.response?.data?.message ||
+                  "Yorum gonderilemedi.",
+              });
             } finally {
               setSending(false);
             }
@@ -531,6 +542,17 @@ const BlogDetail = () => {
               {sending ? "Gönderiliyor…" : "Yorumu Gönder"}
             </button>
           </div>
+          {commentStatus && (
+            <div
+              className={`md:col-span-2 rounded-xl border px-4 py-3 text-sm ${
+                commentStatus.type === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-rose-200 bg-rose-50 text-rose-700"
+              }`}
+            >
+              {commentStatus.text}
+            </div>
+          )}
         </form>
       </motion.section>
     </div>

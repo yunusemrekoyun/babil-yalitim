@@ -1,5 +1,6 @@
 // src/admin/pages/project/AddProject.jsx
 import { useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
 import ProjectForm from "../../components/ProjectForm";
 import api from "../../../api";
 import ToastAlert from "../../components/ToastAlert";
@@ -10,7 +11,7 @@ import {
   completeProgressTask,
   failProgressTask,
   clampProgress,
-} from "../../components/ProgressCenter";
+} from "../../utils/progressBus";
 
 const AddProject = ({ onRequestClose }) => {
   const navigate = useNavigate();
@@ -28,7 +29,9 @@ const AddProject = ({ onRequestClose }) => {
       if (typeof onRequestClose === "function") {
         try {
           onRequestClose();
-        } catch {}
+        } catch (closeError) {
+          console.warn("onRequestClose failed:", closeError);
+        }
       }
 
       await api.post("/projects", formData, {
@@ -71,8 +74,8 @@ const AddProject = ({ onRequestClose }) => {
             </div>
           </div>
           <div className="relative">
-          <ProjectForm onSubmit={handleSubmit} submitting={submitting} />
-        </div>
+            <ProjectForm onSubmit={handleSubmit} submitting={submitting} />
+          </div>
         </div>
       </div>
 
@@ -89,3 +92,7 @@ const AddProject = ({ onRequestClose }) => {
 };
 
 export default AddProject;
+
+AddProject.propTypes = {
+  onRequestClose: PropTypes.func,
+};

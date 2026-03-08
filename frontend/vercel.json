@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/((?!assets|favicon\\.ico|robots\\.txt|manifest\\.webmanifest|vite.svg|.*\\.[^/]+$).*)",
+      "source": "/((?!assets|.*\\.[^/]+$).*)",
       "destination": "/"
     }
   ]

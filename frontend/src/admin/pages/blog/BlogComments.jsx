@@ -92,7 +92,7 @@ const BlogComments = () => {
       arr = arr.filter(
         (c) =>
           c.name?.toLowerCase().includes(s) ||
-          c.email?.toLowerCase().includes(s) ||
+          c.emailMasked?.toLowerCase().includes(s) ||
           c.body?.toLowerCase().includes(s)
       );
     }
@@ -238,7 +238,9 @@ const BlogComments = () => {
                 >
                   <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                     <div className="font-medium text-slate-900 dark:text-white">{c.name}</div>
-                    <div className="text-slate-500 text-xs dark:text-slate-300">{c.email}</div>
+                    <div className="text-slate-500 text-xs dark:text-slate-300">
+                      {c.emailMasked || "-"}
+                    </div>
                   </td>
                   <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                     <div className="whitespace-pre-wrap text-slate-800 dark:text-slate-100">{c.body}</div>

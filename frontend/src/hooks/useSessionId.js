@@ -1,16 +1,16 @@
 // src/hooks/useSessionId.js
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 const KEY = "sessionId";
 
 export default function useSessionId(consent) {
-  const ref = useRef(null);
+  const [sessionId, setSessionId] = useState(null);
 
   useEffect(() => {
     // Sadece consent === "true" iken session oluştur/sürdür
     if (consent !== "true") {
-      ref.current = null;
+      setSessionId(null);
       return;
     }
     try {
@@ -19,11 +19,11 @@ export default function useSessionId(consent) {
         sid = uuidv4();
         localStorage.setItem(KEY, sid);
       }
-      ref.current = sid;
+      setSessionId(sid);
     } catch {
-      ref.current = null;
+      setSessionId(null);
     }
   }, [consent]);
 
-  return ref.current; // null veya string
+  return sessionId;
 }

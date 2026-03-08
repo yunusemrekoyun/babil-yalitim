@@ -13,6 +13,11 @@ const api = axios.create({
   timeout: 20000,
 });
 
+export const getApiUrl = (path = "") => {
+  const normalizedBase = API_BASE.endsWith("/") ? API_BASE : `${API_BASE}/`;
+  return new URL(String(path || "").replace(/^\/+/, ""), normalizedBase).toString();
+};
+
 // İSTEK interceptor
 api.interceptors.request.use(
   (config) => {

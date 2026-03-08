@@ -7,19 +7,18 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "antd": "^5.26.6",
-    "axios": "^1.11.0",
+    "axios": "^1.13.6",
     "framer-motion": "^11.3.30",
-    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.525.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.5.0",
-    "react-intersection-observer": "^9.16.0",
-    "react-router-dom": "^7.7.1",
+    "react-router-dom": "^7.13.1",
     "recharts": "^3.1.0",
     "uuid": "^11.1.0"
   },
@@ -27,7 +26,7 @@
     "@eslint/js": "^9.9.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.9.0",
     "eslint-plugin-react": "^7.35.0",
@@ -36,6 +35,7 @@
     "globals": "^15.9.0",
     "postcss": "^8.4.41",
     "tailwindcss": "^3.4.10",
-    "vite": "^5.4.1"
+    "vite": "^7.3.1",
+    "vitest": "^3.2.4"
   }
 }

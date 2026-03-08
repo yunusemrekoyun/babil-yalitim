@@ -17,7 +17,9 @@ const mediaSchema = new mongoose.Schema(
 const commentSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, trim: true },
+    email: { type: String, trim: true, select: false },
+    emailHash: { type: String, default: "" },
+    emailMasked: { type: String, trim: true, default: "" },
     body: { type: String, required: true, trim: true },
     approved: { type: Boolean, default: false },
   },

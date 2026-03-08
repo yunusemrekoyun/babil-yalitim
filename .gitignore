@@ -34,6 +34,8 @@ lerna-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+!.env.example
+!**/.env.example
 
 # === Özelleştirilmiş ayarlar ===
 *.bak
@@ -49,5 +51,4 @@ Desktop.ini
 *.mov
 *.mkv
 *.webm
-
 
