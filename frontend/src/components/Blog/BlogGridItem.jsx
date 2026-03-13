@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import AdaptiveImage from "../Media/AdaptiveImage";
 
 const toExcerpt = (htmlOrText, maxLen = 140) => {
   if (!htmlOrText) return "";
@@ -29,7 +30,7 @@ const BlogGridItem = ({ item, index }) => {
       initial={{ opacity: 0, y: 22 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.4, ease: "easeOut" }}
-      className="group rounded-2xl overflow-hidden border border-white/40 bg-white/60 backdrop-blur-xl shadow-lg hover:shadow-[0_18px_50px_rgba(0,0,0,0.16)] hover:-translate-y-0.5 transition-all cursor-pointer"
+      className="transform-gpu-soft group rounded-2xl overflow-hidden border border-white/40 bg-white/60 backdrop-blur-xl shadow-lg hover:shadow-[0_18px_50px_rgba(0,0,0,0.16)] hover:-translate-y-0.5 transition-all cursor-pointer"
       onClick={() => navigate(`/blog/${item._id}`)}
       role="button"
       tabIndex={0}
@@ -38,11 +39,12 @@ const BlogGridItem = ({ item, index }) => {
     >
       {/* Kapak */}
       <div className="relative w-full h-44 md:h-56 overflow-hidden">
-        <img
-          src={coverUrl}
+        <AdaptiveImage
+          media={item?.cover || coverUrl}
           alt={item?.title || "blog kapak"}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-          loading="lazy"
+          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          widths={[320, 480, 640, 800, 960]}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
         {createdText && (

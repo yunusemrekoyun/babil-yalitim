@@ -22,10 +22,7 @@ router.get("/:id", getServiceById);
 router.post(
   "/",
   verifyToken,
-  upload.fields([
-    { name: "cover", maxCount: 1 }, // zorunlu, image | video
-    { name: "images", maxCount: 20 }, // opsiyonel, image | video
-  ]),
+  upload.any(),
   compressIfNeeded,
   createService
 );
@@ -33,10 +30,7 @@ router.post(
 router.put(
   "/:id",
   verifyToken,
-  upload.fields([
-    { name: "cover", maxCount: 1 },
-    { name: "images", maxCount: 20 },
-  ]),
+  upload.any(),
   compressIfNeeded,
   updateService
 );

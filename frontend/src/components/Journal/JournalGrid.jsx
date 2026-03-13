@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import JournalGridItem from "./JournalGridItem";
+import useViewportActivation from "../../hooks/useViewportActivation";
 
 const AUTOPLAY_MS = 4000;
 
@@ -34,6 +35,10 @@ const JournalGrid = () => {
   const startRef = useRef({ x: 0, y: 0 });
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [sectionRef, inView] = useViewportActivation({
+    once: false,
+    rootMargin: "120px 0px",
+  });
 
   const navigate = useNavigate();
   const timerRef = useRef(null);
@@ -51,6 +56,7 @@ const JournalGrid = () => {
             list.map((j) => ({
               _id: j._id,
               title: j.title,
+              cover: j?.cover || null,
               coverUrl: j?.cover?.url || "",
               content: j?.content || "",
               date: j?.createdAt || j?.updatedAt || null,
@@ -89,12 +95,12 @@ const JournalGrid = () => {
 
   // autoplay
   useEffect(() => {
-    if (!len || paused) return;
+    if (!len || paused || !inView) return;
     timerRef.current = setInterval(() => {
       setGroupIdx((p) => (p + 1) % groups);
     }, AUTOPLAY_MS);
     return () => clearInterval(timerRef.current);
-  }, [len, groups, paused]);
+  }, [groups, inView, len, paused]);
 
   const goToGroup = (i) => setGroupIdx(((i % groups) + groups) % groups);
 
@@ -128,6 +134,7 @@ const JournalGrid = () => {
 
   return (
     <section
+      ref={sectionRef}
       className="relative w-full px-3 sm:px-4 md:px-6 py-10 md:py-12"
       id="journal"
     >

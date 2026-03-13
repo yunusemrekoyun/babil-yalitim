@@ -42,7 +42,7 @@ const upload = multer({
 
 async function compressIfNeeded(req, res, next) {
   const files = req.files || {};
-  const all = Object.values(files).flat();
+  const all = Array.isArray(files) ? files : Object.values(files).flat();
 
   const failed = [];
 

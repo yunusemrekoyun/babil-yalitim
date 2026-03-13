@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import ToastAlert from "./ToastAlert";
+import { ProjectPreview } from "./previews/ContentPreviews";
 
 const inputCls =
   "w-full rounded-xl border border-slate-200/70 bg-white/60 px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
@@ -27,6 +28,7 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
+  const [showPreview, setShowPreview] = useState(false);
 
   // text alanları
   const [title, setTitle] = useState(initialData?.title || "");
@@ -150,6 +152,53 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
   const existingCoverType = existingCover?.resourceType || "image";
   const newCoverType = coverFile?.type?.startsWith("video") ? "video" : "image";
 
+  const previewData = useMemo(
+    () => ({
+      title,
+      description,
+      category,
+      startDate: startDate ? startDate.split("T")[0] : "",
+      endDate: endDate ? endDate.split("T")[0] : "",
+      cover: {
+        src: coverPreview || existingCover?.url || "",
+        type: coverFile ? newCoverType : existingCoverType,
+        alt: title,
+      },
+      video: {
+        src: videoPreview || existingVideo?.url || "",
+        type: "video",
+        alt: `${title}-video`,
+      },
+      images: imagesPreviews.length
+        ? imagesPreviews.map((src) => ({
+            src,
+            type: "image",
+            alt: `${title}-gorsel`,
+          }))
+        : existingImages.map((img) => ({
+            src: img.url,
+            type: img.resourceType || "image",
+            alt: `${title}-gorsel`,
+          })),
+    }),
+    [
+      category,
+      coverPreview,
+      description,
+      endDate,
+      existingCover?.url,
+      existingCoverType,
+      existingImages,
+      existingVideo?.url,
+      imagesPreviews,
+      newCoverType,
+      startDate,
+      title,
+      videoPreview,
+      coverFile,
+    ]
+  );
+
   return (
     <form onSubmit={submit} className="grid grid-cols-1 gap-6 lg:grid-cols-5">
       {/* Sol: metin alanları */}
@@ -167,10 +216,19 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Açıklama
-          </label>
+        <div className="grid gap-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Açıklama
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowPreview((prev) => !prev)}
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-100 dark:hover:border-slate-500"
+            >
+              {showPreview ? "Önizlemeyi gizle" : "Önizleme göster"}
+            </button>
+          </div>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -179,6 +237,8 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
             placeholder="Proje açıklaması"
           />
         </div>
+
+        {showPreview && <ProjectPreview preview={previewData} />}
 
         <div>
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">

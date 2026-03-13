@@ -374,7 +374,7 @@ const BlogDetail = () => {
           {/* Zengin içerik (başlık id’leri enjekte edilmiş) */}
           {/<[a-z][\s\S]*>/i.test(blog.content) ? (
             <div
-              className="prose prose-sm md:prose-base lg:prose-lg prose-p:leading-7 prose-img:rounded-xl prose-headings:text-secondaryColor max-w-none"
+              className="rich-content prose prose-sm md:prose-base lg:prose-lg prose-p:leading-7 prose-img:rounded-xl prose-headings:text-secondaryColor max-w-none"
               // Başlık bağlantısı için anchor ikonunu css ile göstereceğiz
               dangerouslySetInnerHTML={{ __html: contentWithIds }}
               onClick={(e) => {

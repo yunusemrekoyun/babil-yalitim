@@ -87,7 +87,7 @@ const Hero = ({ targetId = "after-hero" }) => {
             <motion.button
               onClick={scrollToTarget}
               aria-label="Aşağı kaydır"
-              className="rounded-full border border-white/30 bg-white/15 backdrop-blur-xl
+              className="transform-gpu-soft rounded-full border border-white/30 bg-white/15 backdrop-blur-xl
                          shadow-[0_6px_30px_rgba(0,0,0,0.2)] p-2.5 hover:bg-white/25 transition"
               animate={{ y: [0, 10, 0] }}
               transition={{
@@ -176,7 +176,7 @@ const Hero = ({ targetId = "after-hero" }) => {
           <motion.button
             onClick={scrollToTarget}
             aria-label="Aşağı kaydır"
-            className="rounded-full border border-white/30 bg-white/15 backdrop-blur-xl shadow-[0_6px_30px_rgba(0,0,0,0.2)] p-3.5 hover:bg-white/25 transition"
+            className="transform-gpu-soft rounded-full border border-white/30 bg-white/15 backdrop-blur-xl shadow-[0_6px_30px_rgba(0,0,0,0.2)] p-3.5 hover:bg-white/25 transition"
             animate={{ y: [0, 10, 0] }}
             transition={{
               repeat: Infinity,

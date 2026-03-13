@@ -1,70 +1,127 @@
-// src/admin/components/BlogForm.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
+import RichContentField from "./RichContentField";
+import { BlogPreview } from "./previews/ContentPreviews";
 
 const inputCls =
-  "w-full rounded-xl border border-slate-200/70 bg-white/60 px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
+  "w-full rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950/55 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
 
-function BlogForm({
-  initialData,
-  onSubmit,
-  onStartSubmit,
-  submitting = false, // 🔹 BURADA PROPTAN ALIYORUZ
-}) {
+const fileCls =
+  "text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100";
+
+const toMediaType = (fileOrMedia) => {
+  if (!fileOrMedia) return "image";
+  if (fileOrMedia.resourceType) return fileOrMedia.resourceType;
+  if (fileOrMedia.type) return fileOrMedia.type.startsWith("video/") ? "video" : "image";
+  return "image";
+};
+
+const toTagList = (value = "") =>
+  String(value)
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+function BlogForm({ initialData, onSubmit, onStartSubmit, submitting = false }) {
   const [title, setTitle] = useState(initialData?.title || "");
   const [content, setContent] = useState(initialData?.content || "");
   const [tags, setTags] = useState((initialData?.tags || []).join(", "));
   const [coverFile, setCoverFile] = useState(null);
   const [assetsFiles, setAssetsFiles] = useState([]);
+  const [showPreview, setShowPreview] = useState(false);
+
+  const [coverPreview, setCoverPreview] = useState("");
+  const [assetPreviews, setAssetPreviews] = useState([]);
+  const blobUrlsRef = useRef([]);
 
   useEffect(() => {
-    if (initialData) {
-      setTitle(initialData.title || "");
-      setContent(initialData.content || "");
-      setTags((initialData.tags || []).join(", "));
-    }
+    if (!initialData) return;
+    setTitle(initialData.title || "");
+    setContent(initialData.content || "");
+    setTags((initialData.tags || []).join(", "));
   }, [initialData]);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    setCoverFile(file || null);
+  useEffect(
+    () => () => {
+      blobUrlsRef.current.forEach((url) => {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      });
+      blobUrlsRef.current = [];
+    },
+    []
+  );
+
+  const rememberUrl = (file) => {
+    if (!file) return "";
+    const url = URL.createObjectURL(file);
+    blobUrlsRef.current.push(url);
+    return url;
   };
 
-  const handleAssetsChange = (e) => {
-    const files = Array.from(e.target.files || []);
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    setCoverFile(file);
+    setCoverPreview(file ? rememberUrl(file) : "");
+  };
+
+  const handleAssetsChange = (event) => {
+    const files = Array.from(event.target.files || []);
     setAssetsFiles(files);
+    setAssetPreviews(files.map((file) => rememberUrl(file)));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Eğer zaten submitting true ise ikinci kez tetiklenmesini engelle
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (submitting) return;
 
-    // Parent’a "başladı" sinyali ver → modal hemen kapansın
     if (typeof onStartSubmit === "function") {
       try {
         onStartSubmit();
       } catch {
-        //ignore
+        /* ignore */
       }
     }
 
-    const fd = new FormData();
-    fd.append("title", title.trim());
-    fd.append("content", content);
-    fd.append("tags", tags.trim());
+    const formData = new FormData();
+    formData.append("title", title.trim());
+    formData.append("content", content);
+    formData.append("tags", tags.trim());
 
-    if (coverFile) fd.append("cover", coverFile);
-    if (assetsFiles?.length) {
-      assetsFiles.forEach((f) => fd.append("assets", f));
-    }
+    if (coverFile) formData.append("cover", coverFile);
+    assetsFiles.forEach((file) => formData.append("assets", file));
 
-    await onSubmit(fd);
+    await onSubmit(formData);
   };
 
+  const previewData = useMemo(
+    () => ({
+      title,
+      tags: toTagList(tags),
+      content,
+      cover: {
+        src: coverPreview || initialData?.cover?.url || "",
+        type: coverFile ? toMediaType(coverFile) : initialData?.cover?.resourceType || "image",
+        alt: title,
+      },
+      assets: [
+        ...(assetPreviews.length
+          ? assetPreviews.map((src, index) => ({
+              src,
+              type: toMediaType(assetsFiles[index]),
+              alt: `${title}-asset-${index + 1}`,
+            }))
+          : (initialData?.assets || []).map((asset) => ({
+              src: asset.url,
+              type: asset.resourceType || "image",
+              alt: `${title}-asset`,
+            }))),
+      ],
+    }),
+    [assetPreviews, assetsFiles, content, coverFile, coverPreview, initialData, tags, title]
+  );
+
   return (
-    <form onSubmit={handleSubmit} className="grid gap-5">
+    <form onSubmit={handleSubmit} className="grid gap-6">
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
           Başlık
@@ -72,25 +129,25 @@ function BlogForm({
         <input
           type="text"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(event) => setTitle(event.target.value)}
           className={inputCls}
           placeholder="Blog başlığı"
           required
         />
       </div>
 
-      <div className="grid gap-2">
-        <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-          İçerik
-        </label>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className={`min-h-[160px] ${inputCls}`}
-          placeholder="İçeriği yazın…"
-          required
-        />
-      </div>
+      <RichContentField
+        label="İçerik"
+        value={content}
+        onChange={setContent}
+        inputClassName={`min-h-[220px] ${inputCls}`}
+        placeholder="İçeriği yazın…"
+        rows={11}
+        onTogglePreview={() => setShowPreview((prev) => !prev)}
+        showPreview={showPreview}
+      />
+
+      {showPreview && <BlogPreview preview={previewData} />}
 
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -99,29 +156,29 @@ function BlogForm({
         <input
           type="text"
           value={tags}
-          onChange={(e) => setTags(e.target.value)}
+          onChange={(event) => setTags(event.target.value)}
           className={inputCls}
           placeholder="Orn. Yalitim, Cati, Izolasyon"
         />
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Bos birakirsan etiketler icerikten otomatik turetilir.
+        <p className="text-xs text-slate-500 dark:text-slate-300">
+          Boş bırakırsan etiketler içerikten otomatik türetilir.
         </p>
       </div>
 
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-          Kapak {initialData?.cover?.url ? "(guncellemek icin yeni dosya sec)" : "(zorunlu)"}
+          Kapak {initialData?.cover?.url ? "(güncellemek için yeni dosya seç)" : "(zorunlu)"}
         </label>
         <input
           type="file"
           accept="image/*,video/*"
           onChange={handleFileChange}
           required={!initialData?.cover?.url}
-          className="text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
+          className={fileCls}
         />
         {initialData?.cover?.url && (
-          <div className="text-xs text-slate-500 dark:text-slate-300">
-            Mevcut: {initialData.cover.url}
+          <div className="admin-preview-surface p-3 text-xs text-slate-500 dark:text-slate-300">
+            Mevcut kapak seçili. Yeni dosya yüklersen onunla değiştirilir.
           </div>
         )}
       </div>
@@ -135,7 +192,7 @@ function BlogForm({
           accept="image/*,video/*"
           multiple
           onChange={handleAssetsChange}
-          className="text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
+          className={fileCls}
         />
       </div>
 
@@ -143,7 +200,7 @@ function BlogForm({
         <button
           type="submit"
           disabled={submitting}
-          className="btn-admin-primary disabled:opacity-60 disabled:cursor-not-allowed"
+          className="btn-admin-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitting ? "İşleniyor…" : "Kaydet"}
         </button>

@@ -1,25 +1,12 @@
 // src/components/Background/BackgroundVideo.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
-
-const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "";
-
-// Cloudinary video URL
-const cldVideo = (publicId) =>
-  CLOUD && publicId
-    ? `https://res.cloudinary.com/${CLOUD}/video/upload/f_auto,q_auto/${publicId}.mp4`
-    : "";
-
-// Cloudinary poster (ilk kare) URL
-const cldPoster = (publicId) =>
-  CLOUD && publicId
-    ? `https://res.cloudinary.com/${CLOUD}/video/upload/so_0,f_jpg,q_auto/${publicId}.jpg`
-    : "";
-
-const cldImage = (publicId) =>
-  CLOUD && publicId
-    ? `https://res.cloudinary.com/${CLOUD}/image/upload/f_auto,q_auto/${publicId}`
-    : "";
+import {
+  getOptimizedImageUrl,
+  getOptimizedVideoUrl,
+  getVideoPosterUrl,
+} from "../../utils/cloudinary";
+import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 export default function BackgroundVideo({
   desktopPublicId,
@@ -28,98 +15,76 @@ export default function BackgroundVideo({
   fallbackSrc = "/fallback-hero.svg",
   className = "",
 }) {
-  const vA = useRef(null);
-  const vB = useRef(null);
+  const videoRef = useRef(null);
+  const { allowAmbientVideo, backgroundVideoWidth, imageQuality, videoQuality } =
+    usePerformanceProfile();
+  const [ready, setReady] = useState(false);
+
+  const mediaKey = posterPublicId || desktopPublicId || "";
 
   const desktopUrl = useMemo(
-    () => cldVideo(desktopPublicId),
-    [desktopPublicId]
+    () =>
+      getOptimizedVideoUrl(
+        { publicId: desktopPublicId, resourceType: "video" },
+        { width: backgroundVideoWidth, quality: videoQuality }
+      ),
+    [backgroundVideoWidth, desktopPublicId, videoQuality]
   );
 
-  // Poster öncelik: posterPublicId -> desktopPublicId
   const posterUrl = useMemo(
-    () => cldPoster(posterPublicId || desktopPublicId || ""),
-    [posterPublicId, desktopPublicId]
+    () =>
+      getVideoPosterUrl(
+        { publicId: mediaKey, resourceType: "video" },
+        { width: backgroundVideoWidth, quality: imageQuality }
+      ),
+    [backgroundVideoWidth, imageQuality, mediaKey]
   );
+
   const mobileImageUrl = useMemo(
-    () => cldImage(mobilePublicId || ""),
-    [mobilePublicId]
-  );
-
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" ? window.innerWidth < 640 : false
+    () =>
+      getOptimizedImageUrl(
+        { publicId: mobilePublicId, resourceType: "image" },
+        {
+          width: 960,
+          quality: imageQuality,
+          fallbackSrc: posterUrl || fallbackSrc,
+        }
+      ),
+    [fallbackSrc, imageQuality, mobilePublicId, posterUrl]
   );
 
   useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+    if (!allowAmbientVideo) return undefined;
 
-  // DESKTOP: 30 sn’de bir A/B videolar arasında yumuşak geçiş
-  useEffect(() => {
-    if (isMobile) return; // mobilde video yok
+    const video = videoRef.current;
+    if (!video) return undefined;
 
-    const A = vA.current;
-    const B = vB.current;
-    if (!A || !B) return;
-
-    A.muted = B.muted = true;
-    A.playsInline = B.playsInline = true;
-    A.preload = B.preload = "auto";
-
-    const playSafe = (el) => el?.play().catch(() => {});
-
-    // başlat
-    A.style.opacity = 1;
-    B.style.opacity = 0;
-    playSafe(A);
-
-    let timerId = 0;
-    const DURATION_MS = 30000; // 30sn sabit
-    const FADE_MS = 1000;
-
-    const crossFade = (fromEl, toEl) => {
-      if (!toEl) return;
-      try {
-        toEl.currentTime = 0.01;
-      } catch (err) {
-        console.warn("Video reset error:", err);
+    const syncPlayback = () => {
+      if (document.hidden) {
+        video.pause();
+        return;
       }
-      playSafe(toEl);
 
-      toEl.style.transition = `opacity ${FADE_MS}ms linear`;
-      fromEl.style.transition = `opacity ${FADE_MS}ms linear`;
-      toEl.style.opacity = 1;
-      fromEl.style.opacity = 0;
+      video.play().catch(() => {});
     };
 
-    let active = "A";
+    const handleCanPlay = () => setReady(true);
 
-    const tick = () => {
-      if (active === "A") {
-        crossFade(A, B);
-        active = "B";
-      } else {
-        crossFade(B, A);
-        active = "A";
-      }
-      timerId = window.setTimeout(tick, DURATION_MS);
-    };
-
-    timerId = window.setTimeout(tick, DURATION_MS);
+    video.addEventListener("canplay", handleCanPlay);
+    document.addEventListener("visibilitychange", syncPlayback);
+    syncPlayback();
 
     return () => {
-      if (timerId) window.clearTimeout(timerId);
+      video.removeEventListener("canplay", handleCanPlay);
+      document.removeEventListener("visibilitychange", syncPlayback);
     };
-  }, [isMobile, desktopUrl]);
+  }, [allowAmbientVideo, desktopUrl]);
 
   return (
     <div
       className={`fixed inset-0 w-full h-full -z-10 overflow-hidden ${className}`}
     >
-      {isMobile || !desktopUrl ? (
-        // 🔹 MOBİL: SADECE GÖRSEL (video yok)
+      {!allowAmbientVideo || !desktopUrl ? (
         <img
           src={mobileImageUrl || posterUrl || fallbackSrc}
           alt=""
@@ -128,29 +93,32 @@ export default function BackgroundVideo({
           decoding="async"
         />
       ) : (
-        // 🔹 DESKTOP: Çift video, 30sn’de bir yumuşak fade ile sıfırdan başlar
         <>
-          <video
-            ref={vA}
-            src={desktopUrl}
-            className="absolute inset-0 w-full h-full object-cover"
-            muted
-            playsInline
-            preload="metadata"
-            poster={posterUrl || undefined}
+          <img
+            src={posterUrl || fallbackSrc}
+            alt=""
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+              ready ? "opacity-0" : "opacity-100"
+            }`}
+            loading="eager"
+            decoding="async"
           />
           <video
-            ref={vB}
+            ref={videoRef}
             src={desktopUrl}
-            className="absolute inset-0 w-full h-full object-cover"
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+              ready ? "opacity-100" : "opacity-0"
+            }`}
+            autoPlay
+            loop
             muted
             playsInline
             preload="metadata"
-            style={{ opacity: 0 }}
             poster={posterUrl || undefined}
           />
         </>
       )}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/10 via-transparent to-slate-950/20" />
     </div>
   );
 }

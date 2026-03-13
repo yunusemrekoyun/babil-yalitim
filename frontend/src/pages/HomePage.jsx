@@ -8,14 +8,52 @@ import WhyUs from "../components/WhyUs/WhyUs";
 import ServiceSection from "../components/Service/ServiceSection";
 import AboutSection from "../components/About/AboutSection";
 import GlassSection from "../components/Layout/GlassSection";
+import DeferredSection from "../components/Layout/DeferredSection";
 import BlogGrid from "../components/Blog/BlogGrid";
 import BackgroundVideo from "../components/Background/BackgroundVideo";
+import { usePerformanceProfile } from "../performance/PerformanceProvider";
 
 const HERO_DESKTOP = import.meta.env.VITE_HERO_PUBLIC_ID;
 const HERO_MOBILE = import.meta.env.VITE_HERO_MOBILE_PUBLIC_ID;
 const HERO_POSTER = import.meta.env.VITE_HERO_POSTER_PUBLIC_ID;
 
 export default function HomePage() {
+  const { sectionRootMargin } = usePerformanceProfile();
+
+  const sections = [
+    {
+      id: "projects",
+      minHeight: 760,
+      eager: true,
+      content: <ProjectsSection />,
+    },
+    {
+      id: "services",
+      minHeight: 860,
+      content: <ServiceSection />,
+    },
+    {
+      id: "journal",
+      minHeight: 720,
+      content: <Journal />,
+    },
+    {
+      id: "why-us",
+      minHeight: 700,
+      content: <WhyUs />,
+    },
+    {
+      id: "blog",
+      minHeight: 720,
+      content: <BlogGrid />,
+    },
+    {
+      id: "about",
+      minHeight: 640,
+      content: <AboutSection />,
+    },
+  ];
+
   return (
     <div className="relative min-h-screen overflow-x-hidden">
       <BackgroundVideo
@@ -37,24 +75,18 @@ export default function HomePage() {
         <div id="after-hero" />
 
         <div className="bg-transparanColor space-y-12 w-full px-4 sm:px-6 md:px-8 py-12 sm:py-16 flex flex-col items-center justify-center">
-          <GlassSection>
-            <ProjectsSection />
-          </GlassSection>
-          <GlassSection>
-            <ServiceSection />
-          </GlassSection>
-          <GlassSection>
-            <Journal />
-          </GlassSection>
-          <GlassSection>
-            <WhyUs />
-          </GlassSection>
-          <GlassSection>
-            <BlogGrid />
-          </GlassSection>
-          <GlassSection>
-            <AboutSection />
-          </GlassSection>
+          {sections.map((section) => (
+            <DeferredSection
+              key={section.id}
+              id={section.id}
+              eager={section.eager}
+              minHeight={section.minHeight}
+              rootMargin={sectionRootMargin}
+              className="w-full max-w-6xl"
+            >
+              <GlassSection>{section.content}</GlassSection>
+            </DeferredSection>
+          ))}
         </div>
 
         <Footer />

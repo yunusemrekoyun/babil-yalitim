@@ -264,7 +264,7 @@ const JournalDetail = () => {
             variants={fadeUp}
             initial="hidden"
             animate="show"
-            className="lg:col-span-2 prose prose-sm md:prose-base lg:prose-lg prose-p:leading-relaxed prose-img:rounded-xl prose-headings:text-brandBlue prose-a:text-quaternaryColor max-w-none bg-white/85 backdrop-blur rounded-2xl shadow p-5 md:p-8"
+            className="rich-content lg:col-span-2 prose prose-sm md:prose-base lg:prose-lg prose-p:leading-relaxed prose-img:rounded-xl prose-headings:text-brandBlue prose-a:text-quaternaryColor max-w-none bg-white/85 backdrop-blur rounded-2xl shadow p-5 md:p-8"
           >
             {/<[a-z][\s\S]*>/i.test(item.content) ? (
               <div dangerouslySetInnerHTML={{ __html: item.content }} />

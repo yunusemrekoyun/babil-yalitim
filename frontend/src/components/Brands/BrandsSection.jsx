@@ -10,9 +10,7 @@ const BrandsSection = () => {
           </h3>
           <div className="h-1 w-20 bg-quaternaryColor/90 mx-auto mt-4 rounded-full" />
         </div> */}
-
-        <div className="rounded-3xl border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_8px_40px_rgba(0,0,0,0.15)] pt-2 pb-4 px-4 sm:px-6">
-          {" "}
+        <div className="glass-shell-strong pt-2 pb-4 px-4 sm:px-6">
           <BrandGrid />
         </div>
       </div>

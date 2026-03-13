@@ -30,8 +30,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     [
       "group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition border",
       isActive
-        ? "bg-white text-slate-900 border-slate-200 shadow-lg shadow-sky-100"
-        : "border-transparent text-slate-700 hover:border-slate-200 hover:bg-white hover:text-slate-900",
+        ? "bg-white text-slate-900 border-slate-200 shadow-lg shadow-sky-100 dark:bg-slate-100 dark:text-slate-950 dark:border-slate-200 dark:shadow-black/30"
+        : "border-transparent text-slate-700 hover:border-slate-200 hover:bg-white hover:text-slate-900 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-800/85 dark:hover:text-white",
     ].join(" ");
 
   return (

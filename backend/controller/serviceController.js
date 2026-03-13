@@ -1,17 +1,16 @@
-// backend/controller/serviceController.js
 const fs = require("fs/promises");
 const Service = require("../models/Service");
 const cloudinary = require("../config/cloudinary");
 
 /* -------------------- helpers -------------------- */
 
-// '["a","b"]' | "a,b" | ["a","b"] -> ["a","b"]
 const normalizeAreas = (val) => {
-  if (Array.isArray(val))
+  if (Array.isArray(val)) {
     return val
       .map(String)
       .map((s) => s.trim())
       .filter(Boolean);
+  }
 
   if (typeof val === "string") {
     try {
@@ -25,22 +24,49 @@ const normalizeAreas = (val) => {
     } catch {
       /* JSON değilse CSV say */
     }
+
     return val
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
   }
+
   return [];
 };
 
-// En-boy oranı doğrulaması (ör. dikey ~9:16 için 1.5)
-// .env -> VERTICAL_MIN_RATIO=1.5
+const normalizeSubServices = (value) => {
+  if (!value) return [];
+
+  let parsed = value;
+
+  if (typeof value === "string") {
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      return [];
+    }
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed.map((item, index) => ({
+    id: item?.id ? String(item.id) : "",
+    clientId: String(item?.clientId || item?.id || `sub-${index}`),
+    title: String(item?.title || "").trim(),
+    type: String(item?.type || "").trim(),
+    category: String(item?.category || "").trim(),
+    description: String(item?.description || "").trim(),
+    usageAreas: normalizeAreas(item?.usageAreas),
+  }));
+};
+
 const VERTICAL_MIN_RATIO = Number(process.env.VERTICAL_MIN_RATIO || 1.5);
 
 const assertPortrait = (meta, where = "kapak") => {
   const w = Number(meta?.width || 0);
   const h = Number(meta?.height || 0);
-  if (!w || !h) return; // meta yoksa zorlamayalım (özellikle bazı video durumları)
+  if (!w || !h) return;
+
   const ratio = h / w;
   if (h < w || ratio < VERTICAL_MIN_RATIO) {
     const err = new Error(
@@ -51,11 +77,10 @@ const assertPortrait = (meta, where = "kapak") => {
   }
 };
 
-// Tek dosya yükleme (image|video). Hem memoryStorage hem diskStorage ile çalışır.
 const uploadOne = async (file, folder) => {
   const options = {
     folder,
-    resource_type: "auto", // image | video
+    resource_type: "auto",
     overwrite: true,
     unique_filename: true,
     use_filename: true,
@@ -63,13 +88,11 @@ const uploadOne = async (file, folder) => {
 
   let res;
   if (file?.buffer && file?.mimetype) {
-    // memoryStorage
     const dataUri = `data:${file.mimetype};base64,${file.buffer.toString(
       "base64"
     )}`;
     res = await cloudinary.uploader.upload(dataUri, options);
   } else if (file?.path) {
-    // diskStorage
     try {
       res = await cloudinary.uploader.upload(file.path, options);
     } finally {
@@ -94,7 +117,6 @@ const uploadOne = async (file, folder) => {
   };
 };
 
-// Cloudinary'den sil
 const destroyIfExists = async (media) => {
   if (!media?.publicId) return;
   try {
@@ -104,6 +126,97 @@ const destroyIfExists = async (media) => {
   } catch {
     /* sessiz geç */
   }
+};
+
+const flattenFiles = (files) =>
+  Array.isArray(files) ? files : Object.values(files || {}).flat();
+
+const getFirstFile = (files, fieldname) =>
+  flattenFiles(files).find((file) => file.fieldname === fieldname);
+
+const getFiles = (files, fieldname) =>
+  flattenFiles(files).filter((file) => file.fieldname === fieldname);
+
+const validateServicePayload = (payload, label) => {
+  if (!payload.title) {
+    const err = new Error(`${label} için başlık zorunludur.`);
+    err.status = 400;
+    throw err;
+  }
+
+  if (!payload.description) {
+    const err = new Error(`${label} için açıklama zorunludur.`);
+    err.status = 400;
+    throw err;
+  }
+};
+
+const buildSubService = async ({
+  payload,
+  files,
+  folder,
+  existing = null,
+  label = "Alt hizmet",
+}) => {
+  validateServicePayload(payload, label);
+
+  const coverField = `subServiceCover__${payload.clientId}`;
+  const imagesField = `subServiceImages__${payload.clientId}`;
+  const coverFile = getFirstFile(files, coverField);
+  const imageFiles = getFiles(files, imagesField);
+
+  let cover = existing?.cover || null;
+  let images = Array.isArray(existing?.images) ? [...existing.images] : [];
+
+  if (!cover && !coverFile) {
+    const err = new Error(`${label} için kapak zorunludur.`);
+    err.status = 400;
+    throw err;
+  }
+
+  if (coverFile) {
+    const uploaded = await uploadOne(coverFile, `${folder}/subservices`);
+    try {
+      assertPortrait(uploaded, `${label} kapağı`);
+    } catch (error) {
+      await destroyIfExists(uploaded);
+      throw error;
+    }
+
+    if (cover) {
+      await destroyIfExists(cover);
+    }
+    cover = uploaded;
+  }
+
+  if (imageFiles.length) {
+    const uploadedImages = await Promise.all(
+      imageFiles.map((file) => uploadOne(file, `${folder}/subservices/gallery`))
+    );
+    images = [...images, ...uploadedImages];
+  }
+
+  return {
+    _id: existing?._id,
+    title: payload.title,
+    type: payload.type,
+    category: payload.category,
+    description: payload.description,
+    usageAreas: payload.usageAreas,
+    cover,
+    images,
+  };
+};
+
+const destroySubServices = async (subServices = []) => {
+  await Promise.all(
+    subServices.flatMap((subService) => [
+      destroyIfExists(subService?.cover),
+      ...(Array.isArray(subService?.images)
+        ? subService.images.map((image) => destroyIfExists(image))
+        : []),
+    ])
+  );
 };
 
 /* -------------------- GET -------------------- */
@@ -129,42 +242,54 @@ const getServiceById = async (req, res) => {
 };
 
 /* -------------------- CREATE -------------------- */
-// fields (text): title, type, category, usageAreas, description
-// files: cover(1, required image|video), images(multi, optional image|video)
 const createService = async (req, res) => {
   try {
-    const { title, type, category, description } = req.body;
-    const usageAreas = normalizeAreas(req.body.usageAreas);
+    const payload = {
+      title: String(req.body.title || "").trim(),
+      type: String(req.body.type || "").trim(),
+      category: String(req.body.category || "").trim(),
+      description: String(req.body.description || "").trim(),
+      usageAreas: normalizeAreas(req.body.usageAreas),
+    };
+    const subServicesPayload = normalizeSubServices(req.body.subServices);
 
-    const coverFile = req.files?.cover?.[0];
+    validateServicePayload(payload, "Hizmet");
+
+    const files = req.files || [];
+    const coverFile = getFirstFile(files, "cover");
     if (!coverFile) {
       return res.status(400).json({ message: "Kapak zorunludur." });
     }
 
     const folder = process.env.CLOUDINARY_SERVICES_FOLDER || "services";
 
-    // Kapak yükle + DIKEY doğrulaması
     const cover = await uploadOne(coverFile, folder);
     assertPortrait(cover, "kapak");
 
-    // Galeri (opsiyonel) — image|video karışık
     let images = [];
-    if (Array.isArray(req.files?.images) && req.files.images.length) {
+    const galleryFiles = getFiles(files, "images");
+    if (galleryFiles.length) {
       images = await Promise.all(
-        req.files.images.map((f) => uploadOne(f, `${folder}/gallery`))
+        galleryFiles.map((file) => uploadOne(file, `${folder}/gallery`))
       );
-      // Eğer galeriye de dikey zorunluluğu istiyorsan bu satırı aç:
-      // images.forEach((m) => assertPortrait(m, "galeri"));
+    }
+
+    const subServices = [];
+    for (let index = 0; index < subServicesPayload.length; index += 1) {
+      const item = await buildSubService({
+        payload: subServicesPayload[index],
+        files,
+        folder,
+        label: `Alt hizmet ${index + 1}`,
+      });
+      subServices.push(item);
     }
 
     const created = await Service.create({
-      title,
-      type,
-      category,
-      usageAreas,
-      description,
+      ...payload,
       cover,
       images,
+      subServices,
     });
 
     res.status(201).json(created);
@@ -176,52 +301,111 @@ const createService = async (req, res) => {
 };
 
 /* -------------------- UPDATE -------------------- */
-// cover gönderilirse REPLACE; images gönderilirse EKLE
 const updateService = async (req, res) => {
   try {
     const svc = await Service.findById(req.params.id);
     if (!svc) return res.status(404).json({ message: "Servis bulunamadı" });
 
-    const { title, type, category, description } = req.body;
-
-    if (title !== undefined) svc.title = title;
-    if (type !== undefined) svc.type = type;
-    if (category !== undefined) svc.category = category;
-    if (description !== undefined) svc.description = description;
-    if (req.body.usageAreas !== undefined) {
-      svc.usageAreas = normalizeAreas(req.body.usageAreas);
-    }
-
     const folder = process.env.CLOUDINARY_SERVICES_FOLDER || "services";
+    const files = req.files || [];
 
-    // Kapak REPLACE
-    if (req.files?.cover?.[0]) {
-      const uploaded = await uploadOne(req.files.cover[0], folder);
+    const title = req.body.title !== undefined ? String(req.body.title).trim() : svc.title;
+    const type = req.body.type !== undefined ? String(req.body.type).trim() : svc.type;
+    const category =
+      req.body.category !== undefined
+        ? String(req.body.category).trim()
+        : svc.category;
+    const description =
+      req.body.description !== undefined
+        ? String(req.body.description).trim()
+        : svc.description;
+    const usageAreas =
+      req.body.usageAreas !== undefined
+        ? normalizeAreas(req.body.usageAreas)
+        : svc.usageAreas;
+
+    validateServicePayload({ title, description }, "Hizmet");
+
+    svc.title = title;
+    svc.type = type;
+    svc.category = category;
+    svc.description = description;
+    svc.usageAreas = usageAreas;
+
+    const coverFile = getFirstFile(files, "cover");
+    if (coverFile) {
+      const uploaded = await uploadOne(coverFile, folder);
       try {
         assertPortrait(uploaded, "kapak");
-      } catch (e) {
-        // yeni yüklenen uygun değilse hemen temizle
+      } catch (error) {
         await destroyIfExists(uploaded);
-        throw e;
+        throw error;
       }
-      // eskisini sil ve değiştir
       await destroyIfExists(svc.cover);
       svc.cover = uploaded;
     }
 
-    // Galeriye ekle
-    if (Array.isArray(req.files?.images) && req.files.images.length) {
-      const appended = await Promise.all(
-        req.files.images.map((f) => uploadOne(f, `${folder}/gallery`))
+    const galleryFiles = getFiles(files, "images");
+    if (galleryFiles.length) {
+      const uploadedImages = await Promise.all(
+        galleryFiles.map((file) => uploadOne(file, `${folder}/gallery`))
       );
-      // appended.forEach((m) => assertPortrait(m, "galeri")); // istersen aç
-      svc.images = [...(svc.images || []), ...appended];
+      svc.images = [...(svc.images || []), ...uploadedImages];
     }
+
+    const nextSubServicesPayload =
+      req.body.subServices !== undefined
+        ? normalizeSubServices(req.body.subServices)
+        : (svc.subServices || []).map((item) => ({
+            id: String(item._id),
+            clientId: String(item._id),
+            title: item.title,
+            type: item.type,
+            category: item.category,
+            description: item.description,
+            usageAreas: item.usageAreas || [],
+          }));
+
+    const existingMap = new Map(
+      (svc.subServices || []).map((subService) => [String(subService._id), subService])
+    );
+
+    const nextSubServices = [];
+    for (let index = 0; index < nextSubServicesPayload.length; index += 1) {
+      const payload = nextSubServicesPayload[index];
+      const existing = payload.id ? existingMap.get(String(payload.id)) : null;
+
+      const item = await buildSubService({
+        payload,
+        files,
+        folder,
+        existing,
+        label: `Alt hizmet ${index + 1}`,
+      });
+
+      nextSubServices.push(item);
+    }
+
+    const keptIds = new Set(
+      nextSubServices
+        .map((item) => item?._id)
+        .filter(Boolean)
+        .map((value) => String(value))
+    );
+
+    const removedSubServices = (svc.subServices || []).filter(
+      (subService) => !keptIds.has(String(subService._id))
+    );
+    await destroySubServices(removedSubServices);
+
+    svc.subServices = nextSubServices;
 
     const saved = await svc.save();
     res.json(saved);
   } catch (err) {
-    res.status(400).json({ message: err.message || "Servis güncellenemedi" });
+    res.status(err.status || 400).json({
+      message: err.message || "Servis güncellenemedi",
+    });
   }
 };
 
@@ -233,8 +417,9 @@ const deleteService = async (req, res) => {
 
     await destroyIfExists(svc.cover);
     if (Array.isArray(svc.images)) {
-      await Promise.all(svc.images.map(destroyIfExists));
+      await Promise.all(svc.images.map((image) => destroyIfExists(image)));
     }
+    await destroySubServices(svc.subServices || []);
 
     await svc.deleteOne();
     res.json({ message: "Servis silindi" });

@@ -4,6 +4,14 @@ import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PlayCircle, PauseCircle } from "lucide-react";
+import AdaptiveImage from "../Media/AdaptiveImage";
+import {
+  extractCloudinaryAsset,
+  getOptimizedVideoUrl,
+  getVideoPosterUrl,
+  looksVideo,
+} from "../../utils/cloudinary";
+import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 const clamp2 = {
   display: "-webkit-box",
@@ -14,38 +22,8 @@ const clamp2 = {
 
 const fmt = (v) => (v ? new Date(v).toLocaleDateString("tr-TR") : null);
 
-/* ---------------- Helpers ---------------- */
-const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "";
-const looksVideo = (u = "") =>
-  /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(String(u));
-
-// Cloudinary video -> ilk kare poster
-const cldVideoThumb = (publicId) =>
-  CLOUD && publicId
-    ? `https://res.cloudinary.com/${CLOUD}/video/upload/so_0/${publicId}.jpg`
-    : null;
-
-// Cloudinary URL’den publicId çıkar (upload/.../<publicId>.<ext>?q=..)
-const extractCloudinaryPublicId = (url = "") => {
-  try {
-    const u = new URL(url);
-    if (!u.hostname.includes("res.cloudinary.com")) return null;
-    const parts = u.pathname.split("/"); // ['', '<cloud>', 'video|image', 'upload', ... , '<publicId>.<ext>']
-    const uploadIdx = parts.findIndex((p) => p === "upload");
-    if (uploadIdx === -1) return null;
-    const last = parts[parts.length - 1] || "";
-    const noExt = last.replace(/\.[a-z0-9]+$/i, ""); // dosya uzantısını at
-    // publicId bazen alt klasörlü olabilir; upload sonrası tüm segmentleri birleştir
-    const afterUpload = parts.slice(uploadIdx + 1, parts.length - 1); // klasörler
-    const pubId = [...afterUpload, noExt].filter(Boolean).join("/");
-    return pubId || null;
-  } catch {
-    return null;
-  }
-};
-
 // En iyi poster’i seç: gerçek görsel → kapak video thumb → opsiyonel video thumb → legacy
-const pickPosterAndVideo = (project) => {
+const pickPosterAndVideo = (project, cardImageWidth, imageQuality) => {
   const cover = project?.cover || null;
   const images = Array.isArray(project?.images) ? project.images : [];
   const optVideo = project?.video || null;
@@ -64,16 +42,24 @@ const pickPosterAndVideo = (project) => {
 
   const coverIsVideo = cover?.resourceType === "video" || looksVideo(coverUrl);
   const coverVideoPublicId =
-    cover?.publicId ||
-    (coverIsVideo ? extractCloudinaryPublicId(coverUrl) : null);
+    cover?.publicId || (coverIsVideo ? extractCloudinaryAsset(coverUrl)?.publicId : null);
 
   const optVideoUrl = optVideo?.url || "";
   const optVideoPublicId =
-    optVideo?.publicId ||
-    (optVideoUrl ? extractCloudinaryPublicId(optVideoUrl) : null);
+    optVideo?.publicId || (optVideoUrl ? extractCloudinaryAsset(optVideoUrl)?.publicId : null);
 
-  const posterFromCoverVideo = coverIsVideo ? cldVideoThumb(coverVideoPublicId) : null;
-  const posterFromOptVideo = optVideoUrl ? cldVideoThumb(optVideoPublicId) : null;
+  const posterFromCoverVideo = coverIsVideo
+    ? getVideoPosterUrl(
+        { publicId: coverVideoPublicId, resourceType: "video" },
+        { width: cardImageWidth, quality: imageQuality }
+      )
+    : null;
+  const posterFromOptVideo = optVideoUrl
+    ? getVideoPosterUrl(
+        { publicId: optVideoPublicId, resourceType: "video" },
+        { width: cardImageWidth, quality: imageQuality }
+      )
+    : null;
 
   const poster =
     // 1) gerçek görsel
@@ -88,9 +74,9 @@ const pickPosterAndVideo = (project) => {
     "";
 
   // Video önceliği: kapak video varsa onu kullan; yoksa opsiyonel video
-  const videoUrl = coverIsVideo ? coverUrl : optVideoUrl;
+  const video = coverIsVideo ? cover || coverUrl : optVideo || optVideoUrl;
 
-  return { poster, videoUrl };
+  return { poster, video };
 };
 
 /* ---------------- Event: aynı anda tek video ---------------- */
@@ -101,6 +87,8 @@ const ProjectItem = ({ project, index }) => {
   const [imgOk, setImgOk] = useState(true);
   const videoRef = useRef(null);
   const selfId = useRef(project?._id || String(index));
+  const { cardImageWidth, detailImageWidth, imageQuality, videoQuality } =
+    usePerformanceProfile();
 
   // touch cihaz (mobil/tablet)
   const isTouch = useMemo(() => {
@@ -108,7 +96,18 @@ const ProjectItem = ({ project, index }) => {
     return window.matchMedia("(hover: none) and (pointer: coarse)").matches;
   }, []);
 
-  const { poster, videoUrl } = pickPosterAndVideo(project);
+  const { poster, video } = useMemo(
+    () => pickPosterAndVideo(project, cardImageWidth, imageQuality),
+    [cardImageWidth, imageQuality, project]
+  );
+  const videoUrl = useMemo(
+    () =>
+      getOptimizedVideoUrl(video, {
+        width: detailImageWidth,
+        quality: videoQuality,
+      }),
+    [detailImageWidth, video, videoQuality]
+  );
   const hasImage = Boolean(poster);
 
   // Mobil: video'yu dokunana kadar mount etme
@@ -184,7 +183,7 @@ const ProjectItem = ({ project, index }) => {
 
   return (
     <motion.article
-      className="relative rounded-2xl overflow-hidden border border-white/40 bg-white/30 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] group"
+      className="transform-gpu-soft relative overflow-hidden rounded-2xl border border-white/40 bg-white/30 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] group"
       initial={{ opacity: 0, y: 28 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08, duration: 0.45 }}
@@ -195,13 +194,14 @@ const ProjectItem = ({ project, index }) => {
         <div className="relative h-56 md:h-64 overflow-hidden">
           {/* Poster: her zaman render; mobilde video mount olunca silinir */}
           {hasImage && imgOk && (
-            <img
-              src={poster}
+            <AdaptiveImage
+              media={poster}
               alt={project?.title || "Proje"}
               className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 ${
                 hovered ? "scale-110" : "scale-100"
               } ${isTouch && mountedVideo ? "opacity-0" : "opacity-100"}`}
-              loading="lazy"
+              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+              widths={[320, 480, 640, 800, 960]}
               onError={() => setImgOk(false)}
             />
           )}
@@ -214,6 +214,8 @@ const ProjectItem = ({ project, index }) => {
               muted
               loop
               playsInline
+              preload="none"
+              poster={hasImage ? poster : undefined}
               className="absolute inset-0 w-full h-full object-cover"
             />
           )}

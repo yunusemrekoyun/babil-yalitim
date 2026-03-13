@@ -6,8 +6,78 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --perf-blur-sm: 10px;
+    --perf-blur-md: 14px;
+    --perf-blur-lg: 20px;
+    --perf-blur-xl: 24px;
+    --perf-blur-2xl: 32px;
+    --glass-border: rgba(255, 255, 255, 0.34);
+    --glass-bg-soft: rgba(255, 255, 255, 0.12);
+    --glass-bg-strong: rgba(255, 255, 255, 0.2);
+    --glass-shadow-soft: 0 16px 60px -40px rgba(15, 23, 42, 0.24);
+    --glass-shadow-strong: 0 24px 70px -42px rgba(15, 23, 42, 0.28);
+    --brand-marquee-duration: 12s;
+  }
+
+  html[data-perf="standard"] {
+    --perf-blur-sm: 8px;
+    --perf-blur-md: 11px;
+    --perf-blur-lg: 16px;
+    --perf-blur-xl: 18px;
+    --perf-blur-2xl: 22px;
+    --glass-bg-soft: rgba(255, 255, 255, 0.16);
+    --glass-bg-strong: rgba(255, 255, 255, 0.24);
+    --glass-shadow-soft: 0 14px 50px -36px rgba(15, 23, 42, 0.22);
+    --glass-shadow-strong: 0 18px 56px -38px rgba(15, 23, 42, 0.26);
+    --brand-marquee-duration: 15s;
+  }
+
+  html[data-perf="low"] {
+    --perf-blur-sm: 5px;
+    --perf-blur-md: 7px;
+    --perf-blur-lg: 10px;
+    --perf-blur-xl: 12px;
+    --perf-blur-2xl: 14px;
+    --glass-bg-soft: rgba(255, 255, 255, 0.2);
+    --glass-bg-strong: rgba(255, 255, 255, 0.28);
+    --glass-shadow-soft: 0 10px 34px -24px rgba(15, 23, 42, 0.18);
+    --glass-shadow-strong: 0 14px 40px -28px rgba(15, 23, 42, 0.22);
+    --brand-marquee-duration: 18s;
+  }
+
+  .backdrop-blur-sm {
+    -webkit-backdrop-filter: blur(var(--perf-blur-sm)) !important;
+    backdrop-filter: blur(var(--perf-blur-sm)) !important;
+  }
+
+  .backdrop-blur,
+  .backdrop-blur-md {
+    -webkit-backdrop-filter: blur(var(--perf-blur-md)) !important;
+    backdrop-filter: blur(var(--perf-blur-md)) !important;
+  }
+
+  .backdrop-blur-lg {
+    -webkit-backdrop-filter: blur(var(--perf-blur-lg)) !important;
+    backdrop-filter: blur(var(--perf-blur-lg)) !important;
+  }
+
+  .backdrop-blur-xl {
+    -webkit-backdrop-filter: blur(var(--perf-blur-xl)) !important;
+    backdrop-filter: blur(var(--perf-blur-xl)) !important;
+  }
+
+  .backdrop-blur-2xl {
+    -webkit-backdrop-filter: blur(var(--perf-blur-2xl)) !important;
+    backdrop-filter: blur(var(--perf-blur-2xl)) !important;
+  }
+}
+
 body {
   font-family: "Montserrat", sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 html {
@@ -58,6 +128,62 @@ html {
   .glass-panel {
     @apply rounded-3xl border border-slate-200/80 bg-white/80 shadow-[0_18px_60px_-40px_rgba(15,23,42,0.3)] backdrop-blur-2xl dark:border-slate-800/80 dark:bg-[#1b1e23]/85 dark:shadow-[0_26px_70px_-55px_rgba(0,0,0,0.75)];
   }
+
+  .glass-shell {
+    @apply rounded-3xl overflow-hidden;
+    background: var(--glass-bg-soft);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow-soft);
+    -webkit-backdrop-filter: blur(var(--perf-blur-xl));
+    backdrop-filter: blur(var(--perf-blur-xl));
+  }
+
+  .glass-shell-strong {
+    @apply rounded-3xl overflow-hidden;
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow-strong);
+    -webkit-backdrop-filter: blur(var(--perf-blur-2xl));
+    backdrop-filter: blur(var(--perf-blur-2xl));
+  }
+
+  .deferred-shell {
+    @apply w-full rounded-3xl;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.12)),
+      linear-gradient(180deg, rgba(15, 23, 42, 0.04), rgba(15, 23, 42, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: var(--glass-shadow-soft);
+    -webkit-backdrop-filter: blur(var(--perf-blur-lg));
+    backdrop-filter: blur(var(--perf-blur-lg));
+  }
+
+  .transform-gpu-soft {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .rich-content iframe {
+    width: 100%;
+    min-height: 280px;
+    border: 0;
+    border-radius: 1rem;
+    background: #0f172a;
+    aspect-ratio: 16 / 9;
+    margin: 1.5rem 0;
+  }
+
+  .rich-content a {
+    overflow-wrap: anywhere;
+  }
+
+  .admin-preview-surface {
+    @apply rounded-3xl border border-slate-200/70 bg-white/85 shadow-sm dark:border-slate-700/70 dark:bg-slate-950/65 dark:text-slate-100;
+  }
+
+  .admin-muted-text {
+    @apply text-slate-500 dark:text-slate-300;
+  }
 }
 @layer utilities {
   @keyframes scroll-loop {
@@ -85,6 +211,12 @@ html {
   }
 
   .animate-brand-marquee {
-    animation: brand-marquee 12s linear infinite;
+    animation: brand-marquee var(--brand-marquee-duration) linear infinite;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .motion-paused {
+    animation-play-state: paused !important;
   }
 }

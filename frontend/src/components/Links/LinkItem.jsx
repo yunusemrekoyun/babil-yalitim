@@ -14,7 +14,7 @@ const LinkItem = ({
   return (
     <div
       className={`
-        group relative w-full sm:w-60 h-[320px] sm:h-[260px]
+        group relative w-full sm:w-60 h-[320px] sm:h-[260px] transform-gpu-soft
         rounded-2xl shadow-lg bg-white/10 backdrop-blur
         transition-transform duration-300 ease-out
         ${isHovered ? "scale-[1.04] z-10" : "scale-100 z-0"}
@@ -27,6 +27,8 @@ const LinkItem = ({
         src={img}
         alt={label}
         className="absolute inset-0 w-full h-full object-cover object-center rounded-2xl"
+        loading="lazy"
+        decoding="async"
       />
 
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-black/10 via-black/0 to-black/30 pointer-events-none" />

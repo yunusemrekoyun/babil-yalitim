@@ -1,12 +1,22 @@
-// frontend/src/admin/components/JournalForm.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import ToastAlert from "./ToastAlert";
+import RichContentField from "./RichContentField";
+import { JournalPreview } from "./previews/ContentPreviews";
 
 const inputCls =
-  "w-full rounded-xl border border-slate-200/70 bg-white/60 px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
+  "w-full rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950/55 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
 
-/* Küçük yardımcı */
+const fileCls =
+  "mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100";
+
+const toMediaType = (fileOrMedia) => {
+  if (!fileOrMedia) return "image";
+  if (fileOrMedia.resourceType) return fileOrMedia.resourceType;
+  if (fileOrMedia.type) return fileOrMedia.type.startsWith("video/") ? "video" : "image";
+  return "image";
+};
+
 const MediaThumb = ({ src, type = "image", className = "" }) => {
   if (!src) return null;
   if (type === "video") {
@@ -32,11 +42,10 @@ MediaThumb.propTypes = {
 const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
   const isEdit = Boolean(initialData?._id);
 
-  // metin alanları
   const [title, setTitle] = useState(initialData?.title || "");
   const [content, setContent] = useState(initialData?.content || "");
+  const [showPreview, setShowPreview] = useState(false);
 
-  // mevcut medya (sadece gösterim)
   const existingCover = useMemo(
     () => initialData?.cover || null,
     [initialData?.cover]
@@ -46,24 +55,27 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
     [initialData?.assets]
   );
 
-  // yeni seçilen dosyalar
   const [coverFile, setCoverFile] = useState(null);
   const [assetsFiles, setAssetsFiles] = useState([]);
 
-  // önizlemeler
   const [coverPreview, setCoverPreview] = useState(null);
   const [assetsPreviews, setAssetsPreviews] = useState([]);
   const revokers = useRef([]);
 
-  // Toast
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
 
   useEffect(() => {
+    if (!initialData) return;
+    setTitle(initialData.title || "");
+    setContent(initialData.content || "");
+  }, [initialData]);
+
+  useEffect(() => {
     return () => {
-      revokers.current.forEach((u) => {
-        if (u && u.startsWith("blob:")) URL.revokeObjectURL(u);
+      revokers.current.forEach((url) => {
+        if (url && url.startsWith("blob:")) URL.revokeObjectURL(url);
       });
       revokers.current = [];
     };
@@ -71,49 +83,71 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
 
   const blobify = (file, setter) => {
     if (!file) return setter(null);
-    const u = URL.createObjectURL(file);
-    revokers.current.push(u);
-    setter(u);
+    const url = URL.createObjectURL(file);
+    revokers.current.push(url);
+    setter(url);
   };
 
-  const handleCoverChange = (e) => {
-    const f = e.target.files?.[0] || null;
-    setCoverFile(f);
-    blobify(f, setCoverPreview);
+  const handleCoverChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    setCoverFile(file);
+    blobify(file, setCoverPreview);
   };
 
-  const handleAssetsChange = (e) => {
-    const files = Array.from(e.target.files || []);
+  const handleAssetsChange = (event) => {
+    const files = Array.from(event.target.files || []);
     setAssetsFiles(files);
-    // eski blobları bırak
-    assetsPreviews.forEach(
-      (u) => u?.startsWith("blob:") && URL.revokeObjectURL(u)
-    );
-    const urls = files.map((f) => {
-      const u = URL.createObjectURL(f);
-      revokers.current.push(u);
-      return u;
+    assetsPreviews.forEach((url) => {
+      if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+    });
+    const urls = files.map((file) => {
+      const url = URL.createObjectURL(file);
+      revokers.current.push(url);
+      return url;
     });
     setAssetsPreviews(urls);
   };
 
-  const submit = (e) => {
-    e.preventDefault();
+  const submit = (event) => {
+    event.preventDefault();
 
     if (!isEdit && !coverFile) {
-      // alert yerine ortak toast
       showToast("Kapak görseli zorunludur.", "error");
       return;
     }
 
-    const fd = new FormData();
-    fd.append("title", title);
-    fd.append("content", content);
-    if (coverFile) fd.append("cover", coverFile);
-    assetsFiles.forEach((f) => fd.append("assets", f));
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", content);
+    if (coverFile) formData.append("cover", coverFile);
+    assetsFiles.forEach((file) => formData.append("assets", file));
 
-    onSubmit(fd);
+    onSubmit(formData);
   };
+
+  const previewData = useMemo(
+    () => ({
+      title,
+      content,
+      cover: {
+        src: coverPreview || existingCover?.url || "",
+        type: coverFile ? toMediaType(coverFile) : existingCover?.resourceType || "image",
+        alt: title,
+      },
+      assets: assetsPreviews.length
+        ? assetsPreviews.map((src, index) => ({
+            src,
+            type: toMediaType(assetsFiles[index]),
+            alt: `${title}-asset-${index + 1}`,
+          }))
+        : existingAssets.map((asset) => ({
+            src: asset.url,
+            type: asset.resourceType || "image",
+            alt: `${title}-asset`,
+          })),
+    }),
+    [assetsFiles, assetsPreviews, content, coverFile, coverPreview, existingAssets, existingCover, title]
+  );
 
   return (
     <form
@@ -121,76 +155,76 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
       className="grid grid-cols-1 gap-6 lg:grid-cols-5"
       noValidate
     >
-      {/* Sol: metin alanları */}
-      <div className="lg:col-span-3 space-y-5">
+      <div className="space-y-5 lg:col-span-3">
         <div>
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Başlık *
           </label>
           <input
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(event) => setTitle(event.target.value)}
             required
             className={`mt-2 ${inputCls}`}
             placeholder="Örn: X firması ile anlaşma"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
-            İçerik *
-          </label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={8}
-            required
-            className={`mt-2 leading-relaxed ${inputCls}`}
-            placeholder="Habere dair detaylar…"
-          />
-        </div>
+        <RichContentField
+          label="İçerik *"
+          value={content}
+          onChange={setContent}
+          rows={10}
+          inputClassName={`min-h-[220px] ${inputCls}`}
+          placeholder="Habere dair detaylar…"
+          onTogglePreview={() => setShowPreview((prev) => !prev)}
+          showPreview={showPreview}
+        />
+
+        {showPreview && <JournalPreview preview={previewData} />}
 
         <div className="pt-1">
           <button
             type="submit"
             disabled={submitting}
-            className="btn-admin-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            className="btn-admin-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? "İşleniyor…" : "Kaydet"}
           </button>
         </div>
       </div>
 
-      {/* Sağ: medya alanları */}
-      <div className="lg:col-span-2 space-y-6">
-        {/* Kapak */}
+      <div className="space-y-6 lg:col-span-2">
         <div>
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Kapak Görseli {isEdit ? "(mevcut varsa opsiyonel)" : "(zorunlu)"}
           </label>
           <input
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             onChange={handleCoverChange}
-            className="mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
+            className={fileCls}
           />
-          <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/70 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+          <div className="admin-preview-surface mt-3 overflow-hidden">
             {coverPreview ? (
-              <MediaThumb src={coverPreview} className="w-full" />
+              <MediaThumb
+                src={coverPreview}
+                type={toMediaType(coverFile)}
+                className="w-full"
+              />
             ) : existingCover?.url ? (
-              <MediaThumb src={existingCover.url} className="w-full" />
+              <MediaThumb
+                src={existingCover.url}
+                type={existingCover.resourceType || "image"}
+                className="w-full"
+              />
             ) : (
-              <div className="aspect-video grid place-items-center text-xs text-slate-400">
+              <div className="grid aspect-video place-items-center text-xs text-slate-400 dark:text-slate-500">
                 Önizleme
               </div>
             )}
           </div>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Kapak için PNG/JPEG/WEBP önerilir.
-          </p>
         </div>
 
-        {/* Alt medya (image/video çoklu) */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Alt Medya (opsiyonel, çoklu — resim ya da video)
@@ -200,28 +234,30 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
             accept="image/*,video/*"
             multiple
             onChange={handleAssetsChange}
-            className="mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
+            className={fileCls}
           />
 
           {!!existingAssets.length && (
             <>
-              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Mevcut medya</p>
-              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {existingAssets.map((m) => (
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-300">
+                Mevcut medya
+              </p>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {existingAssets.map((asset) => (
                   <div
-                    key={m.publicId}
-                    className="relative rounded-2xl border border-slate-200/70 overflow-hidden shadow-sm dark:border-slate-700 dark:bg-slate-900/40"
+                    key={asset.publicId}
+                    className="relative overflow-hidden rounded-2xl border border-slate-200/70 shadow-sm dark:border-slate-700 dark:bg-slate-900/40"
                   >
                     <MediaThumb
-                      src={m.url}
-                      type={m.resourceType === "video" ? "video" : "image"}
+                      src={asset.url}
+                      type={asset.resourceType === "video" ? "video" : "image"}
                       className="h-28 w-full object-cover"
                     />
                     {onRemoveAsset && (
                       <button
                         type="button"
-                        onClick={() => onRemoveAsset(m.publicId)}
-                        className="absolute right-2 top-2 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-md shadow-rose-500/30 hover:-translate-y-[1px] transition"
+                        onClick={() => onRemoveAsset(asset.publicId)}
+                        className="absolute right-2 top-2 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-md shadow-rose-500/30 transition hover:-translate-y-[1px]"
                         aria-label="Medyayı sil"
                         title="Medyayı sil"
                       >
@@ -236,15 +272,16 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
 
           {!!assetsPreviews.length && (
             <>
-              <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-4 text-xs text-slate-500 dark:text-slate-300">
                 Yeni eklenecekler
               </p>
-              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {assetsPreviews.map((u, i) => (
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {assetsPreviews.map((url, index) => (
                   <MediaThumb
-                    key={i}
-                    src={u}
-                    className="h-28 w-full object-cover rounded-2xl border border-slate-200/70 dark:border-slate-700"
+                    key={url}
+                    src={url}
+                    type={toMediaType(assetsFiles[index])}
+                    className="h-28 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
                   />
                 ))}
               </div>
@@ -272,6 +309,7 @@ JournalForm.propTypes = {
     content: PropTypes.string,
     cover: PropTypes.shape({
       url: PropTypes.string,
+      resourceType: PropTypes.string,
     }),
     assets: PropTypes.arrayOf(
       PropTypes.shape({
@@ -282,7 +320,7 @@ JournalForm.propTypes = {
     ),
   }),
   onSubmit: PropTypes.func.isRequired,
-  onRemoveAsset: PropTypes.func, // sadece edit ekranında kullanılıyor (ConfirmModal parent'ta)
+  onRemoveAsset: PropTypes.func,
   submitting: PropTypes.bool,
 };
 

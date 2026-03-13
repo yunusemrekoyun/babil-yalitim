@@ -1,5 +1,7 @@
 // frontend/src/components/Brands/BrandGrid.jsx
 import BrandItem from "./BrandItem";
+import useViewportActivation from "../../hooks/useViewportActivation";
+import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 import brandKoster from "../../assets/brand-koster.png";
 import brandSika from "../../assets/brand-sika.png";
@@ -18,10 +20,20 @@ const brands = [
 ];
 
 const BrandGrid = () => {
+  const [ref, inView] = useViewportActivation({
+    once: false,
+    rootMargin: "120px 0px",
+  });
+  const { allowMarquee } = usePerformanceProfile();
   const fullList = [...brands, ...brands, ...brands];
+
   return (
-    <div id="brands" className="w-full overflow-hidden relative mt-5">
-      <div className="flex whitespace-nowrap animate-brand-marquee will-change-transform">
+    <div ref={ref} id="brands" className="relative mt-5 w-full overflow-hidden">
+      <div
+        className={`flex whitespace-nowrap animate-brand-marquee ${
+          allowMarquee && inView ? "" : "motion-paused"
+        }`}
+      >
         {fullList.map((brand, index) => (
           <div key={`${brand.id}-${index}`} className="mx-4 sm:mx-8">
             <BrandItem brand={brand} />

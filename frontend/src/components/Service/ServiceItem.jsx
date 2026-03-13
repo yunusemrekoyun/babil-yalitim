@@ -2,6 +2,12 @@
 import PropTypes from "prop-types";
 import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import AdaptiveImage from "../Media/AdaptiveImage";
+import {
+  getOptimizedVideoUrl,
+  getVideoPosterUrl,
+} from "../../utils/cloudinary";
+import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 /**
  * Dikey (9:16) kart.
@@ -12,26 +18,52 @@ import { Link } from "react-router-dom";
 const ServiceItem = ({ service }) => {
   const [hovered, setHovered] = useState(false);
   const videoRef = useRef(null);
+  const { cardImageWidth, detailImageWidth, imageQuality, videoQuality } =
+    usePerformanceProfile();
 
-  const { isVideo, coverUrl, posterUrl } = useMemo(() => {
+  const { isVideo, coverMedia, coverUrl, posterMedia } = useMemo(() => {
     const coverType = service?.cover?.resourceType || "image";
     const isVideo = coverType === "video";
-    const coverUrl =
+    const coverMedia =
+      service?.cover ||
       service?.cover?.url ||
       service?.imageDataUrl ||
       service?.imageUrl ||
       service?.images?.[0]?.url ||
       "";
+    const coverUrl = service?.cover?.url || service?.imageDataUrl || service?.imageUrl || service?.images?.[0]?.url || "";
 
     // Video için poster (varsa galeriden ilk image’i kullan)
-    const posterUrl = isVideo
+    const posterMedia = isVideo
       ? (service?.images || []).find(
           (m) => (m?.resourceType || "image") === "image" && m?.url
-        )?.url
+        ) || service?.cover
       : undefined;
 
-    return { isVideo, coverUrl, posterUrl };
+    return { isVideo, coverMedia, coverUrl, posterMedia };
   }, [service]);
+
+  const optimizedCoverUrl = useMemo(
+    () =>
+      isVideo
+        ? getOptimizedVideoUrl(coverMedia, {
+            width: detailImageWidth,
+            quality: videoQuality,
+          })
+        : coverUrl,
+    [coverMedia, coverUrl, detailImageWidth, isVideo, videoQuality]
+  );
+
+  const posterUrl = useMemo(
+    () =>
+      posterMedia?.resourceType === "video"
+        ? getVideoPosterUrl(posterMedia, {
+            width: cardImageWidth,
+            quality: imageQuality,
+          })
+        : posterMedia,
+    [cardImageWidth, imageQuality, posterMedia]
+  );
 
   const handleEnter = () => {
     setHovered(true);
@@ -60,7 +92,7 @@ const ServiceItem = ({ service }) => {
   return (
     <Link
       to={service?._id ? `/services/${service._id}` : "#"}
-      className="group rounded-3xl overflow-hidden border border-white/50 bg-white/60 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] hover:shadow-[0_18px_50px_rgba(0,0,0,0.12)] block focus:outline-none focus-visible:ring-2 focus-visible:ring-quaternaryColor/60 transition-shadow"
+      className="transform-gpu-soft group block overflow-hidden rounded-3xl border border-white/50 bg-white/60 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] hover:shadow-[0_18px_50px_rgba(0,0,0,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-quaternaryColor/60 transition-shadow"
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
       aria-label={`${service?.title || "Hizmet"} detayına git`}
@@ -70,24 +102,26 @@ const ServiceItem = ({ service }) => {
         {isVideo ? (
           <video
             ref={videoRef}
-            src={coverUrl}
+            src={optimizedCoverUrl}
             muted
             loop
             playsInline
             // hover ile oynatılacağı için autoPlay yok
             poster={posterUrl}
+            preload="none"
             className={`h-full w-full object-cover transition-transform duration-700 ${
               hovered ? "scale-105" : "scale-100"
             }`}
           />
         ) : coverUrl ? (
-          <img
-            src={coverUrl}
+          <AdaptiveImage
+            media={coverMedia}
             alt={service?.title || "service"}
             className={`h-full w-full object-cover transition-transform duration-700 ${
               hovered ? "scale-105" : "scale-100"
             }`}
-            loading="lazy"
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 80vw"
+            widths={[320, 480, 640, 800, 960]}
           />
         ) : (
           <div className="h-full w-full bg-gradient-to-b from-gray-200 to-gray-300" />

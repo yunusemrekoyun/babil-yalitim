@@ -7,6 +7,7 @@ const {
   sanitizeCommentInput,
   toPublicComment,
 } = require("../utils/blog");
+const { buildRichContentHtml } = require("../utils/richContent");
 
 const uploadOne = async (file, folder) => {
   const isVideo = /^video\//i.test(file?.mimetype || "");
@@ -105,7 +106,7 @@ exports.getBlogById = async (req, res) => {
 exports.createBlog = async (req, res) => {
   try {
     const { title, content } = req.body;
-    const safeContent = sanitizeHtml(content);
+    const safeContent = sanitizeHtml(buildRichContentHtml(content));
     const tags = resolveTags(req.body.tags, {
       title,
       content: safeContent,
@@ -149,7 +150,9 @@ exports.updateBlog = async (req, res) => {
     const tagsProvided = req.body.tags !== undefined;
     const nextTitle = title !== undefined ? title : blog.title;
     const nextContent =
-      content !== undefined ? sanitizeHtml(content) : blog.content;
+      content !== undefined
+        ? sanitizeHtml(buildRichContentHtml(content))
+        : blog.content;
 
     if (title !== undefined) blog.title = title;
     if (content !== undefined) blog.content = nextContent;

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
+import AdaptiveImage from "../Media/AdaptiveImage";
 
 const JournalCard = ({ item, index }) => {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ const JournalCard = ({ item, index }) => {
       initial={{ opacity: 0, y: 28 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06, duration: 0.45, ease: "easeOut" }}
-      className="group rounded-2xl overflow-hidden border border-white/30 bg-white/40 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all cursor-pointer"
+      className="transform-gpu-soft group rounded-2xl overflow-hidden border border-white/30 bg-white/40 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all cursor-pointer"
       onClick={() => navigate(`/journals/${item._id}`)}
       role="button"
       tabIndex={0}
@@ -24,11 +25,12 @@ const JournalCard = ({ item, index }) => {
       aria-label={`${item?.title || "Haber"} detayına git`}
     >
       <div className="relative w-full h-56 md:h-60 overflow-hidden">
-        <img
-          src={imgSrc}
+        <AdaptiveImage
+          media={item?.cover || imgSrc}
           alt={item?.title || "haber görseli"}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          loading="lazy"
+          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          widths={[320, 480, 640, 800, 960]}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent opacity-90" />
         {dateText && (
@@ -55,6 +57,11 @@ JournalCard.propTypes = {
   item: PropTypes.shape({
     _id: PropTypes.string,
     title: PropTypes.string,
+    cover: PropTypes.shape({
+      url: PropTypes.string,
+      publicId: PropTypes.string,
+      resourceType: PropTypes.string,
+    }),
     coverUrl: PropTypes.string,
     excerpt: PropTypes.string,
     date: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),

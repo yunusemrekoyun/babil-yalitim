@@ -4,11 +4,18 @@ import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import api from "../../api";
 import ServiceGridItem from "./ServiceGridItem";
+import useViewportActivation from "../../hooks/useViewportActivation";
+import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 const ServiceGrid = () => {
   const [items, setItems] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
+  const [sectionRef, inView] = useViewportActivation({
+    once: false,
+    rootMargin: "140px 0px",
+  });
+  const { hoverBlurScale } = usePerformanceProfile();
 
   const videoRefs = useRef({});
   const scrollRef = useRef(null);
@@ -53,7 +60,8 @@ const ServiceGrid = () => {
       next1: { x: 200, scale: 0.9, opacity: 0.75, z: 8, blur: 1.5 },
       next2: { x: 360, scale: 0.78, opacity: 0.55, z: 5, blur: 2 },
     };
-    return map[slot] || map.center;
+    const target = map[slot] || map.center;
+    return { ...target, blur: target.blur * hoverBlurScale };
   };
 
   // yalnız merkezde video oynat
@@ -79,10 +87,16 @@ const ServiceGrid = () => {
     });
   };
   useEffect(() => {
-    const id = setTimeout(() => stopAllVideosExcept(getIndex(0)), 0);
+    const id = setTimeout(() => {
+      if (!inView) {
+        stopAllVideosExcept(-1);
+        return;
+      }
+      stopAllVideosExcept(getIndex(0));
+    }, 0);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, len]);
+  }, [currentIndex, inView, len]);
 
   // MOBİL: scroll ile index’i güncelle — slide genişliğini gerçek slide’dan ölç
   useEffect(() => {
@@ -108,7 +122,10 @@ const ServiceGrid = () => {
   if (!len) return null;
 
   return (
-    <section className="relative text-white py-16 px-4 sm:px-6 overflow-hidden">
+    <section
+      ref={sectionRef}
+      className="relative overflow-hidden px-4 py-16 text-white sm:px-6"
+    >
       <div className="max-w-6xl mx-auto mb-10 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
           Hizmetlerimiz
@@ -152,6 +169,7 @@ const ServiceGrid = () => {
                 <ServiceGridItem
                   item={items[index]}
                   isCenter={slot === "center"}
+                  shouldAutoplay={slot === "center" && inView}
                   registerVideoRef={(el) => {
                     if (el) videoRefs.current[index] = el;
                     else delete videoRefs.current[index];
@@ -187,6 +205,7 @@ const ServiceGrid = () => {
                 <ServiceGridItem
                   item={item}
                   isCenter={i === currentIndex}
+                  shouldAutoplay={i === currentIndex && inView}
                   registerVideoRef={(el) => {
                     if (el) videoRefs.current[i] = el;
                     else delete videoRefs.current[i];

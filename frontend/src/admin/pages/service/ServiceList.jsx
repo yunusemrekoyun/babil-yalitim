@@ -156,6 +156,9 @@ const ServiceList = () => {
                   <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                     Kategori
                   </th>
+                  <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                    Alt Hizmetler
+                  </th>
                   <th className="border border-slate-200/70 p-3 w-40 dark:border-slate-800/70">
                     İşlemler
                   </th>
@@ -221,6 +224,32 @@ const ServiceList = () => {
                     </td>
                     <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                       {s.category || "-"}
+                    </td>
+                    <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                      {Array.isArray(s.subServices) && s.subServices.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                            {s.subServices.length} alt hizmet
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {s.subServices.slice(0, 3).map((sub) => (
+                              <span
+                                key={sub._id || sub.title}
+                                className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                              >
+                                {sub.title}
+                              </span>
+                            ))}
+                            {s.subServices.length > 3 && (
+                              <span className="text-[11px] text-slate-400">
+                                +{s.subServices.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-500">Yok</span>
+                      )}
                     </td>
                     <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                       <div className="flex gap-2">

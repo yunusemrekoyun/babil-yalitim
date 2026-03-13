@@ -24,11 +24,34 @@ const ALLOWED_TAGS = new Set([
   "pre",
   "img",
   "a",
+  "iframe",
 ]);
 
 const ALLOWED_ATTRS = {
   a: ["href", "title", "target", "rel"],
   img: ["src", "alt", "title"],
+  iframe: [
+    "src",
+    "title",
+    "allow",
+    "allowfullscreen",
+    "referrerpolicy",
+    "loading",
+    "frameborder",
+  ],
+};
+
+const isAllowedIframeSrc = (value = "") => {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./i, "").toLowerCase();
+    return (
+      (host === "youtube.com" || host === "youtube-nocookie.com") &&
+      /^\/embed\/[^/?#]+/i.test(url.pathname)
+    );
+  } catch {
+    return false;
+  }
 };
 
 function sanitizeHtml(input = "") {
@@ -59,6 +82,9 @@ function sanitizeHtml(input = "") {
         const val = attr.value || "";
         if (/^javascript:/i.test(val)) {
           node.removeAttribute(attr.name);
+        }
+        if (tag === "iframe" && attrName === "src" && !isAllowedIframeSrc(val)) {
+          toRemove.push(node);
         }
         if (attrName === "target" && val === "_self") {
           // izin ver

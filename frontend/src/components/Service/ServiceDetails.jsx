@@ -328,6 +328,111 @@ const ServiceDetails = () => {
                 </div>
               </div>
             )}
+
+            {Array.isArray(svc.subServices) && svc.subServices.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-xl font-semibold text-brandBlue mb-4">
+                  Alt Hizmetler
+                </h3>
+                <div className="space-y-4">
+                  {svc.subServices.map((sub, index) => {
+                    const subCoverIsVideo =
+                      sub?.cover?.resourceType === "video" ||
+                      looksVideo(sub?.cover?.url);
+                    const subPreview =
+                      (!subCoverIsVideo && sub?.cover?.url) ||
+                      firstImageFrom(sub?.images) ||
+                      (subCoverIsVideo ? cldVideoThumb(sub?.cover?.url) : null) ||
+                      "";
+
+                    return (
+                      <div
+                        key={sub?._id || `${sub?.title}-${index}`}
+                        className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm"
+                      >
+                        <div className="grid gap-0 lg:grid-cols-[240px_1fr]">
+                          <div className="relative aspect-[4/5] bg-slate-100">
+                            {subPreview ? (
+                              <img
+                                src={subPreview}
+                                alt={sub.title}
+                                className="absolute inset-0 h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : subCoverIsVideo ? (
+                              <video
+                                src={sub.cover.url}
+                                className="absolute inset-0 h-full w-full object-cover"
+                                muted
+                                playsInline
+                                preload="metadata"
+                              />
+                            ) : null}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
+                          </div>
+                          <div className="p-5 md:p-6">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="text-lg font-semibold text-brandBlue">
+                                {sub.title}
+                              </h4>
+                              {sub.type && (
+                                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700">
+                                  {sub.type}
+                                </span>
+                              )}
+                              {sub.category && (
+                                <span className="inline-flex rounded-full bg-quaternaryColor/10 px-3 py-1 text-[11px] font-semibold text-quaternaryColor">
+                                  {sub.category}
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-4 whitespace-pre-wrap leading-relaxed text-gray-700">
+                              {sub.description}
+                            </p>
+                            {Array.isArray(sub.usageAreas) &&
+                              sub.usageAreas.length > 0 && (
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                  {sub.usageAreas.map((area) => (
+                                    <span
+                                      key={`${sub._id || sub.title}-${area}`}
+                                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600"
+                                    >
+                                      {area}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            {Array.isArray(sub.images) && sub.images.length > 0 && (
+                              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                {sub.images.map((media, mediaIndex) =>
+                                  media.resourceType === "video" ? (
+                                    <video
+                                      key={`${media.url}-${mediaIndex}`}
+                                      src={media.url}
+                                      className="aspect-video w-full rounded-2xl object-cover"
+                                      controls
+                                      playsInline
+                                    />
+                                  ) : (
+                                    <img
+                                      key={`${media.url}-${mediaIndex}`}
+                                      src={media.url}
+                                      alt={`${sub.title}-${mediaIndex + 1}`}
+                                      className="aspect-video w-full rounded-2xl object-cover"
+                                      loading="lazy"
+                                    />
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
 

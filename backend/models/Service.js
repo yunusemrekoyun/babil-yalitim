@@ -15,6 +15,19 @@ const mediaSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const subServiceSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    type: { type: String, default: "", trim: true },
+    category: { type: String, default: "", trim: true },
+    usageAreas: { type: [String], default: [] },
+    description: { type: String, required: true, trim: true },
+    cover: { type: mediaSchema, required: true },
+    images: { type: [mediaSchema], default: [] },
+  },
+  { _id: true }
+);
+
 const serviceSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
@@ -25,6 +38,7 @@ const serviceSchema = new mongoose.Schema(
 
     cover: { type: mediaSchema, required: true }, // artık image | video
     images: { type: [mediaSchema], default: [] }, // image | video karışık
+    subServices: { type: [subServiceSchema], default: [] },
   },
   { timestamps: true }
 );

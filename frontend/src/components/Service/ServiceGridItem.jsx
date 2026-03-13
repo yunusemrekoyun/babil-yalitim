@@ -1,12 +1,14 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PlayCircle, PauseCircle } from "lucide-react";
-
-const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "";
-
-const looksVideo = (u) =>
-  /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(String(u || ""));
+import AdaptiveImage from "../Media/AdaptiveImage";
+import {
+  getOptimizedVideoUrl,
+  getVideoPosterUrl,
+  looksVideo,
+} from "../../utils/cloudinary";
+import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 const pickFirstImageAndVideo = (images = []) => {
   let img = null;
@@ -25,15 +27,11 @@ const pickFirstImageAndVideo = (images = []) => {
   return { img, vid };
 };
 
-// Cloudinary video -> thumb
-const cloudinaryVideoThumb = (publicId) => {
-  if (!CLOUD || !publicId) return null;
-  return `https://res.cloudinary.com/${CLOUD}/video/upload/so_0/${publicId}.jpg`;
-};
-
-const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
+const ServiceGridItem = ({ item, isCenter, shouldAutoplay, registerVideoRef }) => {
   const videoRef = useRef(null);
   const [isPlayingTouch, setIsPlayingTouch] = useState(false);
+  const { detailImageWidth, imageQuality, videoQuality } =
+    usePerformanceProfile();
 
   // Cihaz touch mı? (mobil/tablet vs.)
   const isTouch = useMemo(() => {
@@ -48,12 +46,25 @@ const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
   const coverIsVideo =
     cover?.resourceType === "video" || looksVideo(cover?.url);
 
-  const videoUrl = coverIsVideo ? cover?.url : firstVideo || null;
+  const videoMedia = coverIsVideo ? cover || cover?.url : firstVideo || null;
+  const videoUrl = useMemo(
+    () =>
+      getOptimizedVideoUrl(videoMedia, {
+        width: detailImageWidth,
+        quality: videoQuality,
+      }),
+    [detailImageWidth, videoMedia, videoQuality]
+  );
 
-  let previewSrc =
-    (!coverIsVideo && cover?.url) ||
+  const previewMedia =
+    (!coverIsVideo && (cover || cover?.url)) ||
     firstImage ||
-    (coverIsVideo && cloudinaryVideoThumb(cover?.publicId)) ||
+    (coverIsVideo
+      ? getVideoPosterUrl(cover || videoMedia, {
+          width: detailImageWidth,
+          quality: imageQuality,
+        })
+      : null) ||
     item?.imageDataUrl ||
     item?.imageUrl ||
     null;
@@ -79,6 +90,20 @@ const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
     }
   };
 
+  useEffect(() => {
+    if (isTouch || !isCenter || !videoRef.current) return;
+
+    const video = videoRef.current;
+
+    if (shouldAutoplay) {
+      video.play().catch(() => {});
+      return;
+    }
+
+    video.pause();
+    video.currentTime = 0;
+  }, [isCenter, isTouch, shouldAutoplay]);
+
   return (
     <Link
       to={item?._id ? `/services/${item._id}` : "#"}
@@ -97,9 +122,12 @@ const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
             muted
             loop
             playsInline
-            poster={previewSrc || undefined}
+            poster={
+              typeof previewMedia === "string" ? previewMedia : undefined
+            }
             // ÖNEMLİ: Desktop'ta autoplay; mobilde AUTOPLAY KAPALI
             autoPlay={!isTouch}
+            preload={isTouch ? "none" : "metadata"}
             className={size}
             onClick={onTouchToggle}
             onPlay={() => isTouch && setIsPlayingTouch(true)}
@@ -128,18 +156,14 @@ const ServiceGridItem = ({ item, isCenter, registerVideoRef }) => {
             </button>
           )}
         </>
-      ) : previewSrc ? (
-        <img src={previewSrc} alt={item?.title || "service"} className={size} />
-      ) : videoUrl ? (
-        // Merkez değilse: sadece poster/metadata; autoplay yok (dokunma için overlay de yok)
-        <video
-          ref={videoRef}
-          src={videoUrl}
-          muted
-          playsInline
-          preload="metadata"
+      ) : previewMedia ? (
+        <AdaptiveImage
+          media={previewMedia}
+          alt={item?.title || "service"}
           className={size}
-          aria-hidden="true"
+          sizes="(min-width: 640px) 320px, 88vw"
+          widths={[320, 480, 640, 800, 960]}
+          quality={imageQuality}
         />
       ) : (
         <div className={`${size} bg-white/10 border border-white/20`} />
@@ -183,6 +207,7 @@ ServiceGridItem.propTypes = {
     imageUrl: PropTypes.string,
   }),
   isCenter: PropTypes.bool,
+  shouldAutoplay: PropTypes.bool,
   registerVideoRef: PropTypes.func,
 };
 
