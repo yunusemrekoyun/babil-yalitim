@@ -62,18 +62,7 @@ const Hero = ({ targetId = "after-hero" }) => {
           />
         </div>
 
-        {/* Markalar */}
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="w-full mt-12 px-2 z-20"
-        >
-          <BrandsSection />
-        </motion.div>
-
-        {/* Arama + Ok – alta sabitlenen blok */}
-        <div className="mt-auto w-full z-20">
+        <div className="w-full mt-8 z-20">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -83,45 +72,53 @@ const Hero = ({ targetId = "after-hero" }) => {
             <SearchBar />
           </motion.div>
 
-          <div className="w-full flex justify-center mt-4">
-            <motion.button
-              onClick={scrollToTarget}
-              aria-label="Aşağı kaydır"
-              className="transform-gpu-soft rounded-full border border-white/30 bg-white/15 backdrop-blur-xl
-                         shadow-[0_6px_30px_rgba(0,0,0,0.2)] p-2.5 hover:bg-white/25 transition"
-              animate={{ y: [0, 10, 0] }}
-              transition={{
-                repeat: Infinity,
-                repeatType: "loop",
-                duration: 1.6,
-                ease: "easeInOut",
-              }}
-            >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                className="text-white/90"
-              >
-                <path
-                  d="M6 9l6 6 6-6"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </motion.button>
+          <div
+            ref={linksRef}
+            className="w-full flex justify-center mt-6 px-3 z-10"
+          >
+            <LinksSection />
           </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="w-full mt-8 px-2 z-20"
+          >
+            <BrandsSection />
+          </motion.div>
         </div>
 
-        {/* (Mobilde görünse de sorun değil) */}
-        <div
-          ref={linksRef}
-          className="w-full flex justify-center mt-20 px-3 z-10"
-        >
-          <LinksSection />
+        <div className="w-full flex justify-center mt-8">
+          <motion.button
+            onClick={scrollToTarget}
+            aria-label="Aşağı kaydır"
+            className="transform-gpu-soft rounded-full border border-white/30 bg-white/15 backdrop-blur-xl
+                       shadow-[0_6px_30px_rgba(0,0,0,0.2)] p-2.5 hover:bg-white/25 transition"
+            animate={{ y: [0, 10, 0] }}
+            transition={{
+              repeat: Infinity,
+              repeatType: "loop",
+              duration: 1.6,
+              ease: "easeInOut",
+            }}
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              className="text-white/90"
+            >
+              <path
+                d="M6 9l6 6 6-6"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </motion.button>
         </div>
       </section>
 

@@ -12,6 +12,7 @@ const ProjectGridItem = ({ project, index, isMobile }) => {
   /* -------------------- MOBİL: SADECE backend'in verdiği mobileCoverUrl -------------------- */
   if (isMobile) {
     const mobileSrc = project?.mobileCoverUrl || "";
+    const fallbackTitle = project?.title || "Proje";
 
     if (!mobileSrc) {
       // Aynı proje için sadece 1 kez logla
@@ -24,34 +25,37 @@ const ProjectGridItem = ({ project, index, isMobile }) => {
         );
         missingLogSet.add(key);
       }
-      return null; // placeholder yok, hiçbir şey render etme
     }
 
     return (
-      <div className="group relative overflow-hidden rounded-xl text-white cursor-pointer h-full">
+      <div className="group relative h-full overflow-hidden rounded-xl text-white cursor-pointer">
         <Link to={`/project-detail/${project._id}`} className="block h-full">
           <div className="absolute inset-0">
-            <img
-              src={mobileSrc}
-              alt={project?.title || "Proje"}
-              className="absolute inset-0 w-full h-full object-cover bg-gray-200"
-              loading="lazy"
-              decoding="async"
-              onError={(e) => {
-                console.error(
-                  "[PGI mobile] image load ERROR",
-                  { id: project?._id, title: project?.title },
-                  "src:",
-                  e.currentTarget?.src
-                );
-              }}
-            />
+            {mobileSrc ? (
+              <img
+                src={mobileSrc}
+                alt={fallbackTitle}
+                className="absolute inset-0 w-full h-full object-cover bg-gray-200"
+                loading="lazy"
+                decoding="async"
+                onError={(e) => {
+                  console.error(
+                    "[PGI mobile] image load ERROR",
+                    { id: project?._id, title: project?.title },
+                    "src:",
+                    e.currentTarget?.src
+                  );
+                }}
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-500" />
+            )}
           </div>
 
           <div className="absolute inset-0 z-10 bg-black/35" />
           <div className="absolute left-4 bottom-4 z-20">
             <h3 className="text-lg md:text-xl font-semibold">
-              {project.title}
+              {fallbackTitle}
             </h3>
           </div>
 

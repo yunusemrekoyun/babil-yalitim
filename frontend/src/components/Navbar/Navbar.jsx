@@ -172,20 +172,22 @@ export default function Navbar() {
       </nav>
 
       {/* ===== Mobil (light/glass tasarım) ===== */}
-      <div className="md:hidden sticky top-0 z-40 px-4 py-3 flex justify-between items-center text-white">
+      <div className="md:hidden sticky top-0 z-40 px-4 py-3 text-white">
         {/* bar'ı şeffaf tut, okunabilirlik için çok hafif cam efekti ve çizgi */}
         <div className="absolute inset-0 bg-white/10 backdrop-blur-xl border-b border-white/20 pointer-events-none" />
-        <a href="/" className="shrink-0 relative z-10">
-          {/* logo daha büyük */}
-          <img src={Logo} alt="Logo" className="h-12" />
-        </a>
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="relative z-10 text-white size-10 grid place-items-center rounded-md active:scale-95"
-          aria-label={isOpen ? "Menüyü kapat" : "Menüyü aç"}
-        >
-          {isOpen ? <X size={28} /> : <Menu size={28} />}
-        </button>
+        <div className="relative flex min-h-[3rem] items-center justify-center">
+          <a href="/" className="relative z-10 shrink-0">
+            {/* logo daha büyük */}
+            <img src={Logo} alt="Logo" className="h-14 w-auto" />
+          </a>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="absolute right-0 z-10 grid size-10 place-items-center rounded-md text-white active:scale-95"
+            aria-label={isOpen ? "Menüyü kapat" : "Menüyü aç"}
+          >
+            {isOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>

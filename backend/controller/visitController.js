@@ -1,6 +1,5 @@
 // backend/controller/visitController.js
 const Visit = require("../models/Visit");
-const geoip = require("geoip-lite");
 const UAParser = require("ua-parser-js");
 const { v4: uuidv4 } = require("uuid");
 
@@ -49,6 +48,25 @@ function extractClientIp(req) {
   return req.ip || req.connection?.remoteAddress || undefined;
 }
 
+function readGeoFromHeaders(req) {
+  const country =
+    req.headers["x-vercel-ip-country"] ||
+    req.headers["cf-ipcountry"] ||
+    req.headers["x-country-code"] ||
+    null;
+
+  const city =
+    req.headers["x-vercel-ip-city"] ||
+    req.headers["x-city"] ||
+    null;
+
+  return {
+    country:
+      typeof country === "string" && country.trim() ? country.trim() : null,
+    city: typeof city === "string" && city.trim() ? city.trim() : null,
+  };
+}
+
 const recordVisit = async (req, res) => {
   try {
     if (!hasAnalyticsConsent(req)) return res.status(204).end();
@@ -57,8 +75,7 @@ const recordVisit = async (req, res) => {
 
     const { path, duration, scrollDepth, section, userId } = req.body;
     const ip = extractClientIp(req);
-
-    const geo = ip ? geoip.lookup(ip) : null;
+    const geo = readGeoFromHeaders(req);
     const ua = new UAParser(req.headers["user-agent"]).getResult();
 
     const visit = await Visit.create({

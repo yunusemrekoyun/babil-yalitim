@@ -37,6 +37,9 @@ const LinksSection = () => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 640 : true
+  );
   const scrollRef = useRef(null);
 
   const updateArrowState = () => {
@@ -101,10 +104,17 @@ const LinksSection = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const onResize = () =>
+      setIsMobile(typeof window !== "undefined" && window.innerWidth < 640);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   return (
     <div className="w-full flex justify-center mt-6 px-0 sm:px-4 relative">
       {/* Oklar (sadece mobilde gösteriliyor) */}
-      {SHOW_ARROWS_MOBILE && (
+      {SHOW_ARROWS_MOBILE && isMobile && (
         <>
           <button
             onClick={() => handleScroll("left")}
@@ -139,7 +149,7 @@ const LinksSection = () => {
         {links.map((link, idx) => (
           <div
             key={link.label}
-            className="snap-center flex-shrink-0 w-[85%] mx-auto sm:w-auto sm:mx-0"
+            className="snap-center flex-shrink-0 w-[88%] mx-auto sm:w-auto sm:mx-0"
           >
             <LinkItem
               label={link.label}
@@ -147,7 +157,8 @@ const LinksSection = () => {
               color={link.color}
               desc={link.desc}
               href={link.href}
-              isHovered={hoveredIndex === idx}
+              isHovered={isMobile || hoveredIndex === idx}
+              forceExpanded={isMobile}
               onMouseEnter={() => setHoveredIndex(idx)}
               onMouseLeave={() => setHoveredIndex(null)}
             />

@@ -8,16 +8,17 @@ const LinkItem = ({
   desc,
   href,
   isHovered,
+  forceExpanded,
   onMouseEnter,
   onMouseLeave,
 }) => {
   return (
     <div
       className={`
-        group relative w-full sm:w-60 h-[320px] sm:h-[260px] transform-gpu-soft
+        group relative w-full sm:w-60 h-[300px] sm:h-[260px] transform-gpu-soft
         rounded-2xl shadow-lg bg-white/10 backdrop-blur
         transition-transform duration-300 ease-out
-        ${isHovered ? "scale-[1.04] z-10" : "scale-100 z-0"}
+        ${isHovered && !forceExpanded ? "scale-[1.04] z-10" : "scale-100 z-0"}
       `}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -38,11 +39,14 @@ const LinkItem = ({
           absolute left-2 right-2 bottom-2
           rounded-xl border border-white/40 bg-white/80 backdrop-blur-xl shadow-md
           overflow-hidden transition-all duration-300
-          ${isHovered ? "h-36" : "h-14"}
+          ${forceExpanded ? "h-[9.5rem]" : isHovered ? "h-36" : "h-14"}
         `}
       >
         <div className="h-14 px-4 flex items-center">
-          <span className={`font-semibold ${color} text-base line-clamp-1`} title={label}>
+          <span
+            className={`font-semibold ${color} text-base line-clamp-1`}
+            title={label}
+          >
             {label}
           </span>
         </div>
@@ -50,10 +54,12 @@ const LinkItem = ({
         <div
           className={`
             px-4 pb-3 space-y-3 transition-opacity duration-300
-            ${isHovered ? "opacity-100" : "opacity-0 pointer-events-none"}
+            ${forceExpanded || isHovered ? "opacity-100" : "opacity-0 pointer-events-none"}
           `}
         >
-          {desc ? <p className="text-xs text-gray-600 line-clamp-2">{desc}</p> : null}
+          {desc ? (
+            <p className="text-xs text-gray-600 line-clamp-2">{desc}</p>
+          ) : null}
 
           <a
             href={href}
@@ -75,6 +81,7 @@ LinkItem.propTypes = {
   desc: PropTypes.string,
   href: PropTypes.string,
   isHovered: PropTypes.bool.isRequired,
+  forceExpanded: PropTypes.bool,
   onMouseEnter: PropTypes.func,
   onMouseLeave: PropTypes.func,
 };

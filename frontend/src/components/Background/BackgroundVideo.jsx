@@ -12,7 +12,7 @@ export default function BackgroundVideo({
   desktopPublicId,
   mobilePublicId = "",
   posterPublicId = "",
-  fallbackSrc = "/fallback-hero.svg",
+  fallbackSrc = "/fallback-hero.jpg",
   className = "",
 }) {
   const videoRef = useRef(null);

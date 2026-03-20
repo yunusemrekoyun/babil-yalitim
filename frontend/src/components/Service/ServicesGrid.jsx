@@ -124,7 +124,7 @@ const ServiceGrid = () => {
   return (
     <section
       ref={sectionRef}
-      className="relative overflow-hidden px-4 py-16 text-white sm:px-6"
+      className="relative overflow-hidden px-4 py-12 text-white sm:px-6 sm:py-16"
     >
       <div className="max-w-6xl mx-auto mb-10 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
@@ -133,7 +133,11 @@ const ServiceGrid = () => {
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl h-[68vh] sm:h-[520px]">
+      <div
+        className={`relative mx-auto max-w-7xl ${
+          isMobile ? "h-auto" : "h-[68vh] sm:h-[520px]"
+        }`}
+      >
         {/* DESKTOP/TABLET: 5 slot + oklar (animasyonlar AYNEN duruyor) */}
         <div className="hidden sm:block relative w-full h-full">
           {/* Sol ok */}
@@ -194,13 +198,13 @@ const ServiceGrid = () => {
         {/* MOBİL: tek kart, full genişlik container; kart genişliği 88vw => yan karttan “peek” */}
         <div
           ref={scrollRef}
-          className="sm:hidden relative w-full h-full overflow-x-auto no-scrollbar snap-x snap-mandatory px-3"
+          className="sm:hidden relative w-full overflow-x-auto no-scrollbar snap-x snap-mandatory px-1"
         >
-          <div className="flex h-full gap-3">
+          <div className="flex gap-3">
             {items.map((item, i) => (
               <div
                 key={item?._id || i}
-                className="mobile-slide w-[88vw] shrink-0 snap-center flex items-start justify-center pt-2"
+                className="mobile-slide w-[86vw] shrink-0 snap-center flex items-start justify-center pt-2"
               >
                 <ServiceGridItem
                   item={item}
@@ -218,10 +222,10 @@ const ServiceGrid = () => {
 
         {/* Alttaki buton: DESKTOP'ta biraz DAHA AŞAĞIDA, MOBİLDE animasyonsuz */}
         {isMobile ? (
-          <div className="absolute bottom-0 right-4 sm:bottom-[-8px] sm:right-6 z-[45]">
+          <div className="mt-6 flex justify-center">
             <a
               href="/services"
-              className="flex items-center gap-2 text-sm text-white bg-quaternaryColor px-4 py-2 rounded-full"
+              className="flex w-full items-center justify-center gap-2 text-sm text-white bg-quaternaryColor px-4 py-2.5 rounded-full"
             >
               Tüm Hizmetleri Gör
               <ChevronRight size={16} />

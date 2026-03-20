@@ -51,7 +51,7 @@ const ProjectGrid = () => {
     : {};
 
   return (
-    <section className="relative w-full px-4 py-16">
+    <section className="relative w-full px-4 py-12 sm:py-16">
       <div className="max-w-6xl mx-auto mb-10 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
           Projeler
@@ -59,7 +59,7 @@ const ProjectGrid = () => {
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded" />
       </div>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 auto-rows-[250px]">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 sm:gap-4 auto-rows-[250px]">
         {visibleProjects.map((project, index) => (
           <ProjectGridItem
             key={project._id || index}
@@ -70,12 +70,15 @@ const ProjectGrid = () => {
         ))}
       </div>
 
-      <motion.div {...motionProps} className="absolute bottom-2 right-6 z-40">
+      <motion.div
+        {...motionProps}
+        className={isMobile ? "mt-6 flex justify-center" : "absolute bottom-2 right-6 z-40"}
+      >
         <a
           href="/projects"
-          className={`flex items-center gap-2 text-sm text-white bg-quaternaryColor px-4 py-2 rounded-full ${
+          className={`flex items-center justify-center gap-2 text-sm text-white bg-quaternaryColor px-4 py-2.5 rounded-full ${
             isMobile
-              ? ""
+              ? "w-full max-w-6xl"
               : "hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 transition-all duration-300"
           }`}
         >

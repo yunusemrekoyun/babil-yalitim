@@ -70,7 +70,7 @@ const ServiceGridItem = ({ item, isCenter, shouldAutoplay, registerVideoRef }) =
     null;
 
   const size =
-    "w-[78vw] h-[52vh] sm:w-[320px] sm:h-[480px] object-cover rounded-[22px] shadow-lg";
+    "w-[84vw] max-w-[22rem] h-[25rem] sm:w-[320px] sm:h-[480px] object-cover rounded-[22px] shadow-lg";
 
   // Touch cihazda videoya dokununca oynat/durdur; linke gitmeyi engelle
   const onTouchToggle = (e) => {
@@ -172,11 +172,11 @@ const ServiceGridItem = ({ item, isCenter, shouldAutoplay, registerVideoRef }) =
       {/* Overlay sadece merkezde */}
       {isCenter && (
         <div className="absolute inset-0 bg-black/35 flex flex-col justify-end p-4 rounded-[22px]">
-          <p className="text-white text-lg font-semibold mb-1 text-center sm:text-left">
+          <p className="text-white text-lg font-semibold mb-1 text-left">
             {item?.title}
           </p>
           {item?.type && (
-            <span className="self-center sm:self-start inline-block text-[11px] px-2 py-1 rounded-full bg-white/20 border border-white/30 backdrop-blur">
+            <span className="self-start inline-block text-[11px] px-2 py-1 rounded-full bg-white/20 border border-white/30 backdrop-blur">
               {item.type}
             </span>
           )}

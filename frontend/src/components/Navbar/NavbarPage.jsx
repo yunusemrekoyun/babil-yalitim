@@ -97,13 +97,19 @@ const NavbarPage = () => {
       </motion.nav>
 
       {/* ✅ Mobil Navbar */}
-      <div className="md:hidden px-4 py-3 flex justify-between items-center bg-white text-neutral-800 border-b border-gray-300">
-        <a href="/">
-          <img src={Logo} alt="Logo" className="h-10" />
-        </a>
-        <button onClick={() => setIsOpen(!isOpen)} className="z-50">
-          {isOpen ? <X size={28} /> : <Menu size={28} />}
-        </button>
+      <div className="md:hidden border-b border-gray-300 bg-white px-4 py-3 text-neutral-800">
+        <div className="relative flex min-h-[3rem] items-center justify-center">
+          <a href="/" className="shrink-0">
+            <img src={Logo} alt="Logo" className="h-14 w-auto" />
+          </a>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="absolute right-0 z-50 grid size-10 place-items-center"
+            aria-label={isOpen ? "Menüyü kapat" : "Menüyü aç"}
+          >
+            {isOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+        </div>
       </div>
 
       {/* ✅ Mobil Menü Açılır */}

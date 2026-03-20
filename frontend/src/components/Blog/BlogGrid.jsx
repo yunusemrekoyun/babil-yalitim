@@ -19,6 +19,9 @@ const Skeleton = () => (
 const BlogGrid = () => {
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 640 : true
+  );
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,6 +43,18 @@ const BlogGrid = () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const onResize = () =>
+      setIsMobile(typeof window !== "undefined" && window.innerWidth < 640);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const ctaClassName = [
+    "inline-flex items-center justify-center gap-2 text-sm text-white bg-quaternaryColor px-4 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 transition-all duration-300",
+    isMobile ? "w-full py-2.5" : "py-2",
+  ].join(" ");
 
   return (
     <section className="relative w-full">
@@ -90,9 +105,7 @@ const BlogGrid = () => {
               transition={{ duration: 0.4, ease: "easeOut" }}
               whileHover={{ scale: 1.05 }}
               onClick={() => navigate("/blog")}
-              className="inline-flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-                 px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg 
-                 hover:bg-white/20 transition-all duration-300"
+              className={ctaClassName}
             >
               Tüm blogları gör
               <span aria-hidden>→</span>

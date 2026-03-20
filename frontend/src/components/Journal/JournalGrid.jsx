@@ -227,10 +227,10 @@ const JournalGrid = () => {
               <div className="flex justify-center md:justify-end mt-8">
                 <button
                   onClick={() => navigate("/journal")}
-                  className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
-                             px-4 py-2 rounded-full"
+                  className="flex w-full items-center justify-center gap-2 text-sm text-white bg-quaternaryColor 
+                             px-4 py-2.5 rounded-full"
                 >
-                  Tüm haberleri Gör
+                  Tüm haberleri gör
                   <span aria-hidden>→</span>
                 </button>
               </div>

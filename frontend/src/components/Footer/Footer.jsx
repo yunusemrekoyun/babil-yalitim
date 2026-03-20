@@ -10,8 +10,8 @@ import {
 
 const Footer = () => {
   return (
-    <footer className="bg-buzbeyazseffaf text-secondaryColor pt-12 pb-6 px-4 border-t border-secondaryColor">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
+    <footer className="bg-buzbeyazseffaf text-secondaryColor border-t border-secondaryColor px-4 pt-12 pb-6">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-10">
         {/* Logo & Kısa Açıklama */}
         <div className="flex flex-col gap-4">
           <img src={Logo} alt="Logo" className="w-36 mb-2" />
@@ -68,10 +68,10 @@ const Footer = () => {
             İletişim
           </h4>
           <ul className="space-y-3 text-sm">
-            <li className="flex items-center gap-2 ">
-              <MapPin size={18} className="text-secondaryColor" /> {CONTACT_ADDRESS}
+            <li className="flex items-start gap-2">
+              <MapPin size={18} className="mt-0.5 shrink-0 text-secondaryColor" /> {CONTACT_ADDRESS}
             </li>
-            <li className="flex items-center gap-2 ">
+            <li className="flex items-center gap-2">
               <Phone size={18} className="text-secondaryColor" />{" "}
               <a
                 href={`tel:${CONTACT_PHONE_LINK}`}
@@ -80,7 +80,7 @@ const Footer = () => {
                 {CONTACT_PHONE_DISPLAY}
               </a>
             </li>
-            <li className="flex items-center gap-2 ">
+            <li className="flex items-center gap-2">
               <Mail size={18} className="text-secondaryColor" />{" "}
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
@@ -115,7 +115,7 @@ const Footer = () => {
           </div>
         </div>
       </div>
-      <div className="mt-10 border-t border-secondaryColor pt-6 text-center text-secondaryColor text-xs">
+      <div className="mt-10 border-t border-secondaryColor pt-6 text-center text-xs text-secondaryColor">
         © {new Date().getFullYear()} Babil Yalıtım. Tüm hakları saklıdır.
       </div>
     </footer>

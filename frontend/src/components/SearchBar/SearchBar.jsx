@@ -163,7 +163,7 @@ const SearchBar = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onKeyDown}
-              className="bg-white border border-gray-300 rounded-full px-10 py-3 text-brandDark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-quaternaryColor focus:border-quaternaryColor hover:shadow-lg shadow transition text-lg drop-shadow-sm w-full"
+              className="bg-white border border-gray-300 rounded-full px-10 py-3 text-base sm:text-lg text-brandDark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-quaternaryColor focus:border-quaternaryColor hover:shadow-lg shadow transition drop-shadow-sm w-full"
               aria-autocomplete="list"
               aria-expanded={results.length > 0}
               aria-controls="global-search-results"
