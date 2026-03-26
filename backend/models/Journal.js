@@ -13,6 +13,7 @@ const mediaSchema = new mongoose.Schema(
 const journalSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
+    displayOrder: { type: Number, default: 1, min: 1 },
     content: { type: String, required: true },
 
     // medya

@@ -1,5 +1,5 @@
 // src/admin/pages/project/ProjectList.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import api from "../../../api";
@@ -7,8 +7,9 @@ import api from "../../../api";
 // Ortak uyarı & onay
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import OrderSelect from "../../components/OrderSelect";
 
-const Card = ({ project, onDelete }) => {
+const Card = ({ project, onDelete, onOrderChange, maxOrder, orderLoading }) => {
   const coverIsVideo = project?.cover?.resourceType === "video";
   const coverSrc = project?.cover?.url || "";
   const hasCover = Boolean(coverSrc);
@@ -51,12 +52,28 @@ const Card = ({ project, onDelete }) => {
           <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 dark:text-slate-200">
             {project.category || "Kategori yok"}
           </span>
-          <span>
+          <span className="text-right">
+            <span className="block font-semibold text-slate-600 dark:text-slate-200">
+              Sıra #{project.displayOrder || 1}
+            </span>
             {project.createdAt
               ? new Date(project.createdAt).toLocaleDateString("tr-TR")
               : "-"}
           </span>
         </div>
+      </div>
+
+      <div className="mt-3">
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+          Gösterim sırası
+        </div>
+        <OrderSelect
+          value={project.displayOrder || 1}
+          max={maxOrder}
+          onChange={(value) => onOrderChange(project._id, value)}
+          disabled={orderLoading}
+          className="w-full"
+        />
       </div>
 
       <div className="mt-4 flex gap-2">
@@ -83,6 +100,7 @@ Card.propTypes = {
     title: PropTypes.string,
     description: PropTypes.string,
     category: PropTypes.string,
+    displayOrder: PropTypes.number,
     createdAt: PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.instanceOf(Date),
@@ -93,18 +111,22 @@ Card.propTypes = {
     }),
   }).isRequired,
   onDelete: PropTypes.func.isRequired, // (id, title) => void
+  onOrderChange: PropTypes.func.isRequired,
+  maxOrder: PropTypes.number.isRequired,
+  orderLoading: PropTypes.bool,
 };
 
 const ProjectList = () => {
   const [all, setAll] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [orderingId, setOrderingId] = useState("");
   const inputCls =
     "w-full sm:w-64 rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
 
   // filtre durumları
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
-  const [sort, setSort] = useState("-createdAt"); // -createdAt / createdAt / title
+  const [sort, setSort] = useState("displayOrder"); // displayOrder / -createdAt / createdAt / title
 
   // Toast & Confirm state
   const [toast, setToast] = useState(null);
@@ -114,24 +136,25 @@ const ProjectList = () => {
   const [confirm, setConfirm] = useState(null);
   const askConfirm = (cfg) => setConfirm(cfg);
 
-  useEffect(() => {
-    const run = async () => {
-      try {
-        setLoading(true);
-        const { data } = await api.get("/projects");
-        setAll(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error("GET /projects error:", err?.response?.data || err);
-        showToast(
-          err?.response?.data?.message || "Projeler getirilemedi.",
-          "error"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-    run();
+  const fetchProjects = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data } = await api.get("/projects");
+      setAll(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("GET /projects error:", err?.response?.data || err);
+      showToast(
+        err?.response?.data?.message || "Projeler getirilemedi.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   const cats = useMemo(() => {
     const set = new Set();
@@ -151,6 +174,13 @@ const ProjectList = () => {
     }
     if (cat !== "all") arr = arr.filter((p) => p.category === cat);
 
+    if (sort === "displayOrder")
+      arr.sort(
+        (a, b) =>
+          Number(a.displayOrder || Number.MAX_SAFE_INTEGER) -
+            Number(b.displayOrder || Number.MAX_SAFE_INTEGER) ||
+          new Date(a.createdAt) - new Date(b.createdAt)
+      );
     if (sort === "-createdAt")
       arr.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     if (sort === "createdAt")
@@ -172,7 +202,7 @@ const ProjectList = () => {
       onConfirm: async () => {
         try {
           const { data } = await api.delete(`/projects/${id}`);
-          setAll((prev) => prev.filter((p) => p._id !== id));
+          await fetchProjects();
           showToast(data?.message || "Proje silindi.", "success");
         } catch (err) {
           console.error(
@@ -187,6 +217,24 @@ const ProjectList = () => {
       },
       onCancel: () => {},
     });
+  };
+
+  const handleOrderChange = async (id, nextOrder) => {
+    try {
+      setOrderingId(id);
+      setSort("displayOrder");
+      await api.patch(`/projects/${id}/order`, { displayOrder: nextOrder });
+      await fetchProjects();
+      showToast("Proje sırası güncellendi.", "success", 2500);
+    } catch (err) {
+      console.error("PATCH /projects/:id/order error:", err?.response?.data || err);
+      showToast(
+        err?.response?.data?.message || "Proje sırası güncellenemedi.",
+        "error"
+      );
+    } finally {
+      setOrderingId("");
+    }
   };
 
   if (loading) return <div className="p-4 text-slate-500">Yükleniyor…</div>;
@@ -228,6 +276,7 @@ const ProjectList = () => {
               onChange={(e) => setSort(e.target.value)}
               className={`${inputCls} sm:w-44`}
             >
+              <option value="displayOrder">Gösterim sırası</option>
               <option value="-createdAt">Yeniden → Eskiye</option>
               <option value="createdAt">Eskiden → Yeniye</option>
               <option value="title">Başlığa göre</option>
@@ -241,7 +290,14 @@ const ProjectList = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((p) => (
-          <Card key={p._id} project={p} onDelete={handleDelete} />
+          <Card
+            key={p._id}
+            project={p}
+            onDelete={handleDelete}
+            onOrderChange={handleOrderChange}
+            maxOrder={all.length || 1}
+            orderLoading={orderingId === p._id}
+          />
         ))}
         {filtered.length === 0 && (
           <div className="col-span-full admin-card p-6 text-center text-slate-500 dark:text-slate-300">

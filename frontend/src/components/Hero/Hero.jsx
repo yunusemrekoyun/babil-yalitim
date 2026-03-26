@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import SearchBar from "../SearchBar/SearchBar";
 import LinksSection from "../Links/LinksSection";
 import BrandsSection from "../Brands/BrandsSection";
+import HeroServiceRibbon from "./HeroServiceRibbon.jsx";
 
 const Hero = ({ targetId = "after-hero" }) => {
   const linksRef = useRef(null);
@@ -58,16 +59,25 @@ const Hero = ({ targetId = "after-hero" }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.9, delay: 0.35 }}
+            className="mt-1 w-full relative z-30"
+          >
+            <HeroServiceRibbon />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.9, delay: 0.45 }}
             className="w-14 h-1 bg-quaternaryColor rounded-full"
           />
         </div>
 
-        <div className="w-full mt-8 z-20">
+        <div className="w-full mt-7 z-20">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="w-full max-w-4xl mx-auto px-1"
+            transition={{ duration: 0.6, delay: 0.52 }}
+            className="relative z-20 w-full max-w-4xl mx-auto px-1"
           >
             <SearchBar />
           </motion.div>
@@ -82,8 +92,8 @@ const Hero = ({ targetId = "after-hero" }) => {
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="w-full mt-8 px-2 z-20"
+            transition={{ duration: 0.8, delay: 0.7 }}
+            className="relative z-10 w-full mt-8 px-2"
           >
             <BrandsSection />
           </motion.div>
@@ -142,14 +152,23 @@ const Hero = ({ targetId = "after-hero" }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 0.5 }}
+            className="relative z-30 w-full"
+          >
+            <HeroServiceRibbon />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.58 }}
             className="w-16 h-1 bg-quaternaryColor rounded-full"
           />
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.7 }}
-            className="w-full"
+            transition={{ duration: 1, delay: 0.72 }}
+            className="relative z-20 w-full"
           >
             <SearchBar />
           </motion.div>
@@ -159,7 +178,7 @@ const Hero = ({ targetId = "after-hero" }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.9 }}
-          className="w-full mt-8 px-6 relative z-20"
+          className="relative z-10 w-full mt-8 px-6"
         >
           <BrandsSection />
         </motion.div>

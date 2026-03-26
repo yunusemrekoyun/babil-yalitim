@@ -12,6 +12,7 @@ const {
   createService,
   updateService,
   deleteService,
+  setServiceOrder,
 } = require("../controller/serviceController");
 
 // public
@@ -34,6 +35,8 @@ router.put(
   compressIfNeeded,
   updateService
 );
+
+router.patch("/:id/order", verifyToken, setServiceOrder);
 
 router.delete("/:id", verifyToken, deleteService);
 

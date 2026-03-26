@@ -1,8 +1,9 @@
 // src/admin/pages/blog/BlogList.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import OrderSelect from "../../components/OrderSelect";
 import api from "../../../api";
 
 // 2 satırlık çok satır ellipsis (Tailwind plugin gerektirmez)
@@ -19,6 +20,7 @@ const BlogList = () => {
 
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [orderingId, setOrderingId] = useState("");
   const [q, setQ] = useState("");
   const [err, setErr] = useState("");
 
@@ -32,23 +34,24 @@ const BlogList = () => {
   const [confirmTargetId, setConfirmTargetId] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      try {
-        setLoading(true);
-        const { data } = await api.get("/blogs");
-        setBlogs(Array.isArray(data) ? data : []);
-      } catch (e) {
-        console.error("GET /blogs error:", e?.response?.data || e);
-        const msg = e?.response?.data?.message || "Bloglar getirilemedi.";
-        setErr(msg);
-        showToast(msg, "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBlogs();
+  const fetchBlogs = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data } = await api.get("/blogs");
+      setBlogs(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("GET /blogs error:", e?.response?.data || e);
+      const msg = e?.response?.data?.message || "Bloglar getirilemedi.";
+      setErr(msg);
+      showToast(msg, "error");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchBlogs();
+  }, [fetchBlogs]);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -70,6 +73,23 @@ const BlogList = () => {
     setConfirmOpen(true);
   };
 
+  const handleOrderChange = async (id, nextOrder) => {
+    try {
+      setOrderingId(id);
+      await api.patch(`/blogs/${id}/order`, { displayOrder: nextOrder });
+      await fetchBlogs();
+      showToast("Blog sırası güncellendi.", "success", 2500);
+    } catch (e) {
+      console.error("PATCH /blogs/:id/order error:", e?.response?.data || e);
+      showToast(
+        e?.response?.data?.message || "Blog sırası güncellenemedi.",
+        "error"
+      );
+    } finally {
+      setOrderingId("");
+    }
+  };
+
   // Confirm "Evet"
   const confirmDelete = async () => {
     const id = confirmTargetId;
@@ -78,8 +98,8 @@ const BlogList = () => {
     try {
       setConfirmLoading(true);
       await api.delete(`/blogs/${id}`);
+      await fetchBlogs();
       showToast("Blog silindi", "success");
-      setBlogs((prev) => prev.filter((b) => b._id !== id));
     } catch (e) {
       console.error("DELETE /blogs/:id error:", e?.response?.data || e);
       showToast(e?.response?.data?.message || "Silme işlemi başarısız.", "error");
@@ -175,10 +195,24 @@ const BlogList = () => {
                     </div>
 
                     <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                      Sıra #{b.displayOrder || 1} •{" "}
                       {new Date(b.createdAt).toLocaleDateString("tr-TR")} • Yorum:{" "}
                       {typeof b.commentsCount === "number" ? b.commentsCount : "-"}
                     </div>
                   </div>
+                </div>
+
+                <div className="mt-3">
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Gösterim sırası
+                  </div>
+                  <OrderSelect
+                    value={b.displayOrder || 1}
+                    max={blogs.length || 1}
+                    onChange={(value) => handleOrderChange(b._id, value)}
+                    disabled={orderingId === b._id}
+                    className="w-full"
+                  />
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -217,6 +251,9 @@ const BlogList = () => {
                       Başlık
                     </th>
                     <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                      Sıra
+                    </th>
+                    <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                       Etiketler
                     </th>
                     <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
@@ -251,6 +288,14 @@ const BlogList = () => {
                         <div className="font-medium text-slate-800 dark:text-slate-100">
                           {b.title}
                         </div>
+                      </td>
+                      <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                        <OrderSelect
+                          value={b.displayOrder || 1}
+                          max={blogs.length || 1}
+                          onChange={(value) => handleOrderChange(b._id, value)}
+                          disabled={orderingId === b._id}
+                        />
                       </td>
                       <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                         {(b.tags || []).slice(0, 3).map((t) => (

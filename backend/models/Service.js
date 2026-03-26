@@ -18,6 +18,7 @@ const mediaSchema = new mongoose.Schema(
 const subServiceSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
+    displayOrder: { type: Number, default: 1, min: 1 },
     type: { type: String, default: "", trim: true },
     category: { type: String, default: "", trim: true },
     usageAreas: { type: [String], default: [] },
@@ -31,6 +32,7 @@ const subServiceSchema = new mongoose.Schema(
 const serviceSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
+    displayOrder: { type: Number, default: 1, min: 1 },
     type: { type: String, default: "" },
     category: { type: String, default: "" },
     usageAreas: { type: [String], default: [] },

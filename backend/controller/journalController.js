@@ -4,6 +4,10 @@ const Journal = require("../models/Journal");
 const cloudinary = require("../config/cloudinary");
 const sanitizeHtml = require("../utils/sanitizeHtml");
 const { buildRichContentHtml } = require("../utils/richContent");
+const {
+  parseDisplayOrder,
+  syncCollectionDisplayOrder,
+} = require("../utils/displayOrder");
 
 // ---- helpers ----
 const toMediaDoc = (cldRes) => ({
@@ -53,7 +57,8 @@ const emailToHash = (emailRaw) => {
 // ---- CRUD ----
 exports.getJournals = async (req, res) => {
   try {
-    const items = await Journal.find().sort({ createdAt: -1 });
+    await syncCollectionDisplayOrder(Journal);
+    const items = await Journal.find().sort({ displayOrder: 1, createdAt: 1, _id: 1 });
     res.json(items);
   } catch (err) {
     res.status(500).json({ message: "Haberler alınamadı", error: err.message });
@@ -75,6 +80,7 @@ exports.getJournalById = async (req, res) => {
 exports.createJournal = async (req, res) => {
   try {
     const { title, content } = req.body;
+    const requestedOrder = parseDisplayOrder(req.body.displayOrder);
     const files = req.files || {};
     const coverFile = files.cover?.[0];
     if (!coverFile)
@@ -91,12 +97,16 @@ exports.createJournal = async (req, res) => {
 
     const created = await Journal.create({
       title,
+      ...(requestedOrder ? { displayOrder: requestedOrder } : {}),
       content: content ? sanitizeHtml(buildRichContentHtml(content)) : content,
       cover,
       assets,
     });
 
-    res.status(201).json(created);
+    await syncCollectionDisplayOrder(Journal, created._id, requestedOrder);
+    const refreshed = await Journal.findById(created._id);
+
+    res.status(201).json(refreshed);
   } catch (err) {
     res
       .status(400)
@@ -111,6 +121,7 @@ exports.createJournal = async (req, res) => {
 exports.updateJournal = async (req, res) => {
   try {
     const { title, content } = req.body;
+    const requestedOrder = parseDisplayOrder(req.body.displayOrder);
     const item = await Journal.findById(req.params.id);
     if (!item) return res.status(404).json({ message: "Haber bulunamadı" });
 
@@ -118,6 +129,7 @@ exports.updateJournal = async (req, res) => {
     const folder = process.env.CLOUDINARY_JOURNAL_FOLDER || "babil/journals";
 
     if (title !== undefined) item.title = title;
+    if (requestedOrder) item.displayOrder = requestedOrder;
     if (content !== undefined) {
       item.content = content
         ? sanitizeHtml(buildRichContentHtml(content))
@@ -137,7 +149,13 @@ exports.updateJournal = async (req, res) => {
     }
 
     const saved = await item.save();
-    res.json(saved);
+    await syncCollectionDisplayOrder(
+      Journal,
+      saved._id,
+      requestedOrder || saved.displayOrder
+    );
+    const refreshed = await Journal.findById(saved._id);
+    res.json(refreshed);
   } catch (err) {
     res
       .status(400)
@@ -160,11 +178,37 @@ exports.deleteJournal = async (req, res) => {
     }
 
     await item.deleteOne();
+    await syncCollectionDisplayOrder(Journal);
     res.json({ message: "Haber silindi" });
   } catch (err) {
     res
       .status(500)
       .json({ message: "Silme başarısız", error: err?.message || String(err) });
+  }
+};
+
+exports.setJournalOrder = async (req, res) => {
+  try {
+    const item = await Journal.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: "Haber bulunamadı" });
+
+    const requestedOrder = parseDisplayOrder(req.body.displayOrder);
+    if (!requestedOrder) {
+      return res
+        .status(400)
+        .json({ message: "Geçerli bir gösterim sırası girin." });
+    }
+
+    await syncCollectionDisplayOrder(Journal, item._id, requestedOrder);
+    const refreshed = await Journal.findById(item._id);
+    res.json({
+      message: "Haber sırası güncellendi",
+      displayOrder: refreshed?.displayOrder || requestedOrder,
+    });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: "Sıra güncellenemedi", error: err.message });
   }
 };
 

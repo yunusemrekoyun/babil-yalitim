@@ -13,6 +13,7 @@ const {
   createJournal,
   updateJournal,
   deleteJournal,
+  setJournalOrder,
   deleteAsset,
   likeJournal,
   getLikesCount,
@@ -53,6 +54,8 @@ router.put(
   compressIfNeeded,
   updateJournal
 );
+
+router.patch("/:id/order", verifyToken, setJournalOrder);
 
 router.delete("/:id", verifyToken, deleteJournal);
 

@@ -1,6 +1,11 @@
 const fs = require("fs/promises");
 const Service = require("../models/Service");
 const cloudinary = require("../config/cloudinary");
+const {
+  normalizeOrderedItems,
+  parseDisplayOrder,
+  syncCollectionDisplayOrder,
+} = require("../utils/displayOrder");
 
 /* -------------------- helpers -------------------- */
 
@@ -52,6 +57,7 @@ const normalizeSubServices = (value) => {
   return parsed.map((item, index) => ({
     id: item?.id ? String(item.id) : "",
     clientId: String(item?.clientId || item?.id || `sub-${index}`),
+    displayOrder: parseDisplayOrder(item?.displayOrder) || index + 1,
     title: String(item?.title || "").trim(),
     type: String(item?.type || "").trim(),
     category: String(item?.category || "").trim(),
@@ -198,6 +204,10 @@ const buildSubService = async ({
 
   return {
     _id: existing?._id,
+    displayOrder:
+      parseDisplayOrder(payload.displayOrder) ||
+      parseDisplayOrder(existing?.displayOrder) ||
+      0,
     title: payload.title,
     type: payload.type,
     category: payload.category,
@@ -219,11 +229,28 @@ const destroySubServices = async (subServices = []) => {
   );
 };
 
+const normalizeSubServiceOrder = (subServices = []) =>
+  normalizeOrderedItems(subServices).map((item, index) => ({
+    ...item,
+    displayOrder: index + 1,
+  }));
+
 /* -------------------- GET -------------------- */
 const getServices = async (_req, res) => {
   try {
-    const services = await Service.find().sort({ createdAt: -1 });
-    res.json(services);
+    await syncCollectionDisplayOrder(Service);
+    const services = await Service.find().sort({
+      displayOrder: 1,
+      createdAt: 1,
+      _id: 1,
+    });
+    res.json(
+      services.map((service) => {
+        const payload = service.toObject();
+        payload.subServices = normalizeSubServiceOrder(payload.subServices || []);
+        return payload;
+      })
+    );
   } catch (err) {
     res
       .status(500)
@@ -235,7 +262,9 @@ const getServiceById = async (req, res) => {
   try {
     const service = await Service.findById(req.params.id);
     if (!service) return res.status(404).json({ message: "Servis bulunamadı" });
-    res.json(service);
+    const payload = service.toObject();
+    payload.subServices = normalizeSubServiceOrder(payload.subServices || []);
+    res.json(payload);
   } catch (err) {
     res.status(500).json({ message: "Servis alınamadı", error: err.message });
   }
@@ -244,8 +273,10 @@ const getServiceById = async (req, res) => {
 /* -------------------- CREATE -------------------- */
 const createService = async (req, res) => {
   try {
+    const requestedOrder = parseDisplayOrder(req.body.displayOrder);
     const payload = {
       title: String(req.body.title || "").trim(),
+      ...(requestedOrder ? { displayOrder: requestedOrder } : {}),
       type: String(req.body.type || "").trim(),
       category: String(req.body.category || "").trim(),
       description: String(req.body.description || "").trim(),
@@ -285,14 +316,25 @@ const createService = async (req, res) => {
       subServices.push(item);
     }
 
+    const orderedSubServices = normalizeSubServiceOrder(subServices);
+
     const created = await Service.create({
       ...payload,
       cover,
       images,
-      subServices,
+      subServices: orderedSubServices,
     });
 
-    res.status(201).json(created);
+    await syncCollectionDisplayOrder(
+      Service,
+      created._id,
+      requestedOrder
+    );
+    const refreshed = await Service.findById(created._id);
+    const response = refreshed.toObject();
+    response.subServices = normalizeSubServiceOrder(response.subServices || []);
+
+    res.status(201).json(response);
   } catch (err) {
     res
       .status(err.status || 400)
@@ -310,6 +352,7 @@ const updateService = async (req, res) => {
     const files = req.files || [];
 
     const title = req.body.title !== undefined ? String(req.body.title).trim() : svc.title;
+    const requestedOrder = parseDisplayOrder(req.body.displayOrder);
     const type = req.body.type !== undefined ? String(req.body.type).trim() : svc.type;
     const category =
       req.body.category !== undefined
@@ -327,6 +370,7 @@ const updateService = async (req, res) => {
     validateServicePayload({ title, description }, "Hizmet");
 
     svc.title = title;
+    if (requestedOrder) svc.displayOrder = requestedOrder;
     svc.type = type;
     svc.category = category;
     svc.description = description;
@@ -359,6 +403,7 @@ const updateService = async (req, res) => {
         : (svc.subServices || []).map((item) => ({
             id: String(item._id),
             clientId: String(item._id),
+            displayOrder: item.displayOrder,
             title: item.title,
             type: item.type,
             category: item.category,
@@ -398,10 +443,18 @@ const updateService = async (req, res) => {
     );
     await destroySubServices(removedSubServices);
 
-    svc.subServices = nextSubServices;
+    svc.subServices = normalizeSubServiceOrder(nextSubServices);
 
     const saved = await svc.save();
-    res.json(saved);
+    await syncCollectionDisplayOrder(
+      Service,
+      saved._id,
+      requestedOrder || saved.displayOrder
+    );
+    const refreshed = await Service.findById(saved._id);
+    const response = refreshed.toObject();
+    response.subServices = normalizeSubServiceOrder(response.subServices || []);
+    res.json(response);
   } catch (err) {
     res.status(err.status || 400).json({
       message: err.message || "Servis güncellenemedi",
@@ -422,11 +475,38 @@ const deleteService = async (req, res) => {
     await destroySubServices(svc.subServices || []);
 
     await svc.deleteOne();
+    await syncCollectionDisplayOrder(Service);
     res.json({ message: "Servis silindi" });
   } catch (err) {
     res
       .status(500)
       .json({ message: "Silme işlemi başarısız", error: err.message });
+  }
+};
+
+const setServiceOrder = async (req, res) => {
+  try {
+    const svc = await Service.findById(req.params.id);
+    if (!svc) return res.status(404).json({ message: "Servis bulunamadı" });
+
+    const requestedOrder = parseDisplayOrder(req.body.displayOrder);
+    if (!requestedOrder) {
+      return res
+        .status(400)
+        .json({ message: "Geçerli bir gösterim sırası girin." });
+    }
+
+    await syncCollectionDisplayOrder(Service, svc._id, requestedOrder);
+    const refreshed = await Service.findById(svc._id);
+    res.json({
+      message: "Hizmet sırası güncellendi",
+      displayOrder: refreshed?.displayOrder || requestedOrder,
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: "Sıra güncellenemedi",
+      error: err.message,
+    });
   }
 };
 
@@ -436,4 +516,5 @@ module.exports = {
   createService,
   updateService,
   deleteService,
+  setServiceOrder,
 };

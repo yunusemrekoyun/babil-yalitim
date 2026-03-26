@@ -1,9 +1,10 @@
 // src/admin/pages/journal/JournalList.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../../api.js";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmModal from "../../components/ConfirmDialog.jsx";
+import OrderSelect from "../../components/OrderSelect";
 
 const clamp2 = {
   display: "-webkit-box",
@@ -15,6 +16,7 @@ const clamp2 = {
 const JournalList = () => {
   const [journals, setJournals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [orderingId, setOrderingId] = useState("");
   const [q, setQ] = useState("");
   const [err, setErr] = useState("");
 
@@ -36,7 +38,7 @@ const JournalList = () => {
   const closeConfirm = () =>
     setConfirm((c) => ({ ...c, open: false, onConfirm: null }));
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
       const { data } = await api.get("/journals");
@@ -49,12 +51,11 @@ const JournalList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchAll]);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -74,7 +75,7 @@ const JournalList = () => {
         try {
           setConfirm((c) => ({ ...c, loading: true }));
           await api.delete(`/journals/${id}`);
-          setJournals((prev) => prev.filter((j) => j._id !== id));
+          await fetchAll();
           showToast("Haber silindi", "success");
         } catch (e) {
           console.error("DELETE /journals/:id error:", e?.response?.data || e);
@@ -84,6 +85,23 @@ const JournalList = () => {
         }
       }
     );
+  };
+
+  const handleOrderChange = async (id, nextOrder) => {
+    try {
+      setOrderingId(id);
+      await api.patch(`/journals/${id}/order`, { displayOrder: nextOrder });
+      await fetchAll();
+      showToast("Haber sırası güncellendi.", "success", 2500);
+    } catch (e) {
+      console.error("PATCH /journals/:id/order error:", e?.response?.data || e);
+      showToast(
+        e?.response?.data?.message || "Haber sırası güncellenemedi.",
+        "error"
+      );
+    } finally {
+      setOrderingId("");
+    }
   };
 
   if (loading) return <p className="p-4 text-slate-500">Yükleniyor…</p>;
@@ -155,12 +173,26 @@ const JournalList = () => {
                       {j.content}
                     </div>
                     <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                      Sıra #{j.displayOrder || 1} •{" "}
                       {j.createdAt
                         ? new Date(j.createdAt).toLocaleDateString("tr-TR")
                         : "-"}{" "}
                       • Beğeni: {j.likesCount ?? 0}
                     </div>
                   </div>
+                </div>
+
+                <div className="mt-3">
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Gösterim sırası
+                  </div>
+                  <OrderSelect
+                    value={j.displayOrder || 1}
+                    max={journals.length || 1}
+                    onChange={(value) => handleOrderChange(j._id, value)}
+                    disabled={orderingId === j._id}
+                    className="w-full"
+                  />
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -191,6 +223,9 @@ const JournalList = () => {
                     </th>
                     <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                       Başlık
+                    </th>
+                    <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                      Sıra
                     </th>
                     <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                       Tarih
@@ -227,6 +262,14 @@ const JournalList = () => {
                         <div className="mt-1 text-slate-500 max-w-[40ch] line-clamp-2 dark:text-slate-300">
                           {j.content}
                         </div>
+                      </td>
+                      <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                        <OrderSelect
+                          value={j.displayOrder || 1}
+                          max={journals.length || 1}
+                          onChange={(value) => handleOrderChange(j._id, value)}
+                          disabled={orderingId === j._id}
+                        />
                       </td>
                       <td className="border border-slate-200/70 p-3 whitespace-nowrap dark:border-slate-800/70">
                         {j.createdAt

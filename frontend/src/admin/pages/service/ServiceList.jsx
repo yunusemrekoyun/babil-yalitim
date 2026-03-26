@@ -1,15 +1,17 @@
 // src/admin/pages/service/ServiceList.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../../api";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import OrderSelect from "../../components/OrderSelect";
 
 const toArray = (data) => (Array.isArray(data) ? data : []);
 
 const ServiceList = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [orderingId, setOrderingId] = useState("");
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
   const [err, setErr] = useState("");
@@ -28,23 +30,24 @@ const ServiceList = () => {
     loading: false,
   });
 
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        setLoading(true);
-        const { data } = await api.get("/services");
-        setServices(toArray(data));
-      } catch (e) {
-        console.error("GET /services error:", e?.response?.data || e);
-        const msg = e?.response?.data?.message || "Servisler getirilemedi.";
-        setErr(msg);
-        showToast(msg, "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchServices();
+  const fetchServices = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data } = await api.get("/services");
+      setServices(toArray(data));
+    } catch (e) {
+      console.error("GET /services error:", e?.response?.data || e);
+      const msg = e?.response?.data?.message || "Servisler getirilemedi.";
+      setErr(msg);
+      showToast(msg, "error");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
 
   const cats = useMemo(() => {
     const s = new Set();
@@ -77,7 +80,7 @@ const ServiceList = () => {
         setConfirm((c) => ({ ...c, loading: true }));
         try {
           await api.delete(`/services/${id}`);
-          setServices((prev) => prev.filter((s) => s._id !== id));
+          await fetchServices();
           showToast("Hizmet silindi.", "success");
         } catch (e) {
           console.error("DELETE /services/:id error:", e?.response?.data || e);
@@ -90,6 +93,23 @@ const ServiceList = () => {
         }
       },
     });
+  };
+
+  const handleOrderChange = async (id, nextOrder) => {
+    try {
+      setOrderingId(id);
+      await api.patch(`/services/${id}/order`, { displayOrder: nextOrder });
+      await fetchServices();
+      showToast("Hizmet sırası güncellendi.", "success", 2500);
+    } catch (e) {
+      console.error("PATCH /services/:id/order error:", e?.response?.data || e);
+      showToast(
+        e?.response?.data?.message || "Hizmet sırası güncellenemedi.",
+        "error"
+      );
+    } finally {
+      setOrderingId("");
+    }
   };
 
   if (loading) return <p className="p-4 text-slate-500">Yükleniyor…</p>;
@@ -149,6 +169,9 @@ const ServiceList = () => {
                   </th>
                   <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                     Başlık
+                  </th>
+                  <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                    Sıra
                   </th>
                   <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                     Tür
@@ -220,6 +243,14 @@ const ServiceList = () => {
                       )}
                     </td>
                     <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                      <OrderSelect
+                        value={s.displayOrder || 1}
+                        max={services.length || 1}
+                        onChange={(value) => handleOrderChange(s._id, value)}
+                        disabled={orderingId === s._id}
+                      />
+                    </td>
+                    <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                       {s.type || "-"}
                     </td>
                     <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
@@ -237,7 +268,7 @@ const ServiceList = () => {
                                 key={sub._id || sub.title}
                                 className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-100"
                               >
-                                {sub.title}
+                                #{sub.displayOrder || 1} {sub.title}
                               </span>
                             ))}
                             {s.subServices.length > 3 && (

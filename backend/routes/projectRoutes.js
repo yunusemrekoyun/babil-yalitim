@@ -10,6 +10,7 @@ const {
   createProject,
   updateProject,
   deleteProject,
+  setProjectOrder,
   getProjectCovers, // ✅ BUNU EKLE
 } = require("../controller/projectController");
 
@@ -42,6 +43,8 @@ router.put(
   compressIfNeeded,
   updateProject
 );
+
+router.patch("/:id/order", verifyToken, setProjectOrder);
 
 router.delete("/:id", verifyToken, deleteProject);
 

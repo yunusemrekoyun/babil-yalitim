@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import RichContentField from "./RichContentField";
 import { BlogPreview } from "./previews/ContentPreviews";
+import OrderField from "./OrderField";
 
 const inputCls =
   "w-full rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950/55 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
@@ -26,6 +27,9 @@ function BlogForm({ initialData, onSubmit, onStartSubmit, submitting = false }) 
   const [title, setTitle] = useState(initialData?.title || "");
   const [content, setContent] = useState(initialData?.content || "");
   const [tags, setTags] = useState((initialData?.tags || []).join(", "));
+  const [displayOrder, setDisplayOrder] = useState(
+    initialData?.displayOrder ? String(initialData.displayOrder) : ""
+  );
   const [coverFile, setCoverFile] = useState(null);
   const [assetsFiles, setAssetsFiles] = useState([]);
   const [showPreview, setShowPreview] = useState(false);
@@ -39,6 +43,9 @@ function BlogForm({ initialData, onSubmit, onStartSubmit, submitting = false }) 
     setTitle(initialData.title || "");
     setContent(initialData.content || "");
     setTags((initialData.tags || []).join(", "));
+    setDisplayOrder(
+      initialData.displayOrder ? String(initialData.displayOrder) : ""
+    );
   }, [initialData]);
 
   useEffect(
@@ -86,6 +93,7 @@ function BlogForm({ initialData, onSubmit, onStartSubmit, submitting = false }) 
     formData.append("title", title.trim());
     formData.append("content", content);
     formData.append("tags", tags.trim());
+    if (displayOrder.trim()) formData.append("displayOrder", displayOrder.trim());
 
     if (coverFile) formData.append("cover", coverFile);
     assetsFiles.forEach((file) => formData.append("assets", file));
@@ -135,6 +143,8 @@ function BlogForm({ initialData, onSubmit, onStartSubmit, submitting = false }) 
           required
         />
       </div>
+
+      <OrderField value={displayOrder} onChange={setDisplayOrder} />
 
       <RichContentField
         label="İçerik"
@@ -219,6 +229,7 @@ BlogForm.propTypes = {
       publicId: PropTypes.string,
       resourceType: PropTypes.oneOf(["image", "video"]),
     }),
+    displayOrder: PropTypes.number,
     assets: PropTypes.arrayOf(
       PropTypes.shape({
         url: PropTypes.string,

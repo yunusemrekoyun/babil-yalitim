@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import ToastAlert from "./ToastAlert";
 import { ProjectPreview } from "./previews/ContentPreviews";
+import OrderField from "./OrderField";
 
 const inputCls =
   "w-full rounded-xl border border-slate-200/70 bg-white/60 px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
@@ -32,6 +33,9 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
 
   // text alanları
   const [title, setTitle] = useState(initialData?.title || "");
+  const [displayOrder, setDisplayOrder] = useState(
+    initialData?.displayOrder ? String(initialData.displayOrder) : ""
+  );
   const [description, setDescription] = useState(
     initialData?.description || ""
   );
@@ -128,6 +132,7 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
 
     const fd = new FormData();
     fd.append("title", title);
+    if (displayOrder.trim()) fd.append("displayOrder", displayOrder.trim());
     fd.append("description", description);
     fd.append("category", category);
 
@@ -215,6 +220,8 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
             placeholder="Proje başlığı"
           />
         </div>
+
+        <OrderField value={displayOrder} onChange={setDisplayOrder} />
 
         <div className="grid gap-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -415,6 +422,7 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
 ProjectForm.propTypes = {
   initialData: PropTypes.shape({
     title: PropTypes.string,
+    displayOrder: PropTypes.number,
     description: PropTypes.string,
     category: PropTypes.string,
     startDate: PropTypes.string,

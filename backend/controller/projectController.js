@@ -1,6 +1,10 @@
 const fs = require("fs/promises");
 const Project = require("../models/Project");
 const cloudinary = require("../config/cloudinary");
+const {
+  parseDisplayOrder,
+  syncCollectionDisplayOrder,
+} = require("../utils/displayOrder");
 
 /* ---------- helpers ---------- */
 const extractPublicIdFromUrl = (fullUrl) => {
@@ -101,7 +105,8 @@ const parseDate = (v) => {
 /* ---------- GET ---------- */
 exports.getProjects = async (req, res) => {
   try {
-    const items = await Project.find().sort({ createdAt: -1 });
+    await syncCollectionDisplayOrder(Project);
+    const items = await Project.find().sort({ displayOrder: 1, createdAt: 1, _id: 1 });
     res.json(items);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -121,8 +126,17 @@ exports.getProjectById = async (req, res) => {
 /* ---------- CREATE ---------- */
 exports.createProject = async (req, res) => {
   try {
-    const { title, description, category, startDate, endDate, completedAt } =
+    const {
+      title,
+      description,
+      category,
+      startDate,
+      endDate,
+      completedAt,
+      displayOrder,
+    } =
       req.body;
+    const requestedOrder = parseDisplayOrder(displayOrder);
 
     const files = req.files || {};
     const coverFile = files.cover?.[0];
@@ -149,6 +163,7 @@ exports.createProject = async (req, res) => {
 
     const payload = {
       title,
+      ...(requestedOrder ? { displayOrder: requestedOrder } : {}),
       description,
       category,
       cover,
@@ -164,7 +179,9 @@ exports.createProject = async (req, res) => {
     }
 
     const created = await Project.create(payload);
-    res.status(201).json(created);
+    await syncCollectionDisplayOrder(Project, created._id, requestedOrder);
+    const refreshed = await Project.findById(created._id);
+    res.status(201).json(refreshed);
   } catch (err) {
     res.status(400).json({
       message: "Proje eklenemedi",
@@ -176,8 +193,17 @@ exports.createProject = async (req, res) => {
 /* ---------- UPDATE ---------- */
 exports.updateProject = async (req, res) => {
   try {
-    const { title, description, category, startDate, endDate, completedAt } =
+    const {
+      title,
+      description,
+      category,
+      startDate,
+      endDate,
+      completedAt,
+      displayOrder,
+    } =
       req.body;
+    const requestedOrder = parseDisplayOrder(displayOrder);
 
     const proj = await Project.findById(req.params.id);
     if (!proj) return res.status(404).json({ message: "Proje bulunamadı" });
@@ -186,6 +212,7 @@ exports.updateProject = async (req, res) => {
     const folder = process.env.CLOUDINARY_PROJECTS_FOLDER || "babil/projects";
 
     if (title !== undefined) proj.title = title;
+    if (requestedOrder) proj.displayOrder = requestedOrder;
     if (description !== undefined) proj.description = description;
     if (category !== undefined) proj.category = category;
     if (startDate !== undefined) proj.startDate = parseDate(startDate);
@@ -222,7 +249,13 @@ exports.updateProject = async (req, res) => {
     }
 
     const saved = await proj.save();
-    res.json(saved);
+    await syncCollectionDisplayOrder(
+      Project,
+      saved._id,
+      requestedOrder || saved.displayOrder
+    );
+    const refreshed = await Project.findById(saved._id);
+    res.json(refreshed);
   } catch (err) {
     res.status(400).json({
       message: "Proje güncellenemedi",
@@ -233,6 +266,7 @@ exports.updateProject = async (req, res) => {
 
 exports.getProjectCovers = async (req, res) => {
   try {
+    await syncCollectionDisplayOrder(Project);
     // Sadece gerekli alanları çek (performans)
     const items = await Project.find(
       {},
@@ -250,7 +284,7 @@ exports.getProjectCovers = async (req, res) => {
         "video.url": 1,
       }
     )
-      .sort({ createdAt: -1 })
+      .sort({ displayOrder: 1, createdAt: 1, _id: 1 })
       .lean();
 
     const mapped = items.map((p) => {
@@ -285,6 +319,7 @@ exports.getProjectCovers = async (req, res) => {
       return {
         _id: p._id,
         title: p.title,
+        displayOrder: p.displayOrder,
         mobileCoverUrl, // <-- sadece mobilde bunu kullanacağız
       };
     });
@@ -316,8 +351,34 @@ exports.deleteProject = async (req, res) => {
     }
 
     await proj.deleteOne();
+    await syncCollectionDisplayOrder(Project);
     res.json({ message: "Proje silindi" });
   } catch (err) {
     res.status(500).json({ message: "Silme başarısız", error: err.message });
+  }
+};
+
+exports.setProjectOrder = async (req, res) => {
+  try {
+    const proj = await Project.findById(req.params.id);
+    if (!proj) return res.status(404).json({ message: "Proje bulunamadı" });
+
+    const requestedOrder = parseDisplayOrder(req.body.displayOrder);
+    if (!requestedOrder) {
+      return res
+        .status(400)
+        .json({ message: "Geçerli bir gösterim sırası girin." });
+    }
+
+    await syncCollectionDisplayOrder(Project, proj._id, requestedOrder);
+    const refreshed = await Project.findById(proj._id);
+    res.json({
+      message: "Proje sırası güncellendi",
+      displayOrder: refreshed?.displayOrder || requestedOrder,
+    });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: "Sıra güncellenemedi", error: err.message });
   }
 };

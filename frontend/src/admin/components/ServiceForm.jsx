@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import ToastAlert from "./ToastAlert";
 import { ServicePreview } from "./previews/ContentPreviews";
+import OrderField from "./OrderField";
 
 const inputCls =
   "w-full rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950/55 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
@@ -91,6 +92,7 @@ const normalizeAreas = (val) => {
 const makeEmptySubService = (seed = {}) => ({
   id: seed?._id || "",
   clientId: seed?.clientId || seed?._id || createClientId(),
+  displayOrder: seed?.displayOrder || 0,
   title: seed?.title || "",
   type: seed?.type || "",
   category: seed?.category || "",
@@ -105,6 +107,26 @@ const makeEmptySubService = (seed = {}) => ({
   existingImages: seed?.images || [],
   open: true,
 });
+
+const normalizeSubServiceSequence = (items = []) =>
+  items.map((item, index) => ({
+    ...item,
+    displayOrder: index + 1,
+  }));
+
+const moveSubServiceToOrder = (items, clientId, nextOrder) => {
+  const ordered = normalizeSubServiceSequence(items);
+  const currentIndex = ordered.findIndex((item) => item.clientId === clientId);
+  if (currentIndex === -1) return ordered;
+
+  const [target] = ordered.splice(currentIndex, 1);
+  const insertAt = Math.min(
+    Math.max(Number(nextOrder || 1) - 1, 0),
+    ordered.length
+  );
+  ordered.splice(insertAt, 0, target);
+  return normalizeSubServiceSequence(ordered);
+};
 
 const checkPortrait = (file, minRatio = FRONT_VERTICAL_MIN_RATIO) =>
   new Promise((resolve, reject) => {
@@ -175,6 +197,9 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
   );
 
   const [title, setTitle] = useState(initialData?.title || "");
+  const [displayOrder, setDisplayOrder] = useState(
+    initialData?.displayOrder ? String(initialData.displayOrder) : ""
+  );
   const [type, setType] = useState(initialData?.type || "");
   const [category, setCategory] = useState(initialData?.category || "");
   const [description, setDescription] = useState(initialData?.description || "");
@@ -183,7 +208,9 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
   );
   const [usageInput, setUsageInput] = useState("");
   const [subServices, setSubServices] = useState(
-    (initialData?.subServices || []).map((item) => makeEmptySubService(item))
+    normalizeSubServiceSequence(
+      (initialData?.subServices || []).map((item) => makeEmptySubService(item))
+    )
   );
   const [showPreview, setShowPreview] = useState(false);
 
@@ -200,12 +227,17 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
 
   useEffect(() => {
     setTitle(initialData?.title || "");
+    setDisplayOrder(
+      initialData?.displayOrder ? String(initialData.displayOrder) : ""
+    );
     setType(initialData?.type || "");
     setCategory(initialData?.category || "");
     setDescription(initialData?.description || "");
     setUsageAreas(normalizeAreas(initialData?.usageAreas));
     setSubServices(
-      (initialData?.subServices || []).map((item) => makeEmptySubService(item))
+      normalizeSubServiceSequence(
+        (initialData?.subServices || []).map((item) => makeEmptySubService(item))
+      )
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData?._id]);
@@ -250,8 +282,10 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
 
   const updateSubService = (clientId, updater) => {
     setSubServices((items) =>
-      items.map((item) =>
+      normalizeSubServiceSequence(
+        items.map((item) =>
         item.clientId === clientId ? { ...item, ...updater(item) } : item
+        )
       )
     );
   };
@@ -300,11 +334,17 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
   };
 
   const addSubService = () => {
-    setSubServices((items) => [...items, makeEmptySubService()]);
+    setSubServices((items) =>
+      normalizeSubServiceSequence([...items, makeEmptySubService()])
+    );
   };
 
   const removeSubService = (clientId) => {
-    setSubServices((items) => items.filter((item) => item.clientId !== clientId));
+    setSubServices((items) =>
+      normalizeSubServiceSequence(
+        items.filter((item) => item.clientId !== clientId)
+      )
+    );
   };
 
   const handleSubServiceCover = async (clientId, file) => {
@@ -364,6 +404,7 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
 
     const formData = new FormData();
     formData.append("title", title);
+    if (displayOrder.trim()) formData.append("displayOrder", displayOrder.trim());
     formData.append("type", type);
     formData.append("category", category);
     formData.append("description", description);
@@ -374,6 +415,7 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
         subServices.map((item) => ({
           id: item.id,
           clientId: item.clientId,
+          displayOrder: item.displayOrder,
           title: item.title,
           type: item.type,
           category: item.category,
@@ -401,6 +443,7 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
   const previewData = useMemo(
     () => ({
       title,
+      displayOrder,
       type,
       category,
       description,
@@ -423,6 +466,7 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
           })),
       subServices: subServices.map((item, index) => ({
         id: item.id || item.clientId,
+        displayOrder: item.displayOrder || index + 1,
         title: item.title || `Alt Hizmet ${index + 1}`,
         type: item.type,
         category: item.category,
@@ -452,6 +496,7 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
       category,
       coverFile,
       coverPreview,
+      displayOrder,
       description,
       existingCover,
       existingImages,
@@ -487,6 +532,8 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
             placeholder="Örn: Teras Su Yalıtımı"
           />
         </div>
+
+        <OrderField value={displayOrder} onChange={setDisplayOrder} />
 
         <div>
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -610,6 +657,29 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
                         </h4>
                       </div>
                       <div className="flex gap-2">
+                        <select
+                          value={item.displayOrder || index + 1}
+                          onChange={(event) =>
+                            setSubServices((items) =>
+                              moveSubServiceToOrder(
+                                items,
+                                item.clientId,
+                                Number(event.target.value)
+                              )
+                            )
+                          }
+                          className="rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-100 dark:hover:border-slate-500"
+                          aria-label="Alt hizmet sırası"
+                        >
+                          {Array.from({ length: subServices.length }, (_, orderIndex) => {
+                            const order = orderIndex + 1;
+                            return (
+                              <option key={order} value={order}>
+                                Sıra #{order}
+                              </option>
+                            );
+                          })}
+                        </select>
                         <button
                           type="button"
                           onClick={() =>
@@ -1061,6 +1131,7 @@ ServiceForm.propTypes = {
   initialData: PropTypes.shape({
     _id: PropTypes.string,
     title: PropTypes.string,
+    displayOrder: PropTypes.number,
     type: PropTypes.string,
     category: PropTypes.string,
     usageAreas: PropTypes.oneOfType([
@@ -1081,6 +1152,7 @@ ServiceForm.propTypes = {
     subServices: PropTypes.arrayOf(
       PropTypes.shape({
         _id: PropTypes.string,
+        displayOrder: PropTypes.number,
         title: PropTypes.string,
         type: PropTypes.string,
         category: PropTypes.string,

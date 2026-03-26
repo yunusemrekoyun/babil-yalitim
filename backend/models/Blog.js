@@ -29,6 +29,7 @@ const commentSchema = new mongoose.Schema(
 const blogSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
+    displayOrder: { type: Number, default: 1, min: 1 },
     content: { type: String, required: true }, // zengin metin/plain
     tags: { type: [String], default: [] }, // opsiyonel
     cover: { type: mediaSchema, required: true }, // zorunlu kapak (image)

@@ -10,6 +10,7 @@ const {
   createBlog,
   updateBlog,
   deleteBlog,
+  setBlogOrder,
   deleteAsset,
   // comments
   getApprovedComments,
@@ -56,6 +57,8 @@ router.put(
   compressIfNeeded,
   updateBlog
 );
+
+router.patch("/:id/order", verifyToken, setBlogOrder);
 
 router.delete("/:id", verifyToken, deleteBlog);
 

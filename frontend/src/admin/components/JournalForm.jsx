@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import ToastAlert from "./ToastAlert";
 import RichContentField from "./RichContentField";
 import { JournalPreview } from "./previews/ContentPreviews";
+import OrderField from "./OrderField";
 
 const inputCls =
   "w-full rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950/55 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
@@ -44,6 +45,9 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
 
   const [title, setTitle] = useState(initialData?.title || "");
   const [content, setContent] = useState(initialData?.content || "");
+  const [displayOrder, setDisplayOrder] = useState(
+    initialData?.displayOrder ? String(initialData.displayOrder) : ""
+  );
   const [showPreview, setShowPreview] = useState(false);
 
   const existingCover = useMemo(
@@ -70,6 +74,9 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
     if (!initialData) return;
     setTitle(initialData.title || "");
     setContent(initialData.content || "");
+    setDisplayOrder(
+      initialData.displayOrder ? String(initialData.displayOrder) : ""
+    );
   }, [initialData]);
 
   useEffect(() => {
@@ -119,6 +126,7 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("content", content);
+    if (displayOrder.trim()) formData.append("displayOrder", displayOrder.trim());
     if (coverFile) formData.append("cover", coverFile);
     assetsFiles.forEach((file) => formData.append("assets", file));
 
@@ -168,6 +176,8 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
             placeholder="Örn: X firması ile anlaşma"
           />
         </div>
+
+        <OrderField value={displayOrder} onChange={setDisplayOrder} />
 
         <RichContentField
           label="İçerik *"
@@ -307,6 +317,7 @@ JournalForm.propTypes = {
     _id: PropTypes.string,
     title: PropTypes.string,
     content: PropTypes.string,
+    displayOrder: PropTypes.number,
     cover: PropTypes.shape({
       url: PropTypes.string,
       resourceType: PropTypes.string,

@@ -8,6 +8,10 @@ const {
   toPublicComment,
 } = require("../utils/blog");
 const { buildRichContentHtml } = require("../utils/richContent");
+const {
+  parseDisplayOrder,
+  syncCollectionDisplayOrder,
+} = require("../utils/displayOrder");
 
 const uploadOne = async (file, folder) => {
   const isVideo = /^video\//i.test(file?.mimetype || "");
@@ -57,11 +61,13 @@ const destroyIfExists = async (m) => {
 /* ------------ BLOG: public GET ------------ */
 exports.getBlogs = async (_req, res) => {
   try {
-    const items = await Blog.find().sort({ createdAt: -1 });
+    await syncCollectionDisplayOrder(Blog);
+    const items = await Blog.find().sort({ displayOrder: 1, createdAt: 1, _id: 1 });
     // public listede yorumların tamamını göndermiyoruz (performans)
     const lean = items.map((b) => ({
       _id: b._id,
       title: b.title,
+      displayOrder: b.displayOrder,
       content: b.content,
       tags: b.tags,
       cover: b.cover,
@@ -87,6 +93,7 @@ exports.getBlogById = async (req, res) => {
     res.json({
       _id: b._id,
       title: b.title,
+      displayOrder: b.displayOrder,
       content: b.content,
       tags: b.tags,
       cover: b.cover,
@@ -106,6 +113,7 @@ exports.getBlogById = async (req, res) => {
 exports.createBlog = async (req, res) => {
   try {
     const { title, content } = req.body;
+    const requestedOrder = parseDisplayOrder(req.body.displayOrder);
     const safeContent = sanitizeHtml(buildRichContentHtml(content));
     const tags = resolveTags(req.body.tags, {
       title,
@@ -129,13 +137,17 @@ exports.createBlog = async (req, res) => {
 
     const created = await Blog.create({
       title,
+      ...(requestedOrder ? { displayOrder: requestedOrder } : {}),
       content: safeContent,
       tags,
       cover,
       assets,
     });
 
-    res.status(201).json(created);
+    await syncCollectionDisplayOrder(Blog, created._id, requestedOrder);
+    const refreshed = await Blog.findById(created._id);
+
+    res.status(201).json(refreshed);
   } catch (err) {
     res.status(400).json({ message: "Blog eklenemedi", error: err.message });
   }
@@ -147,6 +159,7 @@ exports.updateBlog = async (req, res) => {
     if (!blog) return res.status(404).json({ message: "Blog bulunamadı" });
 
     const { title, content } = req.body;
+    const requestedOrder = parseDisplayOrder(req.body.displayOrder);
     const tagsProvided = req.body.tags !== undefined;
     const nextTitle = title !== undefined ? title : blog.title;
     const nextContent =
@@ -156,6 +169,7 @@ exports.updateBlog = async (req, res) => {
 
     if (title !== undefined) blog.title = title;
     if (content !== undefined) blog.content = nextContent;
+    if (requestedOrder) blog.displayOrder = requestedOrder;
     if (tagsProvided) {
       blog.tags = resolveTags(req.body.tags, {
         title: nextTitle,
@@ -185,7 +199,13 @@ exports.updateBlog = async (req, res) => {
     }
 
     const saved = await blog.save();
-    res.json(saved);
+    await syncCollectionDisplayOrder(
+      Blog,
+      saved._id,
+      requestedOrder || saved.displayOrder
+    );
+    const refreshed = await Blog.findById(saved._id);
+    res.json(refreshed);
   } catch (err) {
     res
       .status(400)
@@ -204,11 +224,37 @@ exports.deleteBlog = async (req, res) => {
     }
 
     await blog.deleteOne();
+    await syncCollectionDisplayOrder(Blog);
     res.json({ message: "Blog silindi" });
   } catch (err) {
     res
       .status(500)
       .json({ message: "Silme işlemi başarısız", error: err.message });
+  }
+};
+
+exports.setBlogOrder = async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) return res.status(404).json({ message: "Blog bulunamadı" });
+
+    const requestedOrder = parseDisplayOrder(req.body.displayOrder);
+    if (!requestedOrder) {
+      return res
+        .status(400)
+        .json({ message: "Geçerli bir gösterim sırası girin." });
+    }
+
+    await syncCollectionDisplayOrder(Blog, blog._id, requestedOrder);
+    const refreshed = await Blog.findById(blog._id);
+    res.json({
+      message: "Blog sırası güncellendi",
+      displayOrder: refreshed?.displayOrder || requestedOrder,
+    });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: "Sıra güncellenemedi", error: err.message });
   }
 };
 

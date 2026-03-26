@@ -17,6 +17,7 @@ const mediaSchema = new mongoose.Schema(
 const projectSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
+    displayOrder: { type: Number, default: 1, min: 1 },
     description: String,
     category: String,
 
