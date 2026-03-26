@@ -175,6 +175,36 @@ html {
 
   .rich-content a {
     overflow-wrap: anywhere;
+    color: #0d7287;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: rgba(13, 114, 135, 0.42);
+    text-decoration-thickness: 0.12em;
+    text-underline-offset: 0.18em;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(92, 179, 193, 0) 58%,
+      rgba(92, 179, 193, 0.22) 58%,
+      rgba(92, 179, 193, 0.22) 100%
+    );
+    transition:
+      color 180ms ease,
+      text-decoration-color 180ms ease,
+      background 180ms ease;
+  }
+
+  .rich-content a:hover,
+  .rich-content a:focus-visible {
+    color: #125795;
+    text-decoration-color: rgba(18, 87, 149, 0.55);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(92, 179, 193, 0) 52%,
+      rgba(92, 179, 193, 0.32) 52%,
+      rgba(92, 179, 193, 0.32) 100%
+    );
   }
 
   .admin-preview-surface {

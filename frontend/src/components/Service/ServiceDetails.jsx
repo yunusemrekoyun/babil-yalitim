@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ChevronLeft, CalendarDays, Tag, Images, Layers } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import PropTypes from "prop-types";
+import {
+  ChevronLeft,
+  CalendarDays,
+  Tag,
+  Images,
+  Layers,
+  PlayCircle,
+  X,
+} from "lucide-react";
 import api from "../../api";
 import OtherServices from "./OtherServices";
 
@@ -50,6 +59,10 @@ const cldVideoThumb = (url = "", { w = 480, h = 854 } = {}) => {
   const { cloudName, publicId } = parsed;
   return `https://res.cloudinary.com/${cloudName}/video/upload/so_0,f_jpg,q_auto,c_fill,w_${w},h_${h}/${publicId}.jpg`;
 };
+
+const isVideoMedia = (media) =>
+  media?.resourceType === "video" || looksVideo(media?.url);
+
 const ServiceDetails = () => {
   const { id } = useParams();
   const [svc, setSvc] = useState(null);
@@ -59,6 +72,24 @@ const ServiceDetails = () => {
   const [activeIdx, setActiveIdx] = useState(0);
   const [related, setRelated] = useState([]);
   const [loadingRelated, setLoadingRelated] = useState(true);
+  const [videoModal, setVideoModal] = useState(null);
+
+  useEffect(() => {
+    if (!videoModal) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setVideoModal(null);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [videoModal]);
 
   useEffect(() => {
     if (!id) return;
@@ -404,15 +435,60 @@ const ServiceDetails = () => {
                               )}
                             {Array.isArray(sub.images) && sub.images.length > 0 && (
                               <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                                {sub.images.map((media, mediaIndex) =>
-                                  media.resourceType === "video" ? (
-                                    <video
+                                {sub.images.map((media, mediaIndex) => {
+                                  const mediaIsVideo = isVideoMedia(media);
+                                  const previewUrl = mediaIsVideo
+                                    ? cldVideoThumb(media.url, {
+                                        w: 960,
+                                        h: 540,
+                                      })
+                                    : media.url;
+
+                                  return mediaIsVideo ? (
+                                    <button
                                       key={`${media.url}-${mediaIndex}`}
-                                      src={media.url}
-                                      className="aspect-video w-full rounded-2xl object-cover"
-                                      controls
-                                      playsInline
-                                    />
+                                      type="button"
+                                      onClick={() =>
+                                        setVideoModal({
+                                          url: media.url,
+                                          poster: previewUrl || "",
+                                          title: `${sub.title} videosu`,
+                                        })
+                                      }
+                                      className="group relative aspect-video w-full overflow-hidden rounded-2xl bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brandBlue/50"
+                                      aria-label={`${sub.title} videosunu aç`}
+                                    >
+                                      {previewUrl ? (
+                                        <img
+                                          src={previewUrl}
+                                          alt={`${sub.title} video önizleme`}
+                                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                                          loading="lazy"
+                                        />
+                                      ) : (
+                                        <div className="grid h-full w-full place-items-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white/85">
+                                          <div className="flex flex-col items-center gap-2">
+                                            <PlayCircle size={34} />
+                                            <span className="text-sm font-medium">
+                                              Videoyu izle
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
+
+                                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
+                                        <span className="inline-flex translate-y-2 items-center gap-2 rounded-full border border-white/30 bg-black/45 px-4 py-2 text-sm font-semibold text-white opacity-0 backdrop-blur-sm transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
+                                          <PlayCircle size={18} />
+                                          Videoyu izle
+                                        </span>
+                                      </div>
+
+                                      <span className="pointer-events-none absolute right-3 top-3 rounded-full border border-white/20 bg-black/45 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
+                                        Video
+                                      </span>
+                                    </button>
                                   ) : (
                                     <img
                                       key={`${media.url}-${mediaIndex}`}
@@ -421,8 +497,8 @@ const ServiceDetails = () => {
                                       className="aspect-video w-full rounded-2xl object-cover"
                                       loading="lazy"
                                     />
-                                  )
-                                )}
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
@@ -527,8 +603,76 @@ const ServiceDetails = () => {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {videoModal ? (
+          <VideoModal item={videoModal} onClose={() => setVideoModal(null)} />
+        ) : null}
+      </AnimatePresence>
     </section>
   );
+};
+
+const VideoModal = ({ item, onClose }) => {
+  if (!item?.url) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/82 p-4 backdrop-blur-sm"
+      onClick={onClose}
+      aria-modal="true"
+      role="dialog"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.98, y: 10 }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
+        className="relative w-full max-w-5xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/55 text-white shadow-lg transition hover:bg-black/70"
+          aria-label="Videoyu kapat"
+        >
+          <X size={20} />
+        </button>
+
+        <div className="overflow-hidden rounded-[28px] bg-black shadow-[0_40px_120px_-32px_rgba(0,0,0,0.72)]">
+          <div className="aspect-video w-full bg-black">
+            <video
+              src={item.url}
+              poster={item.poster || undefined}
+              controls
+              autoPlay
+              playsInline
+              className="h-full w-full object-contain"
+            />
+          </div>
+        </div>
+
+        {item.title ? (
+          <div className="mt-3 text-center text-sm font-medium text-white/82">
+            {item.title}
+          </div>
+        ) : null}
+      </motion.div>
+    </motion.div>
+  );
+};
+
+VideoModal.propTypes = {
+  item: PropTypes.shape({
+    url: PropTypes.string,
+    poster: PropTypes.string,
+    title: PropTypes.string,
+  }),
+  onClose: PropTypes.func.isRequired,
 };
 
 export default ServiceDetails;

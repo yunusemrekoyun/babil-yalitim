@@ -12,6 +12,10 @@ import {
   failProgressTask,
   clampProgress,
 } from "../../utils/progressBus";
+import {
+  ADMIN_SUCCESS_REDIRECT_DELAY_MS,
+  getAdminFeedbackMessage,
+} from "../../utils/mediaFeedback";
 
 function AddBlog({ onRequestClose }) {
   const navigate = useNavigate();
@@ -46,11 +50,15 @@ function AddBlog({ onRequestClose }) {
       });
       completeProgressTask(taskId, "Blog eklendi");
       showToast("Blog eklendi.", "success");
-      navigate("/admin/blogs");
+      setTimeout(
+        () => navigate("/admin/blogs"),
+        ADMIN_SUCCESS_REDIRECT_DELAY_MS
+      );
     } catch (e) {
+      const message = getAdminFeedbackMessage(e, "Blog eklenemedi.");
       console.error("POST /blogs error:", e?.response?.data || e);
-      failProgressTask(taskId, "Blog eklenemedi");
-      showToast(e?.response?.data?.message || "Blog eklenemedi.", "error");
+      failProgressTask(taskId, message);
+      showToast(message, "error");
     } finally {
       setSubmitting(false);
     }

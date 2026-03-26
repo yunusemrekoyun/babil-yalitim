@@ -5,6 +5,7 @@ const sharp = require("sharp");
 const multer = require("multer");
 const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
+const { buildMediaLimitSummary } = require("../utils/uploadErrors");
 
 if (ffmpegPath) {
   ffmpeg.setFfmpegPath(ffmpegPath);
@@ -18,23 +19,179 @@ const storage = multer.diskStorage({
   },
 });
 
-// Uygulama limiti: 50MB; daha büyük görselleri sıkıştırmayı dene, videoları reddet
-const SOFT_LIMIT_MB = 50;
-const SOFT_LIMIT_BYTES = SOFT_LIMIT_MB * 1024 * 1024;
-// multer limiti: çok büyük dosya patlatmasın (200MB)
-const MULTER_LIMIT_BYTES =
-  Number(process.env.MAX_VIDEO_SIZE_MB || 200) * 1024 * 1024;
+const toPositiveNumber = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const IMAGE_SOFT_LIMIT_MB = toPositiveNumber(
+  process.env.IMAGE_UPLOAD_LIMIT_MB,
+  20
+);
+const VIDEO_SOFT_LIMIT_MB = toPositiveNumber(
+  process.env.VIDEO_UPLOAD_LIMIT_MB,
+  50
+);
+const HARD_LIMIT_MB = toPositiveNumber(
+  process.env.MAX_UPLOAD_ACCEPT_MB || process.env.MAX_VIDEO_SIZE_MB,
+  200
+);
+
+const IMAGE_SOFT_LIMIT_BYTES = IMAGE_SOFT_LIMIT_MB * 1024 * 1024;
+const VIDEO_SOFT_LIMIT_BYTES = VIDEO_SOFT_LIMIT_MB * 1024 * 1024;
+const MULTER_LIMIT_BYTES = HARD_LIMIT_MB * 1024 * 1024;
+
+const isImageMime = (mimetype = "") =>
+  /^image\/(jpe?g|png|webp|gif|avif)$/i.test(mimetype);
+const isVideoMime = (mimetype = "") =>
+  /^video\/(mp4|quicktime|x-matroska|webm|x-msvideo)$/i.test(mimetype);
+
+const videoMimeByExtension = {
+  ".avi": "video/x-msvideo",
+  ".mkv": "video/x-matroska",
+  ".mov": "video/quicktime",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+};
+
+const getSoftLimitBytesForFile = (file) => {
+  if (isImageMime(file?.mimetype)) return IMAGE_SOFT_LIMIT_BYTES;
+  if (isVideoMime(file?.mimetype)) return VIDEO_SOFT_LIMIT_BYTES;
+  return 0;
+};
+
+const getSoftLimitMbForFile = (file) => {
+  if (isImageMime(file?.mimetype)) return IMAGE_SOFT_LIMIT_MB;
+  if (isVideoMime(file?.mimetype)) return VIDEO_SOFT_LIMIT_MB;
+  return 0;
+};
+
+const safeUnlink = async (targetPath) => {
+  if (!targetPath) return;
+  await fs.unlink(targetPath).catch(() => {});
+};
+
+const optimizeImageWithoutQualityDrop = async (file) => {
+  const transformer = sharp(file.path, {
+    animated: true,
+    limitInputPixels: false,
+  }).rotate();
+  const mime = String(file.mimetype || "").toLowerCase();
+  let outputPath = "";
+  let outputMime = mime;
+
+  switch (mime) {
+    case "image/jpeg":
+    case "image/jpg":
+      outputPath = `${file.path}.optimized.jpg`;
+      outputMime = "image/jpeg";
+      await transformer
+        .jpeg({
+          quality: 100,
+          mozjpeg: true,
+          progressive: true,
+          chromaSubsampling: "4:4:4",
+        })
+        .toFile(outputPath);
+      break;
+    case "image/png":
+      outputPath = `${file.path}.optimized.png`;
+      outputMime = "image/png";
+      await transformer
+        .png({
+          compressionLevel: 9,
+          adaptiveFiltering: true,
+          palette: false,
+        })
+        .toFile(outputPath);
+      break;
+    case "image/webp":
+      outputPath = `${file.path}.optimized.webp`;
+      outputMime = "image/webp";
+      await transformer.webp({ lossless: true, effort: 6 }).toFile(outputPath);
+      break;
+    case "image/avif":
+      outputPath = `${file.path}.optimized.avif`;
+      outputMime = "image/avif";
+      await transformer.avif({ lossless: true, effort: 9 }).toFile(outputPath);
+      break;
+    case "image/gif":
+      outputPath = `${file.path}.optimized.gif`;
+      outputMime = "image/gif";
+      await transformer.gif({ effort: 10 }).toFile(outputPath);
+      break;
+    default:
+      return false;
+  }
+
+  const stat = await fs.stat(outputPath);
+  if (stat.size >= file.size) {
+    await safeUnlink(outputPath);
+    return false;
+  }
+
+  await safeUnlink(file.path);
+  file.path = outputPath;
+  file.size = stat.size;
+  file.filename = path.basename(outputPath);
+  file.mimetype = outputMime;
+  return true;
+};
+
+const optimizeVideoWithoutQualityDrop = async (file) => {
+  if (!ffmpegPath) return false;
+
+  const extension =
+    path.extname(file.originalname || "").toLowerCase() ||
+    path.extname(file.path || "").toLowerCase() ||
+    ".mp4";
+  const safeExtension =
+    extension in videoMimeByExtension ? extension : path.extname(file.path || "") || ".mp4";
+  const outputPath = `${file.path}.optimized${safeExtension}`;
+  const outputOptions = ["-map_metadata", "-1", "-c", "copy"];
+
+  if ([".mp4", ".mov"].includes(safeExtension)) {
+    outputOptions.push("-movflags", "+faststart");
+  }
+
+  await new Promise((resolve, reject) => {
+    ffmpeg(file.path)
+      .outputOptions(outputOptions)
+      .on("end", resolve)
+      .on("error", reject)
+      .save(outputPath);
+  });
+
+  const stat = await fs.stat(outputPath);
+  if (stat.size >= file.size) {
+    await safeUnlink(outputPath);
+    return false;
+  }
+
+  await safeUnlink(file.path);
+  file.path = outputPath;
+  file.size = stat.size;
+  file.filename = path.basename(outputPath);
+  file.mimetype = videoMimeByExtension[safeExtension] || "video/mp4";
+  return true;
+};
+
+const cleanupUploadedFiles = async (files = []) => {
+  await Promise.all(files.map((file) => safeUnlink(file?.path)));
+};
 
 const upload = multer({
   storage,
   limits: { fileSize: MULTER_LIMIT_BYTES },
   fileFilter: (_req, file, cb) => {
-    const isImage = /^image\/(jpe?g|png|webp|gif|avif)$/i.test(file.mimetype);
-    const isVideo = /^video\/(mp4|quicktime|x-matroska|webm|x-msvideo)$/i.test(
-      file.mimetype
-    );
+    const isImage = isImageMime(file.mimetype);
+    const isVideo = isVideoMime(file.mimetype);
     if (!isImage && !isVideo) {
-      return cb(new Error("Sadece resim veya video yükleyebilirsiniz."));
+      const err = new Error(
+        "Desteklenmeyen dosya türü. Görseller için JPG, PNG, WEBP, GIF, AVIF; videolar için MP4, MOV, MKV, WEBM ve AVI yükleyebilirsiniz."
+      );
+      err.status = 400;
+      return cb(err);
     }
     cb(null, true);
   },
@@ -48,87 +205,46 @@ async function compressIfNeeded(req, res, next) {
 
   for (const file of all) {
     if (!file) continue;
-    if (file.size <= SOFT_LIMIT_BYTES) continue;
+    const softLimitBytes = getSoftLimitBytesForFile(file);
+    const softLimitMb = getSoftLimitMbForFile(file);
 
-    const isImage = /^image\//i.test(file.mimetype || "");
-    const isVideo = /^video\//i.test(file.mimetype || "");
+    if (!softLimitBytes || file.size <= softLimitBytes) continue;
+
+    const isImage = isImageMime(file.mimetype || "");
+    const isVideo = isVideoMime(file.mimetype || "");
 
     if (isImage) {
       try {
-        const outputPath = file.path + ".webp";
-        await sharp(file.path)
-          .resize({
-            width: 1920,
-            height: 1920,
-            fit: "inside",
-            withoutEnlargement: true,
-          })
-          .webp({ quality: 80 })
-          .toFile(outputPath);
-
-        const stat = await fs.stat(outputPath);
-        await fs.unlink(file.path).catch(() => {});
-
-        // Yeni metadata'yı multer dosya objesine yaz
-        file.path = outputPath;
-        file.size = stat.size;
-        file.filename = path.basename(outputPath);
-        file.mimetype = "image/webp";
+        await optimizeImageWithoutQualityDrop(file);
       } catch (err) {
-        failed.push(file.originalname || file.filename || "dosya");
-        continue;
+        /* optimize edilemedi */
       }
 
-      if (file.size > SOFT_LIMIT_BYTES) {
-        failed.push(file.originalname || file.filename || "dosya");
+      if (file.size > softLimitBytes) {
+        failed.push(
+          `${file.originalname || file.filename || "dosya"} (${softLimitMb}MB)`
+        );
       }
       continue;
     }
 
     if (isVideo) {
       if (!ffmpegPath) {
-        failed.push(file.originalname || file.filename || "video");
+        failed.push(
+          `${file.originalname || file.filename || "video"} (${softLimitMb}MB)`
+        );
         continue;
       }
-      const outputPath = file.path + "_compressed.mp4";
       try {
-        await new Promise((resolve, reject) => {
-          ffmpeg(file.path)
-            .outputOptions([
-              "-vcodec",
-              "libx264",
-              "-preset",
-              "veryfast",
-              "-crf",
-              "28",
-              "-acodec",
-              "aac",
-              "-b:a",
-              "128k",
-              "-movflags",
-              "+faststart",
-              "-vf",
-              "scale='min(1280,iw)':-2",
-            ])
-            .on("end", resolve)
-            .on("error", reject)
-            .save(outputPath);
-        });
-
-        const stat = await fs.stat(outputPath);
-        await fs.unlink(file.path).catch(() => {});
-
-        file.path = outputPath;
-        file.size = stat.size;
-        file.filename = path.basename(outputPath);
-        file.mimetype = "video/mp4";
-
-        if (file.size > SOFT_LIMIT_BYTES) {
-          failed.push(file.originalname || file.filename || "video");
-        }
+        await optimizeVideoWithoutQualityDrop(file);
       } catch (err) {
-        await fs.unlink(outputPath).catch(() => {});
-        failed.push(file.originalname || file.filename || "video");
+        /* optimize edilemedi */
+      }
+
+      if (file.size > softLimitBytes) {
+        failed.push(
+          `${file.originalname || file.filename || "video"} (${softLimitMb}MB)`
+        );
       }
       continue;
     }
@@ -137,15 +253,26 @@ async function compressIfNeeded(req, res, next) {
   }
 
   if (failed.length) {
+    await cleanupUploadedFiles(all);
     return res.status(413).json({
       message:
-        "Yüklediğiniz dosya(lar) 50MB limitinin altında olmalı. Sıkıştırmayı denedik ancak hâlâ büyük: " +
+        buildMediaLimitSummary({
+          imageLimitMb: IMAGE_SOFT_LIMIT_MB,
+          videoLimitMb: VIDEO_SOFT_LIMIT_MB,
+        }) +
+        " Kaliteyi düşürmeden optimize etmeyi denedik ancak yeterli olmadı: " +
         failed.join(", ") +
-        ". Lütfen daha küçük veya sıkıştırılmış bir dosya yükleyin.",
+        ". Lütfen daha küçük boyutta bir medya yükleyin.",
     });
   }
 
   next();
 }
 
-module.exports = { upload, compressIfNeeded, SOFT_LIMIT_MB };
+module.exports = {
+  upload,
+  compressIfNeeded,
+  IMAGE_SOFT_LIMIT_MB,
+  VIDEO_SOFT_LIMIT_MB,
+  HARD_LIMIT_MB,
+};

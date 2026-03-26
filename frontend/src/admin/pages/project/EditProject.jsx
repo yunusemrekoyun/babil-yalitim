@@ -1,8 +1,10 @@
 // src/admin/pages/project/EditProject.jsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import PropTypes from "prop-types";
+import AdminLoadingState from "../../components/AdminLoadingState";
 import ProjectForm from "../../components/ProjectForm";
+import LoadErrorState from "../../components/LoadErrorState";
 import api from "../../../api";
 import ToastAlert from "../../components/ToastAlert";
 import {
@@ -12,6 +14,10 @@ import {
   failProgressTask,
   clampProgress,
 } from "../../utils/progressBus";
+import {
+  ADMIN_SUCCESS_REDIRECT_DELAY_MS,
+  getAdminFeedbackMessage,
+} from "../../utils/mediaFeedback";
 
 const EditProject = ({ onRequestClose }) => {
   const { id } = useParams();
@@ -20,26 +26,40 @@ const EditProject = ({ onRequestClose }) => {
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   // toast state
   const [toast, setToast] = useState(null);
-  const showToast = (msg, type = "info", duration = 4000) =>
-    setToast({ msg, type, duration });
+  const showToast = useCallback(
+    (msg, type = "info", duration = 4000) =>
+      setToast({ msg, type, duration }),
+    []
+  );
+
+  const fetchProject = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const { data } = await api.get(`/projects/${id}`);
+      setInitialData(data);
+    } catch (err) {
+      const status = err?.response?.status;
+      const message =
+        status === 404
+          ? "Proje bulunamadı."
+          : getAdminFeedbackMessage(err, "Proje yüklenemedi.");
+      console.error("GET /projects/:id error:", err?.response?.data || err);
+      setInitialData(null);
+      setLoadError(message);
+      showToast(message, "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [id, showToast]);
 
   useEffect(() => {
-    const run = async () => {
-      try {
-        const { data } = await api.get(`/projects/${id}`);
-        setInitialData(data);
-      } catch (err) {
-        console.error("GET /projects/:id error:", err?.response?.data || err);
-        showToast(err?.response?.data?.message || "Proje yüklenemedi.", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    run();
-  }, [id]);
+    fetchProject();
+  }, [fetchProject]);
 
   const handleSubmit = async (formData) => {
     const taskId = createProgressTask("Proje güncelleniyor");
@@ -66,23 +86,53 @@ const EditProject = ({ onRequestClose }) => {
       });
       completeProgressTask(taskId, "Proje güncellendi");
       showToast("Proje güncellendi", "success");
-      setTimeout(() => navigate("/admin/projects"), 300);
+      setTimeout(
+        () => navigate("/admin/projects"),
+        ADMIN_SUCCESS_REDIRECT_DELAY_MS
+      );
     } catch (err) {
+      const message = getAdminFeedbackMessage(err, "Güncellenemedi.");
       console.error("PUT /projects/:id error:", err?.response?.data || err);
-      failProgressTask(taskId, "Proje güncellenemedi");
-      showToast(err?.response?.data?.message || "Güncellenemedi.", "error");
+      failProgressTask(taskId, message);
+      showToast(message, "error");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) return <div className="p-4">Yükleniyor…</div>;
-  if (!initialData)
-    return <div className="p-4 text-red-600">Proje bulunamadı.</div>;
+  if (loading) {
+    return (
+      <div className="p-4 md:p-6">
+        <div className="mx-auto max-w-5xl">
+          <AdminLoadingState
+            title="Proje hazırlanıyor"
+            message="Proje bilgileri ve medya alanları yükleniyor."
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6">
       <div className="mx-auto max-w-5xl">
+        {loadError ? (
+          <LoadErrorState
+            title="Proje yüklenemedi"
+            message={loadError}
+            onRetry={fetchProject}
+          />
+        ) : null}
+
+        {!loadError && !initialData ? (
+          <LoadErrorState
+            title="Proje bulunamadı"
+            message="Kayıt yüklenemedi veya artık mevcut değil."
+            onRetry={fetchProject}
+          />
+        ) : null}
+
+        {loadError || !initialData ? null : (
         <div className="admin-section p-6 sm:p-8 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-slate-500/12 via-transparent to-slate-400/10 dark:from-[#2c2f36]/60 dark:via-transparent dark:to-[#1f2227]/50" />
           <div className="relative flex items-start justify-between gap-3 mb-6">
@@ -104,6 +154,7 @@ const EditProject = ({ onRequestClose }) => {
             />
           </div>
         </div>
+        )}
       </div>
 
       {toast && (

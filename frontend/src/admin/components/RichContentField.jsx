@@ -12,7 +12,10 @@ const RichContentField = ({
   onChange,
   placeholder,
   inputClassName,
+  errorText = "",
+  invalid = false,
   rows = 10,
+  required = false,
   onTogglePreview,
   showPreview,
 }) => {
@@ -52,9 +55,20 @@ const RichContentField = ({
     if (!trimmedUrl) return;
 
     const labelText = linkText.trim() || trimmedUrl;
-    insertAtCursor(
-      `<p><a href="${trimmedUrl}" target="_blank" rel="noopener noreferrer">${labelText}</a></p>`
-    );
+    const canUseMarkdown =
+      labelText === trimmedUrl ||
+      (!/[[\]\n]/.test(labelText) && !/[\n]/.test(trimmedUrl));
+
+    if (labelText === trimmedUrl) {
+      insertAtCursor(trimmedUrl);
+    } else if (canUseMarkdown) {
+      insertAtCursor(`[${labelText}](${trimmedUrl})`);
+    } else {
+      insertAtCursor(
+        `<a href="${trimmedUrl}" target="_blank" rel="noopener noreferrer">${labelText}</a>`
+      );
+    }
+
     setLinkUrl("");
     setLinkText("");
     setShowLinkForm(false);
@@ -162,7 +176,12 @@ const RichContentField = ({
         rows={rows}
         className={inputClassName}
         placeholder={placeholder}
+        required={required}
+        aria-invalid={invalid}
       />
+      {errorText ? (
+        <p className="text-xs text-rose-600 dark:text-rose-300">{errorText}</p>
+      ) : null}
     </div>
   );
 };
@@ -173,7 +192,10 @@ RichContentField.propTypes = {
   onChange: PropTypes.func.isRequired,
   placeholder: PropTypes.string,
   inputClassName: PropTypes.string.isRequired,
+  errorText: PropTypes.string,
+  invalid: PropTypes.bool,
   rows: PropTypes.number,
+  required: PropTypes.bool,
   onTogglePreview: PropTypes.func.isRequired,
   showPreview: PropTypes.bool.isRequired,
 };

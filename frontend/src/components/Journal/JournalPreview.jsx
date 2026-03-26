@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { useMemo, useState } from "react";
 import JournalCard from "./JournalCard";
+import { toPlainRichContent, toRichContentExcerpt } from "../../utils/richContent";
 
 const Skeleton = () => (
   <div className="rounded-2xl overflow-hidden border border-white/40 bg-white/30 backdrop-blur-md shadow-md">
@@ -28,7 +29,8 @@ const normalize = (j) => ({
   _id: j?._id,
   title: j?.title || "",
   coverUrl: j?.cover?.url || "",
-  excerpt: j?.content || "",
+  excerpt: toRichContentExcerpt(j?.content, 170),
+  searchText: toPlainRichContent(j?.content),
   date: j?.createdAt || j?.updatedAt || null,
   tags: Array.isArray(j?.tags) ? j.tags : [], // varsa
   likesCount: j?.likesCount ?? 0,
@@ -44,7 +46,7 @@ const JournalPreview = ({ data = [], loading = false, error = "" }) => {
     const s = q.trim().toLowerCase();
     if (!s) return items;
     return items.filter((it) => {
-      const haystack = `${it.title} ${it.excerpt} ${(it.tags || []).join(
+      const haystack = `${it.title} ${it.searchText || it.excerpt} ${(it.tags || []).join(
         " "
       )}`.toLowerCase();
       return haystack.includes(s);

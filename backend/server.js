@@ -7,6 +7,12 @@ const compression = require("compression");
 const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db");
+const {
+  IMAGE_SOFT_LIMIT_MB,
+  VIDEO_SOFT_LIMIT_MB,
+  HARD_LIMIT_MB,
+} = require("./middleware/uploadMedia");
+const { normalizeUploadError } = require("./utils/uploadErrors");
 
 dotenv.config();
 connectDB();
@@ -103,11 +109,19 @@ app.use((req, res, next) => {
 });
 
 app.use((err, _req, res, _next) => {
-  const status = err.status || 500;
+  const uploadError = normalizeUploadError(err, {
+    imageLimitMb: IMAGE_SOFT_LIMIT_MB,
+    videoLimitMb: VIDEO_SOFT_LIMIT_MB,
+    hardLimitMb: HARD_LIMIT_MB,
+  });
+  const status = uploadError?.status || err.status || 500;
   const payload =
     NODE_ENV === "production"
-      ? { message: err.message || "Internal Server Error" }
-      : { message: err.message || "Internal Server Error", stack: err.stack };
+      ? { message: uploadError?.message || err.message || "Internal Server Error" }
+      : {
+          message: uploadError?.message || err.message || "Internal Server Error",
+          stack: err.stack,
+        };
   res.status(status).json(payload);
 });
 

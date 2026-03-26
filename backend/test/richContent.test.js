@@ -24,6 +24,15 @@ test("buildRichContentHtml duz metin ve youtube blocklarini normalize eder", () 
   assert.match(html, /youtube-nocookie\.com\/embed\/dQw4w9WgXcQ/);
 });
 
+test("buildRichContentHtml markdown link bloklarini anchor olarak normalize eder", () => {
+  const html = buildRichContentHtml(
+    "[Teklif Dosyasi](https://ornek.com/teklif)"
+  );
+
+  assert.match(html, /<a href="https:\/\/ornek\.com\/teklif"/);
+  assert.match(html, />Teklif Dosyasi</);
+});
+
 test("sanitizeHtml yalnizca izinli youtube iframe kaynaklarini korur", () => {
   const safe = sanitizeHtml(
     '<iframe src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"></iframe>'

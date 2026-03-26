@@ -4,25 +4,23 @@ import PropTypes from "prop-types";
 import ToastAlert from "./ToastAlert";
 import { ProjectPreview } from "./previews/ContentPreviews";
 import OrderField from "./OrderField";
+import AdminMediaGallery from "./AdminMediaGallery";
+import { MEDIA_LIMIT_HINT } from "../utils/mediaFeedback";
+import {
+  appendOrderedMediaToFormData,
+  buildMediaPreviewList,
+  createExistingMediaItems,
+  createNewMediaItems,
+  moveMediaItem,
+  removeMediaItem,
+  revokeBlobUrl,
+  toMediaType,
+} from "../utils/mediaCollection";
 
 const inputCls =
   "w-full rounded-xl border border-slate-200/70 bg-white/60 px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
-
-/** MediaPreview: seçilen dosyayı veya mevcut URL’yi gösterir */
-const MediaPreview = ({ src, type = "image", className = "" }) => {
-  if (!src) return null;
-  return type === "video" ? (
-    <video src={src} className={className} controls playsInline muted />
-  ) : (
-    <img src={src} className={className} alt="" />
-  );
-};
-
-MediaPreview.propTypes = {
-  src: PropTypes.string,
-  type: PropTypes.oneOf(["image", "video"]),
-  className: PropTypes.string,
-};
+const errorInputCls =
+  "border-rose-300 focus:border-rose-300 focus:ring-rose-100 dark:border-rose-500/50 dark:focus:border-rose-400 dark:focus:ring-rose-500/20";
 
 const ProjectForm = ({ initialData, onSubmit, submitting }) => {
   // toast
@@ -54,27 +52,49 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
     () => initialData?.video || null,
     [initialData?.video]
   );
-  const existingImages = useMemo(
-    () => initialData?.images || [],
-    [initialData?.images]
-  );
-
   // yeni seçilen dosyalar
   const [coverFile, setCoverFile] = useState(null);
   const [videoFile, setVideoFile] = useState(null);
-  const [imagesFiles, setImagesFiles] = useState([]);
 
   // önizlemeler
   const [coverPreview, setCoverPreview] = useState(null);
   const [videoPreview, setVideoPreview] = useState(null);
-  const [imagesPreviews, setImagesPreviews] = useState([]);
+  const [removeExistingVideo, setRemoveExistingVideo] = useState(false);
+  const [imageItems, setImageItems] = useState(() =>
+    createExistingMediaItems(initialData?.images || [], "proje-gorsel")
+  );
   const revokers = useRef([]);
+  const [fieldErrors, setFieldErrors] = useState({
+    title: "",
+    cover: "",
+    dateRange: "",
+  });
+  const [imageNotice, setImageNotice] = useState("");
 
   // toplam görsel adedi (max 4)
   const remainingImageSlots = useMemo(
-    () => Math.max(0, 4 - (existingImages.length || 0)),
-    [existingImages]
+    () => Math.max(0, 4 - imageItems.length),
+    [imageItems.length]
   );
+
+  useEffect(() => {
+    setTitle(initialData?.title || "");
+    setDisplayOrder(
+      initialData?.displayOrder ? String(initialData.displayOrder) : ""
+    );
+    setDescription(initialData?.description || "");
+    setCategory(initialData?.category || "");
+    setStartDate(initialData?.startDate || "");
+    setEndDate(initialData?.endDate || "");
+    setCoverFile(null);
+    setVideoFile(null);
+    setCoverPreview(null);
+    setVideoPreview(null);
+    setRemoveExistingVideo(false);
+    setImageItems(createExistingMediaItems(initialData?.images || [], "proje-gorsel"));
+    setFieldErrors({ title: "", cover: "", dateRange: "" });
+    setImageNotice("");
+  }, [initialData]);
 
   useEffect(() => {
     return () => {
@@ -94,39 +114,110 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
 
   const handleCoverChange = (e) => {
     const f = e.target.files?.[0] || null;
+    revokeBlobUrl(coverPreview);
     setCoverFile(f);
     blobify(f, setCoverPreview);
+    setFieldErrors((prev) => ({ ...prev, cover: "" }));
   };
 
   const handleVideoChange = (e) => {
     const f = e.target.files?.[0] || null;
+    revokeBlobUrl(videoPreview);
     setVideoFile(f);
+    setRemoveExistingVideo(false);
     blobify(f, setVideoPreview);
   };
 
   const handleImagesChange = (e) => {
     const files = Array.from(e.target.files || []);
-    if (files.length > remainingImageSlots) {
-      showToast(
-        `En fazla ${remainingImageSlots} görsel daha eklenebilir.`,
-        "info"
-      );
-    }
-    const limited = files.slice(0, remainingImageSlots);
-    setImagesFiles(limited);
+    if (!files.length) return;
 
-    const urls = limited.map((f) => {
-      const u = URL.createObjectURL(f);
-      revokers.current.push(u);
-      return u;
+    if (remainingImageSlots === 0) {
+      const message = "Maksimum görsel sayısına ulaştınız. Yeni görsel eklemek için önce mevcut bir görsel kaldırın.";
+      setImageNotice(message);
+      showToast(message, "info");
+      e.target.value = "";
+      return;
+    }
+
+    if (files.length > remainingImageSlots) {
+      const message =
+        remainingImageSlots === 1
+          ? "Sadece 1 görsel daha eklenebildi. Diğer dosyalar atlandı."
+          : `Sadece ilk ${remainingImageSlots} görsel eklendi. Diğer dosyalar atlandı.`;
+      setImageNotice(message);
+      showToast(message, "info");
+    } else {
+      setImageNotice("");
+    }
+
+    const limited = files.slice(0, remainingImageSlots);
+    setImageItems((prev) => [
+      ...prev,
+      ...createNewMediaItems(
+        limited,
+        (file) => {
+          const u = URL.createObjectURL(file);
+          revokers.current.push(u);
+          return u;
+        },
+        "proje-gorsel"
+      ),
+    ]);
+    e.target.value = "";
+  };
+
+  const handleRemoveImage = (id) => {
+    setImageNotice("");
+    setImageItems((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (target?.source === "new") revokeBlobUrl(target.src);
+      return removeMediaItem(prev, id);
     });
-    setImagesPreviews(urls);
+  };
+
+  const handleMoveImage = (id, direction) => {
+    setImageItems((prev) => moveMediaItem(prev, id, direction));
+  };
+
+  const clearSelectedCover = () => {
+    revokeBlobUrl(coverPreview);
+    setCoverFile(null);
+    setCoverPreview(null);
+  };
+
+  const clearSelectedVideo = () => {
+    if (videoPreview) revokeBlobUrl(videoPreview);
+    setVideoFile(null);
+    setVideoPreview(null);
+    if (existingVideo?.url) {
+      setRemoveExistingVideo(true);
+    }
   };
 
   const submit = (e) => {
     e.preventDefault();
-    if (!existingCover && !coverFile) {
-      showToast("Kapak medyası zorunludur (görsel ya da video).", "error");
+
+    const hasInvalidDateRange =
+      startDate &&
+      endDate &&
+      new Date(endDate).getTime() < new Date(startDate).getTime();
+
+    const nextErrors = {
+      title: title.trim() ? "" : "Başlık zorunludur.",
+      cover:
+        existingCover?.url || coverFile
+          ? ""
+          : "Kapak medyası zorunludur (görsel ya da video).",
+      dateRange: hasInvalidDateRange
+        ? "Bitiş tarihi, başlangıç tarihinden önce olamaz."
+        : "",
+    };
+
+    setFieldErrors(nextErrors);
+
+    if (Object.values(nextErrors).some(Boolean)) {
+      showToast("Lütfen işaretli alanları kontrol edin.", "error");
       return;
     }
 
@@ -142,20 +233,73 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
 
     if (coverFile) fd.append("cover", coverFile);
     if (videoFile) fd.append("video", videoFile);
-    imagesFiles.forEach((f) => fd.append("images", f));
+    if (removeExistingVideo && !videoFile) fd.append("removeVideo", "1");
+    appendOrderedMediaToFormData(fd, "images", imageItems, "imageOrder");
 
-    // İstersen debug kalsın; prod'da silebilirsin
-    // for (const [k, v] of fd.entries()) {
-    //   console.log(
-    //     k,
-    //     v instanceof File ? { name: v.name, type: v.type, size: v.size } : v
-    //   );
-    // }
     onSubmit(fd);
   };
 
   const existingCoverType = existingCover?.resourceType || "image";
-  const newCoverType = coverFile?.type?.startsWith("video") ? "video" : "image";
+  const newCoverType = toMediaType(coverFile);
+
+  const coverGalleryItems = useMemo(() => {
+    if (coverPreview && coverFile) {
+      return [
+        {
+          id: "cover:new",
+          source: "new",
+          src: coverPreview,
+          type: newCoverType,
+          alt: title || "proje-kapak",
+          badge: "Yeni kapak",
+          removable: true,
+          file: coverFile,
+        },
+      ];
+    }
+
+    if (existingCover?.url) {
+      return [
+        {
+          ...createExistingMediaItems([existingCover], "proje-kapak")[0],
+          badge: "Mevcut kapak",
+          removable: false,
+        },
+      ];
+    }
+
+    return [];
+  }, [coverFile, coverPreview, existingCover, newCoverType, title]);
+
+  const videoGalleryItems = useMemo(() => {
+    if (videoPreview && videoFile) {
+      return [
+        {
+          id: "video:new",
+          source: "new",
+          src: videoPreview,
+          type: "video",
+          alt: `${title}-video`,
+          badge: "Yeni video",
+          removable: true,
+          file: videoFile,
+        },
+      ];
+    }
+
+    if (!removeExistingVideo && existingVideo?.url) {
+      return [
+        {
+          ...createExistingMediaItems([existingVideo], "proje-video")[0],
+          type: "video",
+          badge: "Mevcut video",
+          removable: true,
+        },
+      ];
+    }
+
+    return [];
+  }, [existingVideo, removeExistingVideo, title, videoFile, videoPreview]);
 
   const previewData = useMemo(
     () => ({
@@ -170,21 +314,13 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
         alt: title,
       },
       video: {
-        src: videoPreview || existingVideo?.url || "",
+        src:
+          videoPreview ||
+          (!removeExistingVideo ? existingVideo?.url || "" : ""),
         type: "video",
         alt: `${title}-video`,
       },
-      images: imagesPreviews.length
-        ? imagesPreviews.map((src) => ({
-            src,
-            type: "image",
-            alt: `${title}-gorsel`,
-          }))
-        : existingImages.map((img) => ({
-            src: img.url,
-            type: img.resourceType || "image",
-            alt: `${title}-gorsel`,
-          })),
+      images: buildMediaPreviewList(imageItems),
     }),
     [
       category,
@@ -193,10 +329,10 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
       endDate,
       existingCover?.url,
       existingCoverType,
-      existingImages,
       existingVideo?.url,
-      imagesPreviews,
+      imageItems,
       newCoverType,
+      removeExistingVideo,
       startDate,
       title,
       videoPreview,
@@ -205,20 +341,35 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
   );
 
   return (
-    <form onSubmit={submit} className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+    <form
+      onSubmit={submit}
+      className="grid grid-cols-1 gap-6 lg:grid-cols-5"
+      noValidate
+    >
       {/* Sol: metin alanları */}
       <div className="lg:col-span-3 space-y-4">
         <div>
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Başlık
+            Başlık *
           </label>
           <input
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setFieldErrors((prev) => ({ ...prev, title: "" }));
+            }}
             required
-            className={`mt-2 ${inputCls}`}
+            aria-invalid={Boolean(fieldErrors.title)}
+            className={`mt-2 ${inputCls} ${
+              fieldErrors.title ? errorInputCls : ""
+            }`}
             placeholder="Proje başlığı"
           />
+          {fieldErrors.title ? (
+            <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
+              {fieldErrors.title}
+            </p>
+          ) : null}
         </div>
 
         <OrderField value={displayOrder} onChange={setDisplayOrder} />
@@ -267,8 +418,14 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
           <input
             type="date"
             value={startDate ? startDate.split("T")[0] : ""}
-            onChange={(e) => setStartDate(e.target.value)}
-            className={`mt-2 ${inputCls}`}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setFieldErrors((prev) => ({ ...prev, dateRange: "" }));
+            }}
+            aria-invalid={Boolean(fieldErrors.dateRange)}
+            className={`mt-2 ${inputCls} ${
+              fieldErrors.dateRange ? errorInputCls : ""
+            }`}
           />
         </div>
 
@@ -279,9 +436,20 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
           <input
             type="date"
             value={endDate ? endDate.split("T")[0] : ""}
-            onChange={(e) => setEndDate(e.target.value)}
-            className={`mt-2 ${inputCls}`}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setFieldErrors((prev) => ({ ...prev, dateRange: "" }));
+            }}
+            aria-invalid={Boolean(fieldErrors.dateRange)}
+            className={`mt-2 ${inputCls} ${
+              fieldErrors.dateRange ? errorInputCls : ""
+            }`}
           />
+          {fieldErrors.dateRange ? (
+            <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
+              {fieldErrors.dateRange}
+            </p>
+          ) : null}
         </div>
 
         <div className="pt-1">
@@ -300,37 +468,33 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
         {/* Kapak */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Kapak Medyası (zorunlu) — Görsel veya Video
+            Kapak Medyası * — Görsel veya Video
           </label>
           <input
             type="file"
             accept="image/*,video/*"
             onChange={handleCoverChange}
-            className="mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
+            aria-invalid={Boolean(fieldErrors.cover)}
+            className={`mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100 ${
+              fieldErrors.cover ? errorInputCls : ""
+            }`}
           />
-          <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/70 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            {coverPreview ? (
-              <MediaPreview
-                src={coverPreview}
-                type={newCoverType}
-                className="w-full"
-              />
-            ) : existingCover ? (
-              <MediaPreview
-                src={existingCover.url}
-                type={existingCoverType}
-                className="w-full"
-              />
-            ) : (
-              <div className="aspect-video grid place-items-center text-xs text-gray-400">
-                Önizleme
-              </div>
-            )}
-          </div>
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Büyük videolar için .mp4 önerilir. Görseller otomatik optimize
-            edilir.
+            {MEDIA_LIMIT_HINT}
           </p>
+          {fieldErrors.cover ? (
+            <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
+              {fieldErrors.cover}
+            </p>
+          ) : null}
+          <div className="mt-3">
+            <AdminMediaGallery
+              items={coverGalleryItems}
+              emptyText="Henüz kapak seçilmedi."
+              columnsClassName="grid-cols-1"
+              onRemove={coverFile ? clearSelectedCover : undefined}
+            />
+          </div>
         </div>
 
         {/* Opsiyonel tek video */}
@@ -344,24 +508,17 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
             onChange={handleVideoChange}
             className="mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
           />
-          <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/70 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            {videoPreview ? (
-              <MediaPreview
-                src={videoPreview}
-                type="video"
-                className="w-full"
-              />
-            ) : existingVideo ? (
-              <MediaPreview
-                src={existingVideo.url}
-                type="video"
-                className="w-full"
-              />
-            ) : (
-              <div className="aspect-video grid place-items-center text-xs text-gray-400">
-                Önizleme
-              </div>
-            )}
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            Video yüklemelerinde 50MB sınırı uygulanır. Limit aşılırsa sistem
+            kaliteyi düşürmeden optimize etmeyi dener.
+          </p>
+          <div className="mt-3">
+            <AdminMediaGallery
+              items={videoGalleryItems}
+              emptyText="Henüz video seçilmedi."
+              columnsClassName="grid-cols-1"
+              onRemove={videoGalleryItems.length ? clearSelectedVideo : undefined}
+            />
           </div>
         </div>
 
@@ -379,30 +536,27 @@ const ProjectForm = ({ initialData, onSubmit, submitting }) => {
             className="mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100"
             disabled={remainingImageSlots === 0}
           />
-          {!!existingImages.length && (
-            <div className="mt-2 grid grid-cols-4 gap-2">
-              {existingImages.map((img, i) => (
-                <img
-                  key={i}
-                  src={img.url}
-                  className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
-                  alt=""
-                />
-              ))}
-            </div>
-          )}
-          {!!imagesPreviews.length && (
-            <div className="mt-2 grid grid-cols-4 gap-2">
-              {imagesPreviews.map((u, i) => (
-                <img
-                  key={i}
-                  src={u}
-                  className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
-                  alt=""
-                />
-              ))}
-            </div>
-          )}
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            Görseller için 20MB sınırı uygulanır. Limit aşılırsa sistem
+            kaliteyi düşürmeden optimize etmeyi dener.
+          </p>
+          {imageNotice ? (
+            <p className="mt-2 text-xs text-amber-700 dark:text-amber-200">
+              {imageNotice}
+            </p>
+          ) : null}
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            Görselleri tıklayarak büyük inceleyebilir, kaldırabilir ve sırasını değiştirebilirsiniz.
+          </p>
+          <div className="mt-3">
+            <AdminMediaGallery
+              items={imageItems}
+              emptyText="Henüz ek görsel yok."
+              columnsClassName="grid-cols-2 sm:grid-cols-4"
+              onRemove={handleRemoveImage}
+              onMove={handleMoveImage}
+            />
+          </div>
         </div>
       </div>
 

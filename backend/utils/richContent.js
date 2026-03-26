@@ -11,6 +11,25 @@ const escapeHtml = (value = "") =>
 const normalizeLineBreaks = (value = "") =>
   String(value).replace(/\r\n?/g, "\n").trim();
 
+const LINK_ONLY_BLOCK_RE = /^\[([^\]\n]+)\]\((https?:\/\/.+)\)$/i;
+
+const buildLinkBlock = (label, url) => {
+  const safeUrl = escapeHtml(url);
+  const safeLabel = escapeHtml(label);
+  return `<p><a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeLabel}</a></p>`;
+};
+
+const parseLinkOnlyBlock = (block = "") => {
+  const match = normalizeLineBreaks(block).match(LINK_ONLY_BLOCK_RE);
+  if (!match) return null;
+
+  const [, rawLabel, rawUrl] = match;
+  const label = rawLabel.trim();
+  const url = rawUrl.trim();
+  if (!label || !url) return null;
+  return { label, url };
+};
+
 const getYouTubeEmbedUrl = (input = "") => {
   const value = String(input || "").trim();
   if (!value) return "";
@@ -74,9 +93,13 @@ const buildRichContentHtml = (input = "") => {
       const embedUrl = getYouTubeEmbedUrl(block);
       if (embedUrl) return buildIframe(embedUrl);
 
+      const linkOnlyBlock = parseLinkOnlyBlock(block);
+      if (linkOnlyBlock) {
+        return buildLinkBlock(linkOnlyBlock.label, linkOnlyBlock.url);
+      }
+
       if (isUrlOnlyBlock(block)) {
-        const safeUrl = escapeHtml(block);
-        return `<p><a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a></p>`;
+        return buildLinkBlock(block, block);
       }
 
       if (/<\/?[a-z][\s\S]*>/i.test(block)) {

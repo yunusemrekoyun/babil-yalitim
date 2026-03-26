@@ -1,7 +1,9 @@
 // src/admin/pages/journal/EditJournal.jsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import AdminLoadingState from "../../components/AdminLoadingState.jsx";
 import JournalForm from "../../components/JournalForm.jsx";
+import LoadErrorState from "../../components/LoadErrorState.jsx";
 import ToastAlert from "../../components/ToastAlert";
 import api from "../../../api.js";
 
@@ -12,6 +14,10 @@ import {
   failProgressTask,
   clampProgress,
 } from "../../utils/progressBus";
+import {
+  ADMIN_SUCCESS_REDIRECT_DELAY_MS,
+  getAdminFeedbackMessage,
+} from "../../utils/mediaFeedback";
 
 const EditJournal = () => {
   const { id } = useParams();
@@ -19,27 +25,39 @@ const EditJournal = () => {
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   const [toast, setToast] = useState(null);
-  const showToast = (msg, type = "info", duration = 4000) =>
-    setToast({ msg, type, duration });
+  const showToast = useCallback(
+    (msg, type = "info", duration = 4000) =>
+      setToast({ msg, type, duration }),
+    []
+  );
 
-  const fetchOne = async () => {
+  const fetchOne = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
     try {
       const { data } = await api.get(`/journals/${id}`);
       setInitialData(data);
     } catch (err) {
+      const status = err?.response?.status;
+      const message =
+        status === 404
+          ? "Haber bulunamadı."
+          : getAdminFeedbackMessage(err, "Haber getirilemedi.");
       console.error("GET /journals/:id error:", err?.response?.data || err);
-      showToast(err?.response?.data?.message || "Haber getirilemedi.", "error");
+      setInitialData(null);
+      setLoadError(message);
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, showToast]);
 
   useEffect(() => {
     fetchOne();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [fetchOne]);
 
   const handleSubmit = async (fd) => {
     const taskId = createProgressTask("Haber güncelleniyor");
@@ -58,46 +76,53 @@ const EditJournal = () => {
       });
       completeProgressTask(taskId, "Haber güncellendi");
       showToast("Haber güncellendi", "success");
-      setTimeout(() => navigate("/admin/journals"), 600);
-    } catch (err) {
-      console.error("PUT /journals/:id error:", err?.response?.data || err);
-      failProgressTask(taskId, "Haber güncellenemedi");
-      showToast(err?.response?.data?.message || "Güncellenemedi.", "error");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleRemoveAsset = async (publicId) => {
-    if (!window.confirm("Bu medyayı silmek istiyor musunuz?")) return;
-    const taskId = createProgressTask("Medya siliniyor");
-    try {
-      await api.delete(`/journals/${id}/assets/${encodeURIComponent(publicId)}`);
-      completeProgressTask(taskId, "Medya silindi");
-      showToast("Medya silindi", "success");
-      setInitialData((prev) =>
-        prev
-          ? {
-              ...prev,
-              assets: (prev.assets || []).filter((a) => a.publicId !== publicId),
-            }
-          : prev
+      setTimeout(
+        () => navigate("/admin/journals"),
+        ADMIN_SUCCESS_REDIRECT_DELAY_MS
       );
     } catch (err) {
-      console.error("DELETE asset error:", err?.response?.data || err);
-      failProgressTask(taskId, "Medya silinemedi");
-      showToast(err?.response?.data?.message || "Medya silinemedi.", "error");
+      const message = getAdminFeedbackMessage(err, "Güncellenemedi.");
+      console.error("PUT /journals/:id error:", err?.response?.data || err);
+      failProgressTask(taskId, message);
+      showToast(message, "error");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) return <div className="p-4">Yükleniyor…</div>;
-  if (!initialData) return <div className="p-4 text-red-600">Haber bulunamadı.</div>;
+  if (loading) {
+    return (
+      <div className="p-4 md:p-6 overflow-x-hidden">
+        <div className="mx-auto w-full max-w-[1000px] px-2 sm:px-4">
+          <AdminLoadingState
+            title="Haber hazırlanıyor"
+            message="Haber içeriği ve mevcut medya alanları yükleniyor."
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 overflow-x-hidden">
       <div className="mx-auto w-full max-w-[1000px] px-2 sm:px-4">
+        {loadError ? (
+          <LoadErrorState
+            title="Haber yüklenemedi"
+            message={loadError}
+            onRetry={fetchOne}
+          />
+        ) : null}
+
+        {!loadError && !initialData ? (
+          <LoadErrorState
+            title="Haber bulunamadı"
+            message="Kayıt yüklenemedi veya artık mevcut değil."
+            onRetry={fetchOne}
+          />
+        ) : null}
+
+        {loadError || !initialData ? null : (
         <div className="admin-section p-6 sm:p-8 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-slate-500/12 via-transparent to-slate-400/10 dark:from-[#2c2f36]/60 dark:via-transparent dark:to-[#1f2227]/50" />
           <div className="relative flex items-start justify-between gap-3 mb-6">
@@ -113,14 +138,14 @@ const EditJournal = () => {
           </div>
 
           <div className="relative">
-          <JournalForm
-            initialData={initialData}
-            onSubmit={handleSubmit}
-            onRemoveAsset={handleRemoveAsset}
-            submitting={submitting}
-          />
+            <JournalForm
+              initialData={initialData}
+              onSubmit={handleSubmit}
+              submitting={submitting}
+            />
           </div>
         </div>
+        )}
 
         {toast && (
           <ToastAlert

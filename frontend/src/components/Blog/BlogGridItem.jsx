@@ -2,15 +2,7 @@ import PropTypes from "prop-types";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import AdaptiveImage from "../Media/AdaptiveImage";
-
-const toExcerpt = (htmlOrText, maxLen = 140) => {
-  if (!htmlOrText) return "";
-  const txt = String(htmlOrText)
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return txt.length <= maxLen ? txt : txt.slice(0, maxLen - 1) + "…";
-};
+import { toRichContentExcerpt } from "../../utils/richContent";
 
 const BlogGridItem = ({ item, index }) => {
   const navigate = useNavigate();
@@ -24,6 +16,7 @@ const BlogGridItem = ({ item, index }) => {
     : "";
 
   const commentsCount = Number(item?.commentsCount || 0);
+  const excerpt = toRichContentExcerpt(item?.content, 140);
 
   return (
     <motion.article
@@ -78,9 +71,7 @@ const BlogGridItem = ({ item, index }) => {
           </div>
         )}
 
-        <p className="mt-3 text-sm text-gray-700 line-clamp-3">
-          {toExcerpt(item?.content)}
-        </p>
+        <p className="mt-3 text-sm text-gray-700 line-clamp-3">{excerpt}</p>
 
         <div className="mt-5 flex items-center justify-between">
           <div className="h-[2px] w-0 group-hover:w-1/2 bg-quaternaryColor/90 transition-all duration-500" />

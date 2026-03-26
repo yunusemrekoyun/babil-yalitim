@@ -3,19 +3,28 @@ import PropTypes from "prop-types";
 import RichContentField from "./RichContentField";
 import { BlogPreview } from "./previews/ContentPreviews";
 import OrderField from "./OrderField";
+import AdminMediaGallery from "./AdminMediaGallery";
+import ToastAlert from "./ToastAlert";
+import { MEDIA_LIMIT_HINT } from "../utils/mediaFeedback";
+import { toEditableRichContent } from "../../utils/richContent";
+import {
+  appendOrderedMediaToFormData,
+  buildMediaPreviewList,
+  createExistingMediaItems,
+  createNewMediaItems,
+  moveMediaItem,
+  removeMediaItem,
+  revokeBlobUrl,
+  toMediaType,
+} from "../utils/mediaCollection";
 
 const inputCls =
   "w-full rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950/55 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
+const errorInputCls =
+  "border-rose-300 focus:border-rose-300 focus:ring-rose-100 dark:border-rose-500/50 dark:focus:border-rose-400 dark:focus:ring-rose-500/20";
 
 const fileCls =
   "text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100";
-
-const toMediaType = (fileOrMedia) => {
-  if (!fileOrMedia) return "image";
-  if (fileOrMedia.resourceType) return fileOrMedia.resourceType;
-  if (fileOrMedia.type) return fileOrMedia.type.startsWith("video/") ? "video" : "image";
-  return "image";
-};
 
 const toTagList = (value = "") =>
   String(value)
@@ -24,28 +33,48 @@ const toTagList = (value = "") =>
     .filter(Boolean);
 
 function BlogForm({ initialData, onSubmit, onStartSubmit, submitting = false }) {
+  const existingCover = useMemo(
+    () => createExistingMediaItems(initialData?.cover ? [initialData.cover] : [], "blog-kapak")[0] || null,
+    [initialData?.cover]
+  );
   const [title, setTitle] = useState(initialData?.title || "");
-  const [content, setContent] = useState(initialData?.content || "");
+  const [content, setContent] = useState(() =>
+    toEditableRichContent(initialData?.content || "")
+  );
   const [tags, setTags] = useState((initialData?.tags || []).join(", "));
   const [displayOrder, setDisplayOrder] = useState(
     initialData?.displayOrder ? String(initialData.displayOrder) : ""
   );
   const [coverFile, setCoverFile] = useState(null);
-  const [assetsFiles, setAssetsFiles] = useState([]);
   const [showPreview, setShowPreview] = useState(false);
 
   const [coverPreview, setCoverPreview] = useState("");
-  const [assetPreviews, setAssetPreviews] = useState([]);
+  const [assetItems, setAssetItems] = useState(() =>
+    createExistingMediaItems(initialData?.assets || [], "blog-medya")
+  );
   const blobUrlsRef = useRef([]);
+  const [fieldErrors, setFieldErrors] = useState({
+    title: "",
+    content: "",
+    cover: "",
+  });
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg, type = "info", duration = 4000) =>
+    setToast({ msg, type, duration });
 
   useEffect(() => {
     if (!initialData) return;
     setTitle(initialData.title || "");
-    setContent(initialData.content || "");
+    setContent(toEditableRichContent(initialData.content || ""));
     setTags((initialData.tags || []).join(", "));
     setDisplayOrder(
       initialData.displayOrder ? String(initialData.displayOrder) : ""
     );
+    setCoverFile(null);
+    setCoverPreview("");
+    setAssetItems(createExistingMediaItems(initialData.assets || [], "blog-medya"));
+    setFieldErrors({ title: "", content: "", cover: "" });
   }, [initialData]);
 
   useEffect(
@@ -67,19 +96,59 @@ function BlogForm({ initialData, onSubmit, onStartSubmit, submitting = false }) 
 
   const handleFileChange = (event) => {
     const file = event.target.files?.[0] || null;
+    revokeBlobUrl(coverPreview);
     setCoverFile(file);
     setCoverPreview(file ? rememberUrl(file) : "");
+    setFieldErrors((prev) => ({ ...prev, cover: "" }));
   };
 
   const handleAssetsChange = (event) => {
     const files = Array.from(event.target.files || []);
-    setAssetsFiles(files);
-    setAssetPreviews(files.map((file) => rememberUrl(file)));
+    if (!files.length) return;
+    setAssetItems((prev) => [
+      ...prev,
+      ...createNewMediaItems(files, rememberUrl, "blog-medya"),
+    ]);
+    event.target.value = "";
+  };
+
+  const clearSelectedCover = () => {
+    revokeBlobUrl(coverPreview);
+    setCoverFile(null);
+    setCoverPreview("");
+  };
+
+  const handleRemoveAsset = (id) => {
+    setAssetItems((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (target?.source === "new") {
+        revokeBlobUrl(target.src);
+      }
+      return removeMediaItem(prev, id);
+    });
+  };
+
+  const handleMoveAsset = (id, direction) => {
+    setAssetItems((prev) => moveMediaItem(prev, id, direction));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (submitting) return;
+
+    const nextErrors = {
+      title: title.trim() ? "" : "Başlık zorunludur.",
+      content: content.trim() ? "" : "İçerik zorunludur.",
+      cover:
+        coverFile || existingCover?.src ? "" : "Kapak medyası zorunludur.",
+    };
+
+    setFieldErrors(nextErrors);
+
+    if (Object.values(nextErrors).some(Boolean)) {
+      showToast("Lütfen işaretli zorunlu alanları doldurun.", "error");
+      return;
+    }
 
     if (typeof onStartSubmit === "function") {
       try {
@@ -96,10 +165,40 @@ function BlogForm({ initialData, onSubmit, onStartSubmit, submitting = false }) 
     if (displayOrder.trim()) formData.append("displayOrder", displayOrder.trim());
 
     if (coverFile) formData.append("cover", coverFile);
-    assetsFiles.forEach((file) => formData.append("assets", file));
+    appendOrderedMediaToFormData(formData, "assets", assetItems, "assetOrder");
 
     await onSubmit(formData);
   };
+
+  const coverGalleryItems = useMemo(() => {
+    if (coverPreview && coverFile) {
+      return [
+        {
+          id: "cover:new",
+          source: "new",
+          src: coverPreview,
+          type: toMediaType(coverFile),
+          alt: title || "blog-kapak",
+          badge: "Yeni kapak",
+          removable: true,
+          file: coverFile,
+        },
+      ];
+    }
+
+    if (existingCover) {
+      return [
+        {
+          ...existingCover,
+          alt: title || existingCover.alt,
+          badge: "Mevcut kapak",
+          removable: false,
+        },
+      ];
+    }
+
+    return [];
+  }, [coverFile, coverPreview, existingCover, title]);
 
   const previewData = useMemo(
     () => ({
@@ -111,46 +210,51 @@ function BlogForm({ initialData, onSubmit, onStartSubmit, submitting = false }) 
         type: coverFile ? toMediaType(coverFile) : initialData?.cover?.resourceType || "image",
         alt: title,
       },
-      assets: [
-        ...(assetPreviews.length
-          ? assetPreviews.map((src, index) => ({
-              src,
-              type: toMediaType(assetsFiles[index]),
-              alt: `${title}-asset-${index + 1}`,
-            }))
-          : (initialData?.assets || []).map((asset) => ({
-              src: asset.url,
-              type: asset.resourceType || "image",
-              alt: `${title}-asset`,
-            }))),
-      ],
+      assets: buildMediaPreviewList(assetItems),
     }),
-    [assetPreviews, assetsFiles, content, coverFile, coverPreview, initialData, tags, title]
+    [assetItems, content, coverFile, coverPreview, initialData, tags, title]
   );
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-6">
+    <form onSubmit={handleSubmit} className="grid gap-6" noValidate>
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-          Başlık
+          Başlık *
         </label>
         <input
           type="text"
           value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          className={inputCls}
+          onChange={(event) => {
+            setTitle(event.target.value);
+            setFieldErrors((prev) => ({ ...prev, title: "" }));
+          }}
+          aria-invalid={Boolean(fieldErrors.title)}
+          className={`${inputCls} ${fieldErrors.title ? errorInputCls : ""}`}
           placeholder="Blog başlığı"
           required
         />
+        {fieldErrors.title ? (
+          <p className="text-xs text-rose-600 dark:text-rose-300">
+            {fieldErrors.title}
+          </p>
+        ) : null}
       </div>
 
       <OrderField value={displayOrder} onChange={setDisplayOrder} />
 
       <RichContentField
-        label="İçerik"
+        label="İçerik *"
         value={content}
-        onChange={setContent}
-        inputClassName={`min-h-[220px] ${inputCls}`}
+        onChange={(nextValue) => {
+          setContent(nextValue);
+          setFieldErrors((prev) => ({ ...prev, content: "" }));
+        }}
+        invalid={Boolean(fieldErrors.content)}
+        errorText={fieldErrors.content}
+        required
+        inputClassName={`min-h-[220px] ${inputCls} ${
+          fieldErrors.content ? errorInputCls : ""
+        }`}
         placeholder="İçeriği yazın…"
         rows={11}
         onTogglePreview={() => setShowPreview((prev) => !prev)}
@@ -177,20 +281,32 @@ function BlogForm({ initialData, onSubmit, onStartSubmit, submitting = false }) 
 
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-          Kapak {initialData?.cover?.url ? "(güncellemek için yeni dosya seç)" : "(zorunlu)"}
+          Kapak Medyası {initialData?.cover?.url ? "(güncellemek için yeni dosya seç)" : "(zorunlu)"}
         </label>
         <input
           type="file"
           accept="image/*,video/*"
           onChange={handleFileChange}
-          required={!initialData?.cover?.url}
-          className={fileCls}
+          required={!existingCover?.src}
+          aria-invalid={Boolean(fieldErrors.cover)}
+          className={`${fileCls} ${fieldErrors.cover ? errorInputCls : ""}`}
         />
-        {initialData?.cover?.url && (
-          <div className="admin-preview-surface p-3 text-xs text-slate-500 dark:text-slate-300">
-            Mevcut kapak seçili. Yeni dosya yüklersen onunla değiştirilir.
-          </div>
-        )}
+        <p className="text-xs text-slate-500 dark:text-slate-300">
+          {MEDIA_LIMIT_HINT}
+        </p>
+        {fieldErrors.cover ? (
+          <p className="text-xs text-rose-600 dark:text-rose-300">
+            {fieldErrors.cover}
+          </p>
+        ) : null}
+        <div className="mt-3">
+          <AdminMediaGallery
+            items={coverGalleryItems}
+            emptyText="Henüz kapak seçilmedi."
+            columnsClassName="grid-cols-1"
+            onRemove={coverFile ? clearSelectedCover : undefined}
+          />
+        </div>
       </div>
 
       <div className="grid gap-2">
@@ -204,6 +320,18 @@ function BlogForm({ initialData, onSubmit, onStartSubmit, submitting = false }) 
           onChange={handleAssetsChange}
           className={fileCls}
         />
+        <p className="text-xs text-slate-500 dark:text-slate-300">
+          {MEDIA_LIMIT_HINT}
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-300">
+          Medyaları tıklayarak büyük inceleyebilir, kaldırabilir ve sırasını değiştirebilirsiniz.
+        </p>
+        <AdminMediaGallery
+          items={assetItems}
+          emptyText="Henüz ek medya yok."
+          onRemove={handleRemoveAsset}
+          onMove={handleMoveAsset}
+        />
       </div>
 
       <div className="flex items-center gap-2">
@@ -215,6 +343,15 @@ function BlogForm({ initialData, onSubmit, onStartSubmit, submitting = false }) 
           {submitting ? "İşleniyor…" : "Kaydet"}
         </button>
       </div>
+
+      {toast ? (
+        <ToastAlert
+          msg={toast.msg}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={() => setToast(null)}
+        />
+      ) : null}
     </form>
   );
 }

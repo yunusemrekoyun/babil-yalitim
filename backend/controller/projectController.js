@@ -5,6 +5,10 @@ const {
   parseDisplayOrder,
   syncCollectionDisplayOrder,
 } = require("../utils/displayOrder");
+const {
+  parseMediaOrder,
+  reorderMediaCollection,
+} = require("../utils/mediaOrder");
 
 /* ---------- helpers ---------- */
 const extractPublicIdFromUrl = (fullUrl) => {
@@ -94,6 +98,18 @@ const uploadOne = async (file, folder, forceType) => {
   }
 };
 
+const destroyIfExists = async (media) => {
+  if (!media?.publicId) return;
+  try {
+    await cloudinary.uploader.destroy(media.publicId, {
+      resource_type: media.resourceType || "image",
+    });
+  } catch {}
+};
+
+const parseBoolean = (value) =>
+  /^(1|true|yes|on)$/i.test(String(value || "").trim());
+
 // Tarih parse helper
 const parseDate = (v) => {
   if (v === undefined || v === null) return undefined;
@@ -155,10 +171,15 @@ exports.createProject = async (req, res) => {
 
     let images = [];
     if (Array.isArray(files.images) && files.images.length) {
-      const limited = files.images.slice(0, 4);
-      images = await Promise.all(
-        limited.map((f) => uploadOne(f, folder, "image"))
+      const uploadedImages = await Promise.all(
+        files.images.slice(0, 4).map((f) => uploadOne(f, folder, "image"))
       );
+      images = await reorderMediaCollection({
+        existing: [],
+        uploaded: uploadedImages,
+        order: parseMediaOrder(req.body.imageOrder),
+        destroy: destroyIfExists,
+      });
     }
 
     const payload = {
@@ -210,6 +231,8 @@ exports.updateProject = async (req, res) => {
 
     const files = req.files || {};
     const folder = process.env.CLOUDINARY_PROJECTS_FOLDER || "babil/projects";
+    const imageOrder = parseMediaOrder(req.body.imageOrder);
+    const removeVideo = parseBoolean(req.body.removeVideo);
 
     if (title !== undefined) proj.title = title;
     if (requestedOrder) proj.displayOrder = requestedOrder;
@@ -220,32 +243,56 @@ exports.updateProject = async (req, res) => {
     if (completedAt !== undefined) proj.completedAt = parseDate(completedAt);
 
     if (files.cover?.[0]) {
-      if (proj.cover?.publicId) {
-        await cloudinary.uploader.destroy(proj.cover.publicId, {
-          resource_type: proj.cover.resourceType || "image",
-        });
-      }
+      await destroyIfExists(proj.cover);
       proj.cover = await uploadOne(files.cover[0], folder, null);
     }
 
     if (files.video?.[0]) {
-      if (proj.video?.publicId) {
-        await cloudinary.uploader.destroy(proj.video.publicId, {
-          resource_type: "video",
-        });
-      }
+      await destroyIfExists(proj.video);
       proj.video = await uploadOne(files.video[0], folder, "video");
+    } else if (removeVideo && proj.video) {
+      await destroyIfExists(proj.video);
+      proj.video = undefined;
     }
 
     if (Array.isArray(files.images) && files.images.length) {
-      const canAdd = Math.max(0, 4 - (proj.images?.length || 0));
-      if (canAdd > 0) {
-        const toAdd = files.images.slice(0, canAdd);
-        const uploaded = await Promise.all(
-          toAdd.map((f) => uploadOne(f, folder, "image"))
+      const uploadedImages = await Promise.all(
+        files.images.slice(0, 4).map((f) => uploadOne(f, folder, "image"))
+      );
+      const nextImages = await reorderMediaCollection({
+        existing: proj.images || [],
+        uploaded: uploadedImages,
+        order: imageOrder,
+        destroy: destroyIfExists,
+      });
+
+      if (nextImages.length > 4) {
+        await Promise.all(
+          uploadedImages
+            .filter((media) =>
+              nextImages.some((item) => item?.publicId === media?.publicId)
+            )
+            .map((media) => destroyIfExists(media))
         );
-        proj.images = [...(proj.images || []), ...uploaded];
+        return res
+          .status(400)
+          .json({ message: "En fazla 4 görsel kaydedebilirsiniz." });
       }
+
+      proj.images = nextImages;
+    } else if (imageOrder.length) {
+      const nextImages = await reorderMediaCollection({
+        existing: proj.images || [],
+        uploaded: [],
+        order: imageOrder,
+        destroy: destroyIfExists,
+      });
+      if (nextImages.length > 4) {
+        return res
+          .status(400)
+          .json({ message: "En fazla 4 görsel kaydedebilirsiniz." });
+      }
+      proj.images = nextImages;
     }
 
     const saved = await proj.save();
@@ -335,19 +382,10 @@ exports.deleteProject = async (req, res) => {
     const proj = await Project.findById(req.params.id);
     if (!proj) return res.status(404).json({ message: "Proje bulunamadı" });
 
-    const destroyOne = async (m) => {
-      if (!m?.publicId) return;
-      try {
-        await cloudinary.uploader.destroy(m.publicId, {
-          resource_type: m.resourceType || "image",
-        });
-      } catch {}
-    };
-
-    await destroyOne(proj.cover);
-    await destroyOne(proj.video);
+    await destroyIfExists(proj.cover);
+    await destroyIfExists(proj.video);
     if (Array.isArray(proj.images)) {
-      await Promise.all(proj.images.map(destroyOne));
+      await Promise.all(proj.images.map(destroyIfExists));
     }
 
     await proj.deleteOne();

@@ -2,15 +2,7 @@ import PropTypes from "prop-types";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import AdaptiveImage from "../Media/AdaptiveImage";
-
-const excerpt = (htmlOrText, max = 150) => {
-  if (!htmlOrText) return "";
-  const txt = String(htmlOrText)
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return txt.length <= max ? txt : txt.slice(0, max - 1) + "…";
-};
+import { toRichContentExcerpt } from "../../utils/richContent";
 
 const JournalGridItem = ({ item, index }) => {
   const navigate = useNavigate();
@@ -20,6 +12,7 @@ const JournalGridItem = ({ item, index }) => {
   const cover =
     item?.coverUrl ||
     "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nNjQwJyBoZWlnaHQ9JzM2MCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJz48cmVjdCBmaWxsPSIjZWVlIiB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJy8+PC9zdmc+";
+  const contentExcerpt = toRichContentExcerpt(item?.content, 150);
 
   return (
     <motion.article
@@ -57,12 +50,12 @@ const JournalGridItem = ({ item, index }) => {
         <h3 className="text-lg md:text-xl font-semibold text-secondaryColor line-clamp-2">
           {item?.title || "Başlık"}
         </h3>
-        {item?.content && (
+        {contentExcerpt && (
           <p
             className="mt-3 text-sm text-gray-700 line-clamp-3"
-            title={excerpt(item.content)}
+            title={contentExcerpt}
           >
-            {excerpt(item.content)}
+            {contentExcerpt}
           </p>
         )}
 

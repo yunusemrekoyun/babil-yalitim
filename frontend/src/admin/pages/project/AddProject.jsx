@@ -12,6 +12,10 @@ import {
   failProgressTask,
   clampProgress,
 } from "../../utils/progressBus";
+import {
+  ADMIN_SUCCESS_REDIRECT_DELAY_MS,
+  getAdminFeedbackMessage,
+} from "../../utils/mediaFeedback";
 
 const AddProject = ({ onRequestClose }) => {
   const navigate = useNavigate();
@@ -47,11 +51,15 @@ const AddProject = ({ onRequestClose }) => {
       });
       completeProgressTask(taskId, "Proje eklendi");
       showToast("Proje eklendi", "success");
-      setTimeout(() => navigate("/admin/projects"), 300);
+      setTimeout(
+        () => navigate("/admin/projects"),
+        ADMIN_SUCCESS_REDIRECT_DELAY_MS
+      );
     } catch (err) {
+      const message = getAdminFeedbackMessage(err, "Proje eklenemedi.");
       console.error("Create /projects error:", err?.response?.data || err);
-      failProgressTask(taskId, "Proje eklenemedi");
-      showToast(err?.response?.data?.message || "Proje eklenemedi.", "error");
+      failProgressTask(taskId, message);
+      showToast(message, "error");
     } finally {
       setSubmitting(false);
     }

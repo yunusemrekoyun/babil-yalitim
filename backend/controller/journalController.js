@@ -1,5 +1,6 @@
 // controller/journalController.js
 const crypto = require("crypto");
+const fs = require("fs/promises");
 const Journal = require("../models/Journal");
 const cloudinary = require("../config/cloudinary");
 const sanitizeHtml = require("../utils/sanitizeHtml");
@@ -8,6 +9,10 @@ const {
   parseDisplayOrder,
   syncCollectionDisplayOrder,
 } = require("../utils/displayOrder");
+const {
+  parseMediaOrder,
+  reorderMediaCollection,
+} = require("../utils/mediaOrder");
 
 // ---- helpers ----
 const toMediaDoc = (cldRes) => ({
@@ -25,7 +30,11 @@ const uploadOne = async (file, folder) => {
     )}`;
     res = await cloudinary.uploader.upload(dataUri, opts);
   } else if (file?.path) {
-    res = await cloudinary.uploader.upload(file.path, opts);
+    try {
+      res = await cloudinary.uploader.upload(file.path, opts);
+    } finally {
+      await fs.unlink(file.path).catch(() => {});
+    }
   } else {
     throw new Error("Yükleme için geçersiz dosya");
   }
@@ -92,7 +101,15 @@ exports.createJournal = async (req, res) => {
 
     let assets = [];
     if (Array.isArray(files.assets) && files.assets.length) {
-      assets = await Promise.all(files.assets.map((f) => uploadOne(f, folder)));
+      const uploadedAssets = await Promise.all(
+        files.assets.map((f) => uploadOne(f, folder))
+      );
+      assets = await reorderMediaCollection({
+        existing: [],
+        uploaded: uploadedAssets,
+        order: parseMediaOrder(req.body.assetOrder),
+        destroy: destroyIfExists,
+      });
     }
 
     const created = await Journal.create({
@@ -127,6 +144,7 @@ exports.updateJournal = async (req, res) => {
 
     const files = req.files || {};
     const folder = process.env.CLOUDINARY_JOURNAL_FOLDER || "babil/journals";
+    const assetOrder = parseMediaOrder(req.body.assetOrder);
 
     if (title !== undefined) item.title = title;
     if (requestedOrder) item.displayOrder = requestedOrder;
@@ -142,10 +160,22 @@ exports.updateJournal = async (req, res) => {
     }
 
     if (Array.isArray(files.assets) && files.assets.length) {
-      const appended = await Promise.all(
+      const uploadedAssets = await Promise.all(
         files.assets.map((f) => uploadOne(f, folder))
       );
-      item.assets = [...(item.assets || []), ...appended];
+      item.assets = await reorderMediaCollection({
+        existing: item.assets || [],
+        uploaded: uploadedAssets,
+        order: assetOrder,
+        destroy: destroyIfExists,
+      });
+    } else if (assetOrder.length) {
+      item.assets = await reorderMediaCollection({
+        existing: item.assets || [],
+        uploaded: [],
+        order: assetOrder,
+        destroy: destroyIfExists,
+      });
     }
 
     const saved = await item.save();

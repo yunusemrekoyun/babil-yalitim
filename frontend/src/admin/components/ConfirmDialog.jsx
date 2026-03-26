@@ -29,10 +29,13 @@ export default function ConfirmDialog({
   // ESC kapatma
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => e.key === "Escape" && onCancel?.();
+    const onKey = (e) => {
+      if (e.key !== "Escape" || loading) return;
+      onCancel?.();
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onCancel]);
+  }, [loading, open, onCancel]);
 
   if (!open) return null;
 
@@ -52,7 +55,7 @@ export default function ConfirmDialog({
       {/* backdrop */}
       <div
         className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
-        onClick={onCancel}
+        onClick={loading ? undefined : onCancel}
       />
       {/* modal */}
       <div className="relative z-10 w-[92vw] max-w-md admin-card p-6">

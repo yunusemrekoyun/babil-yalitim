@@ -19,6 +19,7 @@ import {
   Cell,
   Area,
 } from "recharts";
+import { getAdminFeedbackMessage } from "../utils/mediaFeedback";
 
 /** ---------- Yardımcılar ---------- */
 const fmtDate = (d) => {
@@ -73,6 +74,27 @@ const toQuery = (filters) => {
 
 const PIE_COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
 
+const CHART_TOOLTIP_PROPS = {
+  contentStyle: {
+    background: "rgba(15, 23, 42, 0.96)",
+    color: "#f8fafc",
+    borderRadius: 14,
+    border: "1px solid rgba(148, 163, 184, 0.24)",
+    boxShadow: "0 18px 40px -24px rgba(15, 23, 42, 0.85)",
+  },
+  labelStyle: {
+    color: "#e2e8f0",
+    fontWeight: 600,
+    marginBottom: 6,
+  },
+  itemStyle: {
+    color: "#f8fafc",
+  },
+  cursor: {
+    fill: "rgba(99, 102, 241, 0.12)",
+  },
+};
+
 const toIsoDay = (date) => {
   const x = new Date(date);
   const year = x.getFullYear();
@@ -105,6 +127,7 @@ const Dashboard = () => {
   const [series, setSeries] = useState([]); // {date, count}
   const [recent, setRecent] = useState([]); // son kayıtlar liste
   const [recentLoading, setRecentLoading] = useState(false);
+  const [recentErr, setRecentErr] = useState("");
   const [recentPage, setRecentPage] = useState(1);
   const RECENT_PAGE_SIZE = 20;
 
@@ -137,7 +160,12 @@ const Dashboard = () => {
       setSeries(Array.isArray(tsRes.data) ? tsRes.data : []);
     } catch (e) {
       console.error("Analytics fetch error:", e?.response?.data || e);
-      setErr("Veriler alınamadı. Lütfen daha sonra tekrar deneyin.");
+      setErr(
+        getAdminFeedbackMessage(
+          e,
+          "Veriler alınamadı. Lütfen daha sonra tekrar deneyin."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -146,12 +174,19 @@ const Dashboard = () => {
   const fetchRecent = useCallback(async () => {
     try {
       setRecentLoading(true);
+      setRecentErr("");
       const defaultFrom = filters.from || toIsoDay(Date.now() - 15 * 24 * 60 * 60 * 1000);
       const qs = toQuery({ ...filters, from: defaultFrom, limit: 1000 });
       const { data } = await api.get(`/visits${qs ? `?${qs}` : ""}`);
       setRecent(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Recent fetch error:", e?.response?.data || e);
+      setRecentErr(
+        getAdminFeedbackMessage(
+          e,
+          "Son ziyaretler alınamadı. Lütfen filtreleri kontrol edip tekrar deneyin."
+        )
+      );
     } finally {
       setRecentLoading(false);
     }
@@ -270,8 +305,7 @@ const Dashboard = () => {
                     <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#475569" }} />
                     <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#475569" }} />
                     <Tooltip
-                      contentStyle={{ background: "#0f172a", color: "#e2e8f0", borderRadius: 12, border: "none" }}
-                      labelStyle={{ color: "#cbd5e1" }}
+                      {...CHART_TOOLTIP_PROPS}
                     />
                     <Legend />
                     <Line
@@ -315,8 +349,7 @@ const Dashboard = () => {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ background: "#0f172a", color: "#e2e8f0", borderRadius: 12, border: "none" }}
-                      labelStyle={{ color: "#cbd5e1" }}
+                      {...CHART_TOOLTIP_PROPS}
                     />
                     <Legend />
                   </PieChart>
@@ -344,8 +377,7 @@ const Dashboard = () => {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ background: "#0f172a", color: "#e2e8f0", borderRadius: 12, border: "none" }}
-                      labelStyle={{ color: "#cbd5e1" }}
+                      {...CHART_TOOLTIP_PROPS}
                     />
                     <Legend />
                   </PieChart>
@@ -360,6 +392,11 @@ const Dashboard = () => {
             </Card>
 
             <Card title="Son Ziyaretler" loading={recentLoading}>
+              {recentErr ? (
+                <div className="mb-3 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+                  {recentErr}
+                </div>
+              ) : null}
               <RecentTable rows={recentRows} />
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300">
                 <span>

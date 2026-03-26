@@ -12,6 +12,10 @@ const {
   parseDisplayOrder,
   syncCollectionDisplayOrder,
 } = require("../utils/displayOrder");
+const {
+  parseMediaOrder,
+  reorderMediaCollection,
+} = require("../utils/mediaOrder");
 
 const uploadOne = async (file, folder) => {
   const isVideo = /^video\//i.test(file?.mimetype || "");
@@ -130,9 +134,15 @@ exports.createBlog = async (req, res) => {
 
     let assets = [];
     if (Array.isArray(req.files?.assets) && req.files.assets.length) {
-      assets = await Promise.all(
+      const uploadedAssets = await Promise.all(
         req.files.assets.map((f) => uploadOne(f, `${folder}/assets`))
       );
+      assets = await reorderMediaCollection({
+        existing: [],
+        uploaded: uploadedAssets,
+        order: parseMediaOrder(req.body.assetOrder),
+        destroy: destroyIfExists,
+      });
     }
 
     const created = await Blog.create({
@@ -183,6 +193,7 @@ exports.updateBlog = async (req, res) => {
     }
 
     const folder = process.env.CLOUDINARY_BLOGS_FOLDER || "blogs";
+    const assetOrder = parseMediaOrder(req.body.assetOrder);
 
     // kapak REPLACE
     if (req.files?.cover?.[0]) {
@@ -190,12 +201,24 @@ exports.updateBlog = async (req, res) => {
       blog.cover = await uploadOne(req.files.cover[0], folder);
     }
 
-    // assets EKLE (image/video karışık)
+    // assets güncelle (image/video karışık)
     if (Array.isArray(req.files?.assets) && req.files.assets.length) {
-      const uploaded = await Promise.all(
+      const uploadedAssets = await Promise.all(
         req.files.assets.map((f) => uploadOne(f, `${folder}/assets`))
       );
-      blog.assets = [...(blog.assets || []), ...uploaded];
+      blog.assets = await reorderMediaCollection({
+        existing: blog.assets || [],
+        uploaded: uploadedAssets,
+        order: assetOrder,
+        destroy: destroyIfExists,
+      });
+    } else if (assetOrder.length) {
+      blog.assets = await reorderMediaCollection({
+        existing: blog.assets || [],
+        uploaded: [],
+        order: assetOrder,
+        destroy: destroyIfExists,
+      });
     }
 
     const saved = await blog.save();

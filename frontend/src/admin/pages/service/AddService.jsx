@@ -11,6 +11,10 @@ import {
   failProgressTask,
   clampProgress,
 } from "../../utils/progressBus";
+import {
+  ADMIN_SUCCESS_REDIRECT_DELAY_MS,
+  getAdminFeedbackMessage,
+} from "../../utils/mediaFeedback";
 
 const AddService = () => {
   const navigate = useNavigate();
@@ -33,11 +37,15 @@ const AddService = () => {
       });
       completeProgressTask(taskId, "Hizmet eklendi");
       showToast("Hizmet eklendi", "success");
-      navigate("/admin/services");
+      setTimeout(
+        () => navigate("/admin/services"),
+        ADMIN_SUCCESS_REDIRECT_DELAY_MS
+      );
     } catch (err) {
+      const message = getAdminFeedbackMessage(err, "Hizmet eklenemedi.");
       console.error("POST /services error:", err?.response?.data || err);
-      failProgressTask(taskId, "Hizmet eklenemedi");
-      showToast(err?.response?.data?.message || "Hizmet eklenemedi.", "error");
+      failProgressTask(taskId, message);
+      showToast(message, "error");
     }
     finally {
       setSubmitting(false);

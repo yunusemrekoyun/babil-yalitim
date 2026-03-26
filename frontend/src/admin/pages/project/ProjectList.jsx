@@ -3,11 +3,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import api from "../../../api";
-
-// Ortak uyarı & onay
+import AdminLoadingState from "../../components/AdminLoadingState";
+import LoadErrorState from "../../components/LoadErrorState";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import OrderSelect from "../../components/OrderSelect";
+import { getAdminFeedbackMessage } from "../../utils/mediaFeedback";
 
 const Card = ({ project, onDelete, onOrderChange, maxOrder, orderLoading }) => {
   const coverIsVideo = project?.cover?.resourceType === "video";
@@ -15,7 +16,7 @@ const Card = ({ project, onDelete, onOrderChange, maxOrder, orderLoading }) => {
   const hasCover = Boolean(coverSrc);
 
   return (
-    <div className="admin-card p-4 relative overflow-hidden">
+    <div className="admin-card relative overflow-hidden p-4">
       <div className="aspect-video w-full overflow-hidden rounded-2xl border border-slate-200/70 bg-slate-100/70 dark:border-slate-800 dark:bg-slate-900/60">
         {hasCover ? (
           coverIsVideo ? (
@@ -35,21 +36,21 @@ const Card = ({ project, onDelete, onOrderChange, maxOrder, orderLoading }) => {
             />
           )
         ) : (
-          <div className="h-full w-full grid place-items-center text-xs text-slate-400">
+          <div className="grid h-full w-full place-items-center text-xs text-slate-400">
             Kapak yok
           </div>
         )}
       </div>
 
       <div className="mt-3">
-        <h3 className="font-semibold text-slate-900 line-clamp-1 dark:text-white">
+        <h3 className="line-clamp-1 font-semibold text-slate-900 dark:text-white">
           {project.title}
         </h3>
-        <p className="text-sm text-slate-500 line-clamp-2 mt-1 dark:text-slate-300">
+        <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-300">
           {project.description}
         </p>
         <div className="mt-2 flex items-center justify-between text-xs text-slate-500 dark:text-slate-300">
-          <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 dark:text-slate-200">
+          <span className="rounded bg-slate-100 px-2 py-0.5 dark:bg-slate-800 dark:text-slate-200">
             {project.category || "Kategori yok"}
           </span>
           <span className="text-right">
@@ -110,7 +111,7 @@ Card.propTypes = {
       url: PropTypes.string,
     }),
   }).isRequired,
-  onDelete: PropTypes.func.isRequired, // (id, title) => void
+  onDelete: PropTypes.func.isRequired,
   onOrderChange: PropTypes.func.isRequired,
   maxOrder: PropTypes.number.isRequired,
   orderLoading: PropTypes.bool,
@@ -120,33 +121,32 @@ const ProjectList = () => {
   const [all, setAll] = useState([]);
   const [loading, setLoading] = useState(true);
   const [orderingId, setOrderingId] = useState("");
+  const [loadError, setLoadError] = useState("");
   const inputCls =
     "w-full sm:w-64 rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
 
-  // filtre durumları
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
-  const [sort, setSort] = useState("displayOrder"); // displayOrder / -createdAt / createdAt / title
+  const [sort, setSort] = useState("displayOrder");
 
-  // Toast & Confirm state
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
 
   const [confirm, setConfirm] = useState(null);
-  const askConfirm = (cfg) => setConfirm(cfg);
+  const askConfirm = (config) => setConfirm(config);
 
   const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError("");
       const { data } = await api.get("/projects");
       setAll(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("GET /projects error:", err?.response?.data || err);
-      showToast(
-        err?.response?.data?.message || "Projeler getirilemedi.",
-        "error"
-      );
+      const message = getAdminFeedbackMessage(err, "Projeler getirilemedi.");
+      setLoadError(message);
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -157,37 +157,46 @@ const ProjectList = () => {
   }, [fetchProjects]);
 
   const cats = useMemo(() => {
-    const set = new Set();
-    all.forEach((p) => p.category && set.add(p.category));
-    return ["all", ...Array.from(set)];
+    const categories = new Set();
+    all.forEach((project) => project.category && categories.add(project.category));
+    return ["all", ...Array.from(categories)];
   }, [all]);
 
   const filtered = useMemo(() => {
-    let arr = [...all];
+    let items = [...all];
+
     if (q.trim()) {
-      const s = q.toLowerCase();
-      arr = arr.filter(
-        (p) =>
-          p.title?.toLowerCase().includes(s) ||
-          p.description?.toLowerCase().includes(s)
+      const search = q.toLowerCase();
+      items = items.filter(
+        (project) =>
+          project.title?.toLowerCase().includes(search) ||
+          project.description?.toLowerCase().includes(search)
       );
     }
-    if (cat !== "all") arr = arr.filter((p) => p.category === cat);
 
-    if (sort === "displayOrder")
-      arr.sort(
+    if (cat !== "all") {
+      items = items.filter((project) => project.category === cat);
+    }
+
+    if (sort === "displayOrder") {
+      items.sort(
         (a, b) =>
           Number(a.displayOrder || Number.MAX_SAFE_INTEGER) -
             Number(b.displayOrder || Number.MAX_SAFE_INTEGER) ||
           new Date(a.createdAt) - new Date(b.createdAt)
       );
-    if (sort === "-createdAt")
-      arr.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    if (sort === "createdAt")
-      arr.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    if (sort === "title")
-      arr.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
-    return arr;
+    }
+    if (sort === "-createdAt") {
+      items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    if (sort === "createdAt") {
+      items.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    }
+    if (sort === "title") {
+      items.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+    }
+
+    return items;
   }, [all, q, cat, sort]);
 
   const handleDelete = (id, title) => {
@@ -209,10 +218,7 @@ const ProjectList = () => {
             "DELETE /projects/:id error:",
             err?.response?.data || err
           );
-          showToast(
-            err?.response?.data?.message || "Silme işleminde hata.",
-            "error"
-          );
+          showToast(getAdminFeedbackMessage(err, "Silme işleminde hata."), "error");
         }
       },
       onCancel: () => {},
@@ -229,7 +235,7 @@ const ProjectList = () => {
     } catch (err) {
       console.error("PATCH /projects/:id/order error:", err?.response?.data || err);
       showToast(
-        err?.response?.data?.message || "Proje sırası güncellenemedi.",
+        getAdminFeedbackMessage(err, "Proje sırası güncellenemedi."),
         "error"
       );
     } finally {
@@ -237,7 +243,21 @@ const ProjectList = () => {
     }
   };
 
-  if (loading) return <div className="p-4 text-slate-500">Yükleniyor…</div>;
+  const hasActiveFilters = Boolean(q.trim()) || cat !== "all";
+  const emptyMessage = hasActiveFilters
+    ? "Seçili filtrelerle eşleşen proje bulunamadı."
+    : "Henüz proje kaydı yok.";
+
+  if (loading && !all.length) {
+    return (
+      <div className="p-4 md:p-6">
+        <AdminLoadingState
+          title="Projeler yükleniyor"
+          message="Proje listesi, kapaklar ve kategori filtreleri hazırlanıyor."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-5">
@@ -265,9 +285,9 @@ const ProjectList = () => {
               onChange={(e) => setCat(e.target.value)}
               className={`${inputCls} sm:w-40`}
             >
-              {cats.map((c) => (
-                <option key={c} value={c}>
-                  {c === "all" ? "Tüm Kategoriler" : c}
+              {cats.map((category) => (
+                <option key={category} value={category}>
+                  {category === "all" ? "Tüm Kategoriler" : category}
                 </option>
               ))}
             </select>
@@ -288,28 +308,37 @@ const ProjectList = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((p) => (
-          <Card
-            key={p._id}
-            project={p}
-            onDelete={handleDelete}
-            onOrderChange={handleOrderChange}
-            maxOrder={all.length || 1}
-            orderLoading={orderingId === p._id}
-          />
-        ))}
-        {filtered.length === 0 && (
-          <div className="col-span-full admin-card p-6 text-center text-slate-500 dark:text-slate-300">
-            Kayıt bulunamadı.
-          </div>
-        )}
-      </div>
+      {loadError ? (
+        <LoadErrorState
+          title="Projeler yüklenemedi"
+          message={loadError}
+          onRetry={fetchProjects}
+        />
+      ) : null}
 
-      {/* Onay & Uyarı */}
-      {confirm && (
+      {loadError && !all.length ? null : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((project) => (
+            <Card
+              key={project._id}
+              project={project}
+              onDelete={handleDelete}
+              onOrderChange={handleOrderChange}
+              maxOrder={all.length || 1}
+              orderLoading={orderingId === project._id}
+            />
+          ))}
+          {filtered.length === 0 ? (
+            <div className="col-span-full admin-card p-6 text-center text-slate-500 dark:text-slate-300">
+              {emptyMessage}
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {confirm ? (
         <ConfirmDialog
-          open={true}
+          open
           title={confirm.title}
           message={confirm.message}
           confirmText={confirm.confirmText || "Onayla"}
@@ -319,9 +348,8 @@ const ProjectList = () => {
           onClose={() => setConfirm(null)}
           onConfirm={async () => {
             if (confirm.loading) return;
-            setConfirm((c) => ({ ...c, loading: true }));
-            const fn = confirm.onConfirm;
-            await fn?.();
+            setConfirm((current) => ({ ...current, loading: true }));
+            await confirm.onConfirm?.();
             setConfirm(null);
           }}
           onCancel={() => {
@@ -330,15 +358,16 @@ const ProjectList = () => {
             setConfirm(null);
           }}
         />
-      )}
-      {toast && (
+      ) : null}
+
+      {toast ? (
         <ToastAlert
           msg={toast.msg}
           type={toast.type}
           duration={toast.duration}
           onClose={() => setToast(null)}
         />
-      )}
+      ) : null}
     </div>
   );
 };

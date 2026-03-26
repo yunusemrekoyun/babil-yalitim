@@ -12,6 +12,10 @@ import {
   failProgressTask,
   clampProgress,
 } from "../../utils/progressBus";
+import {
+  ADMIN_SUCCESS_REDIRECT_DELAY_MS,
+  getAdminFeedbackMessage,
+} from "../../utils/mediaFeedback";
 
 const AddJournal = () => {
   const navigate = useNavigate();
@@ -38,11 +42,15 @@ const AddJournal = () => {
       });
       completeProgressTask(taskId, "Haber eklendi");
       showToast("Haber eklendi", "success");
-      setTimeout(() => navigate("/admin/journals"), 600);
+      setTimeout(
+        () => navigate("/admin/journals"),
+        ADMIN_SUCCESS_REDIRECT_DELAY_MS
+      );
     } catch (err) {
+      const message = getAdminFeedbackMessage(err, "Haber eklenemedi.");
       console.error("POST /journals error:", err?.response?.data || err);
-      failProgressTask(taskId, "Haber eklenemedi");
-      showToast(err?.response?.data?.message || "Haber eklenemedi.", "error");
+      failProgressTask(taskId, message);
+      showToast(message, "error");
     } finally {
       setSubmitting(false);
     }

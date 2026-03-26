@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { EVENT } from "../utils/progressBus";
+
+const AUTO_REMOVE_MS = {
+  done: 5000,
+  error: 12000,
+};
 
 const statusStyles = {
   active:
@@ -14,6 +19,13 @@ const statusStyles = {
 const ProgressCenter = () => {
   const [tasks, setTasks] = useState([]);
   const timers = useRef({});
+
+  const dismissTask = useCallback((id) => {
+    if (!id) return;
+    setTasks((prev) => prev.filter((task) => task.id !== id));
+    clearTimeout(timers.current[id]);
+    delete timers.current[id];
+  }, []);
 
   useEffect(() => {
     const handler = (e) => {
@@ -57,21 +69,21 @@ const ProgressCenter = () => {
     return () => window.removeEventListener(EVENT, handler);
   }, []);
 
-  // Otomatik temizle: done/error 5 sn sonra düşsün
+  // Otomatik temizle: success kısa, error daha uzun süre kalsın
   useEffect(() => {
     tasks.forEach((t) => {
       if (t.status === "active" || timers.current[t.id]) return;
+      const timeoutMs = AUTO_REMOVE_MS[t.status];
+      if (!timeoutMs) return;
       timers.current[t.id] = setTimeout(() => {
-        setTasks((prev) => prev.filter((x) => x.id !== t.id));
-        clearTimeout(timers.current[t.id]);
-        delete timers.current[t.id];
-      }, 5000);
+        dismissTask(t.id);
+      }, timeoutMs);
     });
     return () => {
       Object.values(timers.current || {}).forEach(clearTimeout);
       timers.current = {};
     };
-  }, [tasks]);
+  }, [dismissTask, tasks]);
 
   const sorted = useMemo(
     () =>
@@ -107,7 +119,7 @@ const ProgressCenter = () => {
                   </span>
                 </div>
                 {task.message && (
-                  <p className="mt-1 text-xs text-slate-700 dark:text-slate-200 line-clamp-2">
+                  <p className="mt-1 text-xs leading-relaxed text-slate-700 dark:text-slate-200 break-words">
                     {task.message}
                   </p>
                 )}
@@ -122,6 +134,15 @@ const ProgressCenter = () => {
                     }`}
                     style={{ width: `${Math.min(100, task.progress)}%` }}
                   />
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => dismissTask(task.id)}
+                    className="text-[11px] font-medium text-slate-600 underline-offset-2 transition hover:underline dark:text-slate-300"
+                  >
+                    Kapat
+                  </button>
                 </div>
               </div>
             </div>

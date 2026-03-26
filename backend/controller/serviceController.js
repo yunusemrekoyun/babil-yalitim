@@ -6,6 +6,10 @@ const {
   parseDisplayOrder,
   syncCollectionDisplayOrder,
 } = require("../utils/displayOrder");
+const {
+  parseMediaOrder,
+  reorderMediaCollection,
+} = require("../utils/mediaOrder");
 
 /* -------------------- helpers -------------------- */
 
@@ -163,6 +167,7 @@ const buildSubService = async ({
   folder,
   existing = null,
   label = "Alt hizmet",
+  imageOrder = [],
 }) => {
   validateServicePayload(payload, label);
 
@@ -199,7 +204,19 @@ const buildSubService = async ({
     const uploadedImages = await Promise.all(
       imageFiles.map((file) => uploadOne(file, `${folder}/subservices/gallery`))
     );
-    images = [...images, ...uploadedImages];
+    images = await reorderMediaCollection({
+      existing: images,
+      uploaded: uploadedImages,
+      order: imageOrder,
+      destroy: destroyIfExists,
+    });
+  } else if (imageOrder.length) {
+    images = await reorderMediaCollection({
+      existing: images,
+      uploaded: [],
+      order: imageOrder,
+      destroy: destroyIfExists,
+    });
   }
 
   return {
@@ -300,9 +317,15 @@ const createService = async (req, res) => {
     let images = [];
     const galleryFiles = getFiles(files, "images");
     if (galleryFiles.length) {
-      images = await Promise.all(
+      const uploadedImages = await Promise.all(
         galleryFiles.map((file) => uploadOne(file, `${folder}/gallery`))
       );
+      images = await reorderMediaCollection({
+        existing: [],
+        uploaded: uploadedImages,
+        order: parseMediaOrder(req.body.imageOrder),
+        destroy: destroyIfExists,
+      });
     }
 
     const subServices = [];
@@ -312,6 +335,9 @@ const createService = async (req, res) => {
         files,
         folder,
         label: `Alt hizmet ${index + 1}`,
+        imageOrder: parseMediaOrder(
+          req.body[`subServiceImageOrder__${subServicesPayload[index].clientId}`]
+        ),
       });
       subServices.push(item);
     }
@@ -394,7 +420,19 @@ const updateService = async (req, res) => {
       const uploadedImages = await Promise.all(
         galleryFiles.map((file) => uploadOne(file, `${folder}/gallery`))
       );
-      svc.images = [...(svc.images || []), ...uploadedImages];
+      svc.images = await reorderMediaCollection({
+        existing: svc.images || [],
+        uploaded: uploadedImages,
+        order: parseMediaOrder(req.body.imageOrder),
+        destroy: destroyIfExists,
+      });
+    } else if (req.body.imageOrder !== undefined) {
+      svc.images = await reorderMediaCollection({
+        existing: svc.images || [],
+        uploaded: [],
+        order: parseMediaOrder(req.body.imageOrder),
+        destroy: destroyIfExists,
+      });
     }
 
     const nextSubServicesPayload =
@@ -426,6 +464,9 @@ const updateService = async (req, res) => {
         folder,
         existing,
         label: `Alt hizmet ${index + 1}`,
+        imageOrder: parseMediaOrder(
+          req.body[`subServiceImageOrder__${payload.clientId}`]
+        ),
       });
 
       nextSubServices.push(item);

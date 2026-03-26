@@ -2,9 +2,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../../api";
+import AdminLoadingState from "../../components/AdminLoadingState";
+import LoadErrorState from "../../components/LoadErrorState";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import OrderSelect from "../../components/OrderSelect";
+import { getAdminFeedbackMessage } from "../../utils/mediaFeedback";
 
 const toArray = (data) => (Array.isArray(data) ? data : []);
 
@@ -14,7 +17,7 @@ const ServiceList = () => {
   const [orderingId, setOrderingId] = useState("");
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
-  const [err, setErr] = useState("");
+  const [loadError, setLoadError] = useState("");
   const inputCls =
     "w-full sm:w-64 rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
 
@@ -33,13 +36,14 @@ const ServiceList = () => {
   const fetchServices = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError("");
       const { data } = await api.get("/services");
       setServices(toArray(data));
     } catch (e) {
       console.error("GET /services error:", e?.response?.data || e);
-      const msg = e?.response?.data?.message || "Servisler getirilemedi.";
-      setErr(msg);
-      showToast(msg, "error");
+      const message = getAdminFeedbackMessage(e, "Servisler getirilemedi.");
+      setLoadError(message);
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -50,24 +54,29 @@ const ServiceList = () => {
   }, [fetchServices]);
 
   const cats = useMemo(() => {
-    const s = new Set();
-    services.forEach((x) => x.category && s.add(x.category));
-    return ["all", ...Array.from(s)];
+    const categories = new Set();
+    services.forEach((service) => service.category && categories.add(service.category));
+    return ["all", ...Array.from(categories)];
   }, [services]);
 
   const filtered = useMemo(() => {
-    let arr = [...services];
-    const s = q.trim().toLowerCase();
-    if (s) {
-      arr = arr.filter(
-        (x) =>
-          x.title?.toLowerCase().includes(s) ||
-          x.description?.toLowerCase().includes(s) ||
-          x.type?.toLowerCase().includes(s)
+    let items = [...services];
+    const search = q.trim().toLowerCase();
+
+    if (search) {
+      items = items.filter(
+        (service) =>
+          service.title?.toLowerCase().includes(search) ||
+          service.description?.toLowerCase().includes(search) ||
+          service.type?.toLowerCase().includes(search)
       );
     }
-    if (cat !== "all") arr = arr.filter((x) => x.category === cat);
-    return arr;
+
+    if (cat !== "all") {
+      items = items.filter((service) => service.category === cat);
+    }
+
+    return items;
   }, [services, q, cat]);
 
   const askDelete = (id, title) => {
@@ -77,19 +86,20 @@ const ServiceList = () => {
       message: `"${title || "Bu hizmet"}" silinsin mi? Bu işlem geri alınamaz.`,
       loading: false,
       onConfirm: async () => {
-        setConfirm((c) => ({ ...c, loading: true }));
+        setConfirm((current) => ({ ...current, loading: true }));
         try {
           await api.delete(`/services/${id}`);
           await fetchServices();
           showToast("Hizmet silindi.", "success");
         } catch (e) {
           console.error("DELETE /services/:id error:", e?.response?.data || e);
-          showToast(
-            e?.response?.data?.message || "Hizmet silinemedi.",
-            "error"
-          );
+          showToast(getAdminFeedbackMessage(e, "Hizmet silinemedi."), "error");
         } finally {
-          setConfirm((c) => ({ ...c, open: false, loading: false }));
+          setConfirm((current) => ({
+            ...current,
+            open: false,
+            loading: false,
+          }));
         }
       },
     });
@@ -104,7 +114,7 @@ const ServiceList = () => {
     } catch (e) {
       console.error("PATCH /services/:id/order error:", e?.response?.data || e);
       showToast(
-        e?.response?.data?.message || "Hizmet sırası güncellenemedi.",
+        getAdminFeedbackMessage(e, "Hizmet sırası güncellenemedi."),
         "error"
       );
     } finally {
@@ -112,8 +122,21 @@ const ServiceList = () => {
     }
   };
 
-  if (loading) return <p className="p-4 text-slate-500">Yükleniyor…</p>;
-  if (err) return <p className="p-4 text-red-500">{err}</p>;
+  const hasActiveFilters = Boolean(q.trim()) || cat !== "all";
+  const emptyMessage = hasActiveFilters
+    ? "Seçili filtrelerle eşleşen hizmet bulunamadı."
+    : "Henüz hizmet kaydı yok.";
+
+  if (loading && !services.length) {
+    return (
+      <div className="p-4 md:p-6 overflow-x-hidden">
+        <AdminLoadingState
+          title="Hizmetler yükleniyor"
+          message="Hizmet listesi ve alt hizmet bilgileri hazırlanıyor."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 overflow-x-hidden space-y-5">
@@ -141,9 +164,9 @@ const ServiceList = () => {
               onChange={(e) => setCat(e.target.value)}
               className={`${inputCls} sm:w-40`}
             >
-              {cats.map((c) => (
-                <option key={c} value={c}>
-                  {c === "all" ? "Tüm Kategoriler" : c}
+              {cats.map((category) => (
+                <option key={category} value={category}>
+                  {category === "all" ? "Tüm Kategoriler" : category}
                 </option>
               ))}
             </select>
@@ -154,13 +177,21 @@ const ServiceList = () => {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {loadError ? (
+        <LoadErrorState
+          title="Hizmetler yüklenemedi"
+          message={loadError}
+          onRetry={fetchServices}
+        />
+      ) : null}
+
+      {loadError && !services.length ? null : filtered.length === 0 ? (
         <div className="admin-card p-6 text-center text-slate-500 dark:text-slate-300">
-          Kayıt bulunamadı.
+          {emptyMessage}
         </div>
       ) : (
-        <div className="-mx-4 sm:mx-0 overflow-x-auto">
-          <div className="admin-card p-0 overflow-hidden">
+        <div className="-mx-4 overflow-x-auto sm:mx-0">
+          <div className="admin-card overflow-hidden p-0">
             <table className="min-w-[860px] w-full border-collapse text-sm">
               <thead className="bg-slate-50/70 text-left text-slate-600 dark:bg-slate-900/50 dark:text-slate-300">
                 <tr>
@@ -188,31 +219,31 @@ const ServiceList = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((s) => (
+                {filtered.map((service) => (
                   <tr
-                    key={s._id}
+                    key={service._id}
                     className="align-top transition hover:bg-indigo-50/60 dark:hover:bg-slate-800/40"
                   >
                     <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                      {s.cover?.url ? (
+                      {service.cover?.url ? (
                         <div className="relative">
-                          {s.cover.resourceType === "video" ? (
+                          {service.cover.resourceType === "video" ? (
                             <>
                               <video
-                                src={s.cover.url}
-                                className="h-16 w-24 object-cover rounded-md"
+                                src={service.cover.url}
+                                className="h-16 w-24 rounded-md object-cover"
                                 muted
                                 playsInline
                               />
-                              <span className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 rounded bg-black/70 text-white">
+                              <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
                                 video
                               </span>
                             </>
                           ) : (
                             <img
-                              src={s.cover.url}
-                              alt={s.title}
-                              className="h-16 w-24 object-cover rounded-md"
+                              src={service.cover.url}
+                              alt={service.title}
+                              className="h-16 w-24 rounded-md object-cover"
                             />
                           )}
                         </div>
@@ -222,76 +253,82 @@ const ServiceList = () => {
                     </td>
                     <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                       <div className="font-medium text-slate-800 dark:text-slate-100">
-                        {s.title}
+                        {service.title}
                       </div>
-                      {Array.isArray(s.usageAreas) && s.usageAreas.length > 0 && (
+                      {Array.isArray(service.usageAreas) &&
+                      service.usageAreas.length > 0 ? (
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {s.usageAreas.slice(0, 3).map((u) => (
+                          {service.usageAreas.slice(0, 3).map((area) => (
                             <span
-                              key={u}
+                              key={area}
                               className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-700 dark:bg-slate-800 dark:text-slate-200"
                             >
-                              {u}
+                              {area}
                             </span>
                           ))}
-                          {s.usageAreas.length > 3 && (
+                          {service.usageAreas.length > 3 ? (
                             <span className="text-[11px] text-slate-400">
-                              +{s.usageAreas.length - 3}
+                              +{service.usageAreas.length - 3}
                             </span>
-                          )}
+                          ) : null}
                         </div>
-                      )}
+                      ) : null}
                     </td>
                     <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                       <OrderSelect
-                        value={s.displayOrder || 1}
+                        value={service.displayOrder || 1}
                         max={services.length || 1}
-                        onChange={(value) => handleOrderChange(s._id, value)}
-                        disabled={orderingId === s._id}
+                        onChange={(value) =>
+                          handleOrderChange(service._id, value)
+                        }
+                        disabled={orderingId === service._id}
                       />
                     </td>
                     <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                      {s.type || "-"}
+                      {service.type || "-"}
                     </td>
                     <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                      {s.category || "-"}
+                      {service.category || "-"}
                     </td>
                     <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                      {Array.isArray(s.subServices) && s.subServices.length > 0 ? (
+                      {Array.isArray(service.subServices) &&
+                      service.subServices.length > 0 ? (
                         <div className="space-y-2">
                           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
-                            {s.subServices.length} alt hizmet
+                            {service.subServices.length} alt hizmet
                           </div>
                           <div className="flex flex-wrap gap-1.5">
-                            {s.subServices.slice(0, 3).map((sub) => (
+                            {service.subServices.slice(0, 3).map((subService) => (
                               <span
-                                key={sub._id || sub.title}
+                                key={subService._id || subService.title}
                                 className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-100"
                               >
-                                #{sub.displayOrder || 1} {sub.title}
+                                #{subService.displayOrder || 1} {subService.title}
                               </span>
                             ))}
-                            {s.subServices.length > 3 && (
+                            {service.subServices.length > 3 ? (
                               <span className="text-[11px] text-slate-400">
-                                +{s.subServices.length - 3}
+                                +{service.subServices.length - 3}
                               </span>
-                            )}
+                            ) : null}
                           </div>
                         </div>
                       ) : (
-                        <span className="text-slate-400 dark:text-slate-500">Yok</span>
+                        <span className="text-slate-400 dark:text-slate-500">
+                          Yok
+                        </span>
                       )}
                     </td>
                     <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                       <div className="flex gap-2">
                         <Link
-                          to={`/admin/services/edit/${s._id}`}
+                          to={`/admin/services/edit/${service._id}`}
                           className="inline-flex items-center gap-1 rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
                         >
                           Düzenle
                         </Link>
                         <button
-                          onClick={() => askDelete(s._id, s.title)}
+                          onClick={() => askDelete(service._id, service.title)}
                           className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
                         >
                           Sil
@@ -306,26 +343,29 @@ const ServiceList = () => {
         </div>
       )}
 
-      {toast && (
+      {toast ? (
         <ToastAlert
           msg={toast.msg}
           type={toast.type}
           duration={toast.duration}
           onClose={() => setToast(null)}
         />
-      )}
+      ) : null}
 
-      {confirm.open && (
+      {confirm.open ? (
         <ConfirmDialog
           open={confirm.open}
           title={confirm.title}
           message={confirm.message}
           type="danger"
-          onCancel={() => setConfirm((c) => ({ ...c, open: false }))}
+          onCancel={() => {
+            if (confirm.loading) return;
+            setConfirm((current) => ({ ...current, open: false }));
+          }}
           onConfirm={confirm.onConfirm}
           loading={confirm.loading}
         />
-      )}
+      ) : null}
     </div>
   );
 };

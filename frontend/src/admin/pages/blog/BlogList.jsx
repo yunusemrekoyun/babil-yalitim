@@ -1,17 +1,60 @@
 // src/admin/pages/blog/BlogList.jsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../../../api";
+import AdminLoadingState from "../../components/AdminLoadingState";
+import LoadErrorState from "../../components/LoadErrorState";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import OrderSelect from "../../components/OrderSelect";
-import api from "../../../api";
+import { getAdminFeedbackMessage } from "../../utils/mediaFeedback";
 
-// 2 satırlık çok satır ellipsis (Tailwind plugin gerektirmez)
 const clamp2 = {
   display: "-webkit-box",
   WebkitLineClamp: 2,
   WebkitBoxOrient: "vertical",
   overflow: "hidden",
+};
+
+const isVideoCover = (cover) =>
+  cover?.resourceType === "video" ||
+  /\.(mp4|webm|mov|m4v)(?:$|[?#])/i.test(cover?.url || "");
+
+const renderCover = (cover, title, className) => {
+  if (!cover?.url) {
+    return (
+      <div
+        className={`${className} grid shrink-0 place-items-center rounded-md border border-dashed bg-slate-100/70 text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800/60`}
+      >
+        Kapak yok
+      </div>
+    );
+  }
+
+  if (isVideoCover(cover)) {
+    return (
+      <div className="relative shrink-0">
+        <video
+          src={cover.url}
+          className={`${className} rounded-md border border-slate-200/70 object-cover dark:border-slate-800`}
+          muted
+          playsInline
+          preload="metadata"
+        />
+        <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
+          video
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={cover.url}
+      alt={title}
+      className={`${className} shrink-0 rounded-md border border-slate-200/70 object-cover dark:border-slate-800`}
+    />
+  );
 };
 
 const BlogList = () => {
@@ -22,14 +65,12 @@ const BlogList = () => {
   const [loading, setLoading] = useState(true);
   const [orderingId, setOrderingId] = useState("");
   const [q, setQ] = useState("");
-  const [err, setErr] = useState("");
+  const [loadError, setLoadError] = useState("");
 
-  // toast
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
 
-  // confirm
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTargetId, setConfirmTargetId] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -37,13 +78,14 @@ const BlogList = () => {
   const fetchBlogs = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError("");
       const { data } = await api.get("/blogs");
       setBlogs(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("GET /blogs error:", e?.response?.data || e);
-      const msg = e?.response?.data?.message || "Bloglar getirilemedi.";
-      setErr(msg);
-      showToast(msg, "error");
+      const message = getAdminFeedbackMessage(e, "Bloglar getirilemedi.");
+      setLoadError(message);
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -54,20 +96,17 @@ const BlogList = () => {
   }, [fetchBlogs]);
 
   const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    let arr = [...blogs];
-    if (s) {
-      arr = arr.filter(
-        (b) =>
-          b.title?.toLowerCase().includes(s) ||
-          b.content?.toLowerCase().includes(s) ||
-          (b.tags || []).some((t) => t.toLowerCase().includes(s))
-      );
-    }
-    return arr;
+    const search = q.trim().toLowerCase();
+    if (!search) return blogs;
+
+    return blogs.filter(
+      (blog) =>
+        blog.title?.toLowerCase().includes(search) ||
+        blog.content?.toLowerCase().includes(search) ||
+        (blog.tags || []).some((tag) => tag.toLowerCase().includes(search))
+    );
   }, [blogs, q]);
 
-  // Sil butonuna basılınca: confirm aç
   const askDelete = (id) => {
     setConfirmTargetId(id);
     setConfirmOpen(true);
@@ -82,7 +121,7 @@ const BlogList = () => {
     } catch (e) {
       console.error("PATCH /blogs/:id/order error:", e?.response?.data || e);
       showToast(
-        e?.response?.data?.message || "Blog sırası güncellenemedi.",
+        getAdminFeedbackMessage(e, "Blog sırası güncellenemedi."),
         "error"
       );
     } finally {
@@ -90,7 +129,6 @@ const BlogList = () => {
     }
   };
 
-  // Confirm "Evet"
   const confirmDelete = async () => {
     const id = confirmTargetId;
     if (!id) return;
@@ -102,7 +140,10 @@ const BlogList = () => {
       showToast("Blog silindi", "success");
     } catch (e) {
       console.error("DELETE /blogs/:id error:", e?.response?.data || e);
-      showToast(e?.response?.data?.message || "Silme işlemi başarısız.", "error");
+      showToast(
+        getAdminFeedbackMessage(e, "Silme işlemi başarısız."),
+        "error"
+      );
     } finally {
       setConfirmLoading(false);
       setConfirmOpen(false);
@@ -115,8 +156,21 @@ const BlogList = () => {
     setConfirmTargetId(null);
   };
 
-  if (loading) return <div className="p-6">Yükleniyor…</div>;
-  if (err) return <div className="p-6 text-red-600">{err}</div>;
+  const hasActiveFilters = Boolean(q.trim());
+  const emptyMessage = hasActiveFilters
+    ? "Aramanızla eşleşen blog bulunamadı."
+    : "Henüz blog kaydı yok.";
+
+  if (loading && !blogs.length) {
+    return (
+      <div className="p-4 md:p-6 overflow-x-hidden">
+        <AdminLoadingState
+          title="Bloglar yükleniyor"
+          message="Blog listesi ve yorum istatistikleri hazırlanıyor."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 overflow-x-hidden space-y-5">
@@ -147,57 +201,61 @@ const BlogList = () => {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {loadError ? (
+        <LoadErrorState
+          title="Bloglar yüklenemedi"
+          message={loadError}
+          onRetry={fetchBlogs}
+        />
+      ) : null}
+
+      {loadError && !blogs.length ? null : filtered.length === 0 ? (
         <div className="admin-card p-6 text-center text-slate-500 dark:text-slate-300">
-          Kayıt bulunamadı.
+          {emptyMessage}
         </div>
       ) : (
         <>
           <div className="grid gap-3 sm:hidden">
-            {filtered.map((b) => (
-              <div key={b._id} className="admin-card p-4 relative overflow-hidden">
+            {filtered.map((blog) => (
+              <div
+                key={blog._id}
+                className="admin-card relative overflow-hidden p-4"
+              >
                 <div className="flex items-start gap-3">
-                  {b.cover?.url ? (
-                    <img
-                      src={b.cover.url}
-                      alt={b.title}
-                      className="h-16 w-24 rounded-md object-cover border border-slate-200/70 dark:border-slate-800 shrink-0"
-                    />
-                  ) : (
-                    <div className="h-16 w-24 rounded-md border border-dashed bg-slate-100/70 grid place-items-center text-xs text-slate-400 shrink-0 dark:bg-slate-800/60 dark:border-slate-700">
-                      Kapak yok
-                    </div>
-                  )}
+                  {renderCover(blog.cover, blog.title, "h-16 w-24")}
 
                   <div className="min-w-0 flex-1">
                     <div
-                      className="font-semibold text-slate-900 leading-snug break-words dark:text-white"
+                      className="font-semibold leading-snug break-words text-slate-900 dark:text-white"
                       style={clamp2}
-                      title={b.title}
+                      title={blog.title}
                     >
-                      {b.title}
+                      {blog.title}
                     </div>
 
                     <div className="mt-1 flex flex-wrap gap-1">
-                      {(b.tags || []).slice(0, 3).map((t) => (
+                      {(blog.tags || []).slice(0, 3).map((tag) => (
                         <span
-                          key={t}
+                          key={tag}
                           className="inline-block rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-700 dark:bg-slate-800 dark:text-slate-200"
                         >
-                          {t}
+                          {tag}
                         </span>
                       ))}
-                      {(b.tags || []).length > 3 && (
+                      {(blog.tags || []).length > 3 ? (
                         <span className="text-[11px] text-slate-400">
-                          +{b.tags.length - 3}
+                          +{blog.tags.length - 3}
                         </span>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                      Sıra #{b.displayOrder || 1} •{" "}
-                      {new Date(b.createdAt).toLocaleDateString("tr-TR")} • Yorum:{" "}
-                      {typeof b.commentsCount === "number" ? b.commentsCount : "-"}
+                      Sıra #{blog.displayOrder || 1} •{" "}
+                      {new Date(blog.createdAt).toLocaleDateString("tr-TR")} •
+                      Yorum:{" "}
+                      {typeof blog.commentsCount === "number"
+                        ? blog.commentsCount
+                        : "-"}
                     </div>
                   </div>
                 </div>
@@ -207,29 +265,29 @@ const BlogList = () => {
                     Gösterim sırası
                   </div>
                   <OrderSelect
-                    value={b.displayOrder || 1}
+                    value={blog.displayOrder || 1}
                     max={blogs.length || 1}
-                    onChange={(value) => handleOrderChange(b._id, value)}
-                    disabled={orderingId === b._id}
+                    onChange={(value) => handleOrderChange(blog._id, value)}
+                    disabled={orderingId === blog._id}
                     className="w-full"
                   />
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Link
-                    to={`/admin/blogs/edit/${b._id}`}
+                    to={`/admin/blogs/edit/${blog._id}`}
                     className="inline-flex items-center gap-1 rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
                   >
                     Düzenle
                   </Link>
                   <Link
-                    to={`/admin/blogs/${b._id}/comments`}
+                    to={`/admin/blogs/${blog._id}/comments`}
                     className="inline-flex items-center gap-1 rounded-xl bg-slate-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-700"
                   >
                     Yorumlar
                   </Link>
                   <button
-                    onClick={() => askDelete(b._id)}
+                    onClick={() => askDelete(blog._id)}
                     className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
                   >
                     Sil
@@ -239,8 +297,8 @@ const BlogList = () => {
             ))}
           </div>
 
-          <div className="-mx-4 sm:mx-0 overflow-x-auto hidden sm:block">
-            <div className="admin-card p-0 overflow-hidden">
+          <div className="-mx-4 hidden overflow-x-auto sm:mx-0 sm:block">
+            <div className="admin-card overflow-hidden p-0">
               <table className="min-w-[900px] w-full text-sm">
                 <thead className="bg-slate-50/70 text-left text-slate-600 dark:bg-slate-900/50 dark:text-slate-300">
                   <tr>
@@ -268,74 +326,72 @@ const BlogList = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((b) => (
+                  {filtered.map((blog) => (
                     <tr
-                      key={b._id}
+                      key={blog._id}
                       className="align-top transition hover:bg-indigo-50/60 dark:hover:bg-slate-800/40"
                     >
                       <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                        {b.cover?.url ? (
-                          <img
-                            src={b.cover.url}
-                            alt={b.title}
-                            className="h-16 w-24 rounded-md object-cover shadow-sm"
-                          />
-                        ) : (
-                          "-"
-                        )}
+                        {blog.cover?.url
+                          ? renderCover(
+                              blog.cover,
+                              blog.title,
+                              "h-16 w-24 shadow-sm"
+                            )
+                          : "-"}
                       </td>
                       <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                         <div className="font-medium text-slate-800 dark:text-slate-100">
-                          {b.title}
+                          {blog.title}
                         </div>
                       </td>
                       <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                         <OrderSelect
-                          value={b.displayOrder || 1}
+                          value={blog.displayOrder || 1}
                           max={blogs.length || 1}
-                          onChange={(value) => handleOrderChange(b._id, value)}
-                          disabled={orderingId === b._id}
+                          onChange={(value) => handleOrderChange(blog._id, value)}
+                          disabled={orderingId === blog._id}
                         />
                       </td>
                       <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                        {(b.tags || []).slice(0, 3).map((t) => (
+                        {(blog.tags || []).slice(0, 3).map((tag) => (
                           <span
-                            key={t}
+                            key={tag}
                             className="mr-1 inline-block rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-700 dark:bg-slate-800 dark:text-slate-200"
                           >
-                            {t}
+                            {tag}
                           </span>
                         ))}
-                        {(b.tags || []).length > 3 && (
+                        {(blog.tags || []).length > 3 ? (
                           <span className="text-[11px] text-slate-400">
-                            +{b.tags.length - 3}
+                            +{blog.tags.length - 3}
                           </span>
-                        )}
+                        ) : null}
                       </td>
                       <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                        {typeof b.commentsCount === "number"
-                          ? b.commentsCount
+                        {typeof blog.commentsCount === "number"
+                          ? blog.commentsCount
                           : "-"}
                       </td>
                       <td className="border border-slate-200/70 p-3 whitespace-nowrap dark:border-slate-800/70">
-                        {new Date(b.createdAt).toLocaleDateString("tr-TR")}
+                        {new Date(blog.createdAt).toLocaleDateString("tr-TR")}
                       </td>
                       <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                         <div className="flex flex-wrap gap-2">
                           <Link
-                            to={`/admin/blogs/edit/${b._id}`}
+                            to={`/admin/blogs/edit/${blog._id}`}
                             className="inline-flex items-center gap-1 rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
                           >
                             Düzenle
                           </Link>
                           <Link
-                            to={`/admin/blogs/${b._id}/comments`}
+                            to={`/admin/blogs/${blog._id}/comments`}
                             className="inline-flex items-center gap-1 rounded-xl bg-slate-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-700"
                           >
                             Yorumlar
                           </Link>
                           <button
-                            onClick={() => askDelete(b._id)}
+                            onClick={() => askDelete(blog._id)}
                             className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
                           >
                             Sil
@@ -351,14 +407,14 @@ const BlogList = () => {
         </>
       )}
 
-      {toast && (
+      {toast ? (
         <ToastAlert
           msg={toast.msg}
           type={toast.type}
           duration={toast.duration}
           onClose={() => setToast(null)}
         />
-      )}
+      ) : null}
 
       <ConfirmDialog
         open={confirmOpen}

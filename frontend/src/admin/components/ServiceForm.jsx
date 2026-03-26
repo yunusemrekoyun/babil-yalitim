@@ -3,9 +3,23 @@ import PropTypes from "prop-types";
 import ToastAlert from "./ToastAlert";
 import { ServicePreview } from "./previews/ContentPreviews";
 import OrderField from "./OrderField";
+import AdminMediaGallery from "./AdminMediaGallery";
+import { MEDIA_LIMIT_HINT } from "../utils/mediaFeedback";
+import {
+  appendOrderedMediaToFormData,
+  buildMediaPreviewList,
+  createExistingMediaItems,
+  createNewMediaItems,
+  moveMediaItem,
+  removeMediaItem,
+  revokeBlobUrl,
+  toMediaType,
+} from "../utils/mediaCollection";
 
 const inputCls =
   "w-full rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950/55 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
+const errorInputCls =
+  "border-rose-300 focus:border-rose-300 focus:ring-rose-100 dark:border-rose-500/50 dark:focus:border-rose-400 dark:focus:ring-rose-500/20";
 
 const helperTextCls = "mt-2 text-xs text-slate-500 dark:text-slate-300";
 const fileCls =
@@ -16,41 +30,6 @@ const FRONT_VERTICAL_MIN_RATIO = 1.5;
 const createClientId = () =>
   globalThis.crypto?.randomUUID?.() ||
   `sub-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-const toMediaType = (fileOrMedia) => {
-  if (!fileOrMedia) return "image";
-  if (fileOrMedia.resourceType) return fileOrMedia.resourceType;
-  if (fileOrMedia.type) return fileOrMedia.type.startsWith("video/") ? "video" : "image";
-  return "image";
-};
-
-const ImagePreview = ({ src, className = "" }) => {
-  if (!src) return null;
-  return <img src={src} className={className} alt="" />;
-};
-ImagePreview.propTypes = {
-  src: PropTypes.string,
-  className: PropTypes.string,
-};
-
-const VideoPreview = ({ src, className = "" }) => {
-  if (!src) return null;
-  return (
-    <video
-      src={src}
-      className={className}
-      muted
-      loop
-      controls
-      playsInline
-      preload="metadata"
-    />
-  );
-};
-VideoPreview.propTypes = {
-  src: PropTypes.string,
-  className: PropTypes.string,
-};
 
 const Chip = ({ text, onRemove }) => (
   <span className="inline-flex items-center gap-1 rounded-full bg-slate-100/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-100">
@@ -101,10 +80,8 @@ const makeEmptySubService = (seed = {}) => ({
   usageInput: "",
   coverFile: null,
   coverPreview: "",
-  imagesFiles: [],
-  imagePreviews: [],
   existingCover: seed?.cover || null,
-  existingImages: seed?.images || [],
+  galleryItems: createExistingMediaItems(seed?.images || [], "alt-hizmet-medya"),
   open: true,
 });
 
@@ -191,10 +168,6 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
     () => initialData?.cover || null,
     [initialData?.cover]
   );
-  const existingImages = useMemo(
-    () => initialData?.images || [],
-    [initialData?.images]
-  );
 
   const [title, setTitle] = useState(initialData?.title || "");
   const [displayOrder, setDisplayOrder] = useState(
@@ -215,10 +188,18 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
   const [showPreview, setShowPreview] = useState(false);
 
   const [coverFile, setCoverFile] = useState(null);
-  const [imagesFiles, setImagesFiles] = useState([]);
   const [coverPreview, setCoverPreview] = useState("");
-  const [imagesPreviews, setImagesPreviews] = useState([]);
+  const [imageItems, setImageItems] = useState(() =>
+    createExistingMediaItems(initialData?.images || [], "hizmet-medya")
+  );
   const revokers = useRef([]);
+  const [fieldErrors, setFieldErrors] = useState({
+    title: "",
+    type: "",
+    description: "",
+    cover: "",
+  });
+  const [subServiceErrors, setSubServiceErrors] = useState({});
 
   const [mediaError, setMediaError] = useState("");
   const [toast, setToast] = useState(null);
@@ -239,6 +220,11 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
         (initialData?.subServices || []).map((item) => makeEmptySubService(item))
       )
     );
+    setCoverFile(null);
+    setCoverPreview("");
+    setImageItems(createExistingMediaItems(initialData?.images || [], "hizmet-medya"));
+    setFieldErrors({ title: "", type: "", description: "", cover: "" });
+    setSubServiceErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData?._id]);
 
@@ -284,24 +270,63 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
     setSubServices((items) =>
       normalizeSubServiceSequence(
         items.map((item) =>
-        item.clientId === clientId ? { ...item, ...updater(item) } : item
+          item.clientId === clientId ? { ...item, ...updater(item) } : item
         )
       )
     );
+  };
+
+  const clearFieldError = (field) => {
+    setFieldErrors((prev) =>
+      prev[field] ? { ...prev, [field]: "" } : prev
+    );
+  };
+
+  const clearSubServiceError = (clientId, field) => {
+    setSubServiceErrors((prev) => {
+      const current = prev[clientId];
+      if (!current?.[field]) return prev;
+
+      const nextForClient = {
+        ...current,
+        [field]: "",
+      };
+
+      if (!Object.values(nextForClient).some(Boolean)) {
+        const next = { ...prev };
+        delete next[clientId];
+        return next;
+      }
+
+      return {
+        ...prev,
+        [clientId]: nextForClient,
+      };
+    });
+  };
+
+  const updateSubServiceField = (clientId, field, value) => {
+    clearSubServiceError(clientId, field);
+    updateSubService(clientId, () => ({
+      [field]: value,
+    }));
   };
 
   const handleCoverChange = async (event) => {
     setMediaError("");
     const file = event.target.files?.[0] || null;
     if (!file) {
+      revokeBlobUrl(coverPreview);
       setCoverFile(null);
       setCoverPreview("");
       return;
     }
     try {
       await checkPortrait(file);
+      revokeBlobUrl(coverPreview);
       setCoverFile(file);
       setCoverPreview(rememberUrl(file));
+      clearFieldError("cover");
     } catch (error) {
       setMediaError(error.message || "Kapak dosyası kabul edilmedi.");
       event.target.value = "";
@@ -313,24 +338,21 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
   const handleImagesChange = async (event) => {
     setMediaError("");
     const files = Array.from(event.target.files || []);
-    if (!files.length) {
-      setImagesFiles([]);
-      setImagesPreviews([]);
-      return;
-    }
+    if (!files.length) return;
     for (const file of files) {
       try {
         await checkPortrait(file);
       } catch (error) {
         setMediaError(error.message || "Galeri dosyalarından biri geçersiz.");
         event.target.value = "";
-        setImagesFiles([]);
-        setImagesPreviews([]);
         return;
       }
     }
-    setImagesFiles(files);
-    setImagesPreviews(files.map((file) => rememberUrl(file)));
+    setImageItems((prev) => [
+      ...prev,
+      ...createNewMediaItems(files, rememberUrl, "hizmet-medya"),
+    ]);
+    event.target.value = "";
   };
 
   const addSubService = () => {
@@ -340,27 +362,45 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
   };
 
   const removeSubService = (clientId) => {
-    setSubServices((items) =>
-      normalizeSubServiceSequence(
+    setSubServiceErrors((prev) => {
+      if (!prev[clientId]) return prev;
+      const next = { ...prev };
+      delete next[clientId];
+      return next;
+    });
+    setSubServices((items) => {
+      const target = items.find((item) => item.clientId === clientId);
+      if (target?.coverPreview) revokeBlobUrl(target.coverPreview);
+      (target?.galleryItems || [])
+        .filter((item) => item.source === "new")
+        .forEach((item) => revokeBlobUrl(item.src));
+      return normalizeSubServiceSequence(
         items.filter((item) => item.clientId !== clientId)
-      )
-    );
+      );
+    });
   };
 
   const handleSubServiceCover = async (clientId, file) => {
     if (!file) {
-      updateSubService(clientId, () => ({
-        coverFile: null,
-        coverPreview: "",
-      }));
+      updateSubService(clientId, (current) => {
+        revokeBlobUrl(current.coverPreview);
+        return {
+          coverFile: null,
+          coverPreview: "",
+        };
+      });
       return;
     }
 
     await checkPortrait(file);
-    updateSubService(clientId, () => ({
-      coverFile: file,
-      coverPreview: rememberUrl(file),
-    }));
+    updateSubService(clientId, (current) => {
+      revokeBlobUrl(current.coverPreview);
+      return {
+        coverFile: file,
+        coverPreview: rememberUrl(file),
+      };
+    });
+    clearSubServiceError(clientId, "cover");
   };
 
   const handleSubServiceImages = async (clientId, files) => {
@@ -368,36 +408,123 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
       await checkPortrait(file);
     }
 
-    updateSubService(clientId, () => ({
-      imagesFiles: files,
-      imagePreviews: files.map((file) => rememberUrl(file)),
+    updateSubService(clientId, (current) => ({
+      galleryItems: [
+        ...(current.galleryItems || []),
+        ...createNewMediaItems(files, rememberUrl, "alt-hizmet-medya"),
+      ],
     }));
   };
 
+  const clearSelectedCover = () => {
+    revokeBlobUrl(coverPreview);
+    setCoverFile(null);
+    setCoverPreview("");
+  };
+
+  const handleRemoveImage = (id) => {
+    setImageItems((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (target?.source === "new") revokeBlobUrl(target.src);
+      return removeMediaItem(prev, id);
+    });
+  };
+
+  const handleMoveImage = (id, direction) => {
+    setImageItems((prev) => moveMediaItem(prev, id, direction));
+  };
+
+  const handleRemoveSubServiceImage = (clientId, mediaId) => {
+    updateSubService(clientId, (current) => {
+      const target = (current.galleryItems || []).find((item) => item.id === mediaId);
+      if (target?.source === "new") revokeBlobUrl(target.src);
+      return {
+        galleryItems: removeMediaItem(current.galleryItems || [], mediaId),
+      };
+    });
+  };
+
+  const handleMoveSubServiceImage = (clientId, mediaId, direction) => {
+    updateSubService(clientId, (current) => ({
+      galleryItems: moveMediaItem(current.galleryItems || [], mediaId, direction),
+    }));
+  };
+
+  const clearSubServiceCoverSelection = (clientId) => {
+    updateSubService(clientId, (current) => {
+      revokeBlobUrl(current.coverPreview);
+      return {
+        coverFile: null,
+        coverPreview: "",
+      };
+    });
+  };
+
   const validateSubServices = () => {
+    const nextErrors = {};
+    let hasErrors = false;
+    let shouldExpand = false;
+
     for (let index = 0; index < subServices.length; index += 1) {
       const item = subServices[index];
+      const itemErrors = {};
+
       if (!item.title.trim()) {
-        showToast(`Alt hizmet ${index + 1} için başlık zorunlu.`, "error");
-        return false;
+        itemErrors.title = `Alt hizmet ${index + 1} için başlık zorunlu.`;
       }
       if (!item.description.trim()) {
-        showToast(`Alt hizmet ${index + 1} için açıklama zorunlu.`, "error");
-        return false;
+        itemErrors.description = `Alt hizmet ${index + 1} için açıklama zorunlu.`;
       }
       if (!item.coverFile && !item.existingCover?.url) {
-        showToast(`Alt hizmet ${index + 1} için kapak zorunlu.`, "error");
-        return false;
+        itemErrors.cover = `Alt hizmet ${index + 1} için kapak zorunlu.`;
+      }
+
+      if (Object.keys(itemErrors).length) {
+        hasErrors = true;
+        nextErrors[item.clientId] = itemErrors;
+        if (!item.open) shouldExpand = true;
       }
     }
+
+    if (hasErrors) {
+      setSubServiceErrors(nextErrors);
+      if (shouldExpand) {
+        setSubServices((items) =>
+          normalizeSubServiceSequence(
+            items.map((item) =>
+              nextErrors[item.clientId] ? { ...item, open: true } : item
+            )
+          )
+        );
+      }
+      showToast(
+        "Alt hizmetlerde eksik alanlar var. Lütfen işaretli alanları kontrol edin.",
+        "error"
+      );
+      return false;
+    }
+
+    setSubServiceErrors({});
     return true;
   };
 
   const submit = (event) => {
     event.preventDefault();
 
-    if (!isEdit && !coverFile) {
-      showToast("Kapak (dikey image/video) zorunludur.", "error");
+    const nextErrors = {
+      title: title.trim() ? "" : "Hizmet adı zorunludur.",
+      type: type.trim() ? "" : "Hizmet türü zorunludur.",
+      description: description.trim() ? "" : "Açıklama zorunludur.",
+      cover:
+        coverFile || existingCover?.url
+          ? ""
+          : "Kapak medyası zorunludur.",
+    };
+
+    setFieldErrors(nextErrors);
+
+    if (Object.values(nextErrors).some(Boolean)) {
+      showToast("Lütfen işaretli zorunlu alanları doldurun.", "error");
       return;
     }
     if (!validateSubServices()) return;
@@ -426,19 +553,51 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
     );
 
     if (coverFile) formData.append("cover", coverFile);
-    imagesFiles.forEach((file) => formData.append("images", file));
+    appendOrderedMediaToFormData(formData, "images", imageItems, "imageOrder");
 
     subServices.forEach((item) => {
       if (item.coverFile) {
         formData.append(`subServiceCover__${item.clientId}`, item.coverFile);
       }
-      item.imagesFiles.forEach((file) =>
-        formData.append(`subServiceImages__${item.clientId}`, file)
+      appendOrderedMediaToFormData(
+        formData,
+        `subServiceImages__${item.clientId}`,
+        item.galleryItems || [],
+        `subServiceImageOrder__${item.clientId}`
       );
     });
 
     onSubmit(formData);
   };
+
+  const coverGalleryItems = useMemo(() => {
+    if (coverPreview && coverFile) {
+      return [
+        {
+          id: "cover:new",
+          source: "new",
+          src: coverPreview,
+          type: toMediaType(coverFile),
+          alt: title || "hizmet-kapak",
+          badge: "Yeni kapak",
+          removable: true,
+          file: coverFile,
+        },
+      ];
+    }
+
+    if (existingCover?.url) {
+      return [
+        {
+          ...createExistingMediaItems([existingCover], "hizmet-kapak")[0],
+          badge: "Mevcut kapak",
+          removable: false,
+        },
+      ];
+    }
+
+    return [];
+  }, [coverFile, coverPreview, existingCover, title]);
 
   const previewData = useMemo(
     () => ({
@@ -453,17 +612,7 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
         type: coverFile ? toMediaType(coverFile) : existingCover?.resourceType || "image",
         alt: title,
       },
-      images: imagesPreviews.length
-        ? imagesPreviews.map((src, index) => ({
-            src,
-            type: toMediaType(imagesFiles[index]),
-            alt: `${title}-asset-${index + 1}`,
-          }))
-        : existingImages.map((item) => ({
-            src: item.url,
-            type: item.resourceType || "image",
-            alt: `${title}-asset`,
-          })),
+      images: buildMediaPreviewList(imageItems),
       subServices: subServices.map((item, index) => ({
         id: item.id || item.clientId,
         displayOrder: item.displayOrder || index + 1,
@@ -479,17 +628,7 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
             : item.existingCover?.resourceType || "image",
           alt: item.title,
         },
-        images: item.imagePreviews.length
-          ? item.imagePreviews.map((src, imageIndex) => ({
-              src,
-              type: toMediaType(item.imagesFiles[imageIndex]),
-              alt: `${item.title}-asset-${imageIndex + 1}`,
-            }))
-          : (item.existingImages || []).map((image) => ({
-              src: image.url,
-              type: image.resourceType || "image",
-              alt: `${item.title}-asset`,
-            })),
+        images: buildMediaPreviewList(item.galleryItems || []),
       })),
     }),
     [
@@ -499,20 +638,13 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
       displayOrder,
       description,
       existingCover,
-      existingImages,
-      imagesFiles,
-      imagesPreviews,
+      imageItems,
       subServices,
       title,
       type,
       usageAreas,
     ]
   );
-
-  const existingCoverIsVideo =
-    existingCover?.resourceType === "video" ||
-    (existingCover?.url || "").includes(".mp4");
-
   return (
     <form
       onSubmit={submit}
@@ -526,11 +658,22 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
           </label>
           <input
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            onChange={(event) => {
+              setTitle(event.target.value);
+              clearFieldError("title");
+            }}
             required
-            className={`mt-2 ${inputCls}`}
+            aria-invalid={Boolean(fieldErrors.title)}
+            className={`mt-2 ${inputCls} ${
+              fieldErrors.title ? errorInputCls : ""
+            }`}
             placeholder="Örn: Teras Su Yalıtımı"
           />
+          {fieldErrors.title ? (
+            <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
+              {fieldErrors.title}
+            </p>
+          ) : null}
         </div>
 
         <OrderField value={displayOrder} onChange={setDisplayOrder} />
@@ -541,11 +684,22 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
           </label>
           <input
             value={type}
-            onChange={(event) => setType(event.target.value)}
+            onChange={(event) => {
+              setType(event.target.value);
+              clearFieldError("type");
+            }}
             required
-            className={`mt-2 ${inputCls}`}
+            aria-invalid={Boolean(fieldErrors.type)}
+            className={`mt-2 ${inputCls} ${
+              fieldErrors.type ? errorInputCls : ""
+            }`}
             placeholder="Örn: Su Yalıtımı"
           />
+          {fieldErrors.type ? (
+            <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
+              {fieldErrors.type}
+            </p>
+          ) : null}
         </div>
 
         <div>
@@ -595,7 +749,7 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
         <div className="grid gap-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Açıklama
+              Açıklama *
             </label>
             <button
               type="button"
@@ -607,11 +761,22 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
           </div>
           <textarea
             value={description}
-            onChange={(event) => setDescription(event.target.value)}
+            onChange={(event) => {
+              setDescription(event.target.value);
+              clearFieldError("description");
+            }}
             rows={7}
-            className={`mt-2 w-full leading-relaxed ${inputCls}`}
+            aria-invalid={Boolean(fieldErrors.description)}
+            className={`mt-2 w-full leading-relaxed ${inputCls} ${
+              fieldErrors.description ? errorInputCls : ""
+            }`}
             placeholder="Hizmet ile ilgili detaylı açıklama…"
           />
+          {fieldErrors.description ? (
+            <p className="text-xs text-rose-600 dark:text-rose-300">
+              {fieldErrors.description}
+            </p>
+          ) : null}
         </div>
 
         {showPreview && <ServicePreview preview={previewData} />}
@@ -638,9 +803,32 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
           ) : (
             <div className="space-y-4">
               {subServices.map((item, index) => {
-                const existingSubCoverIsVideo =
-                  item.existingCover?.resourceType === "video" ||
-                  (item.existingCover?.url || "").includes(".mp4");
+                const subServiceCoverItems =
+                  item.coverPreview && item.coverFile
+                    ? [
+                        {
+                          id: `sub-cover:${item.clientId}`,
+                          source: "new",
+                          src: item.coverPreview,
+                          type: toMediaType(item.coverFile),
+                          alt: item.title || "alt-hizmet-kapak",
+                          badge: "Yeni kapak",
+                          removable: true,
+                          file: item.coverFile,
+                        },
+                      ]
+                    : item.existingCover?.url
+                    ? [
+                        {
+                          ...createExistingMediaItems(
+                            [item.existingCover],
+                            "alt-hizmet-kapak"
+                          )[0],
+                          badge: "Mevcut kapak",
+                          removable: false,
+                        },
+                      ]
+                    : [];
 
                 return (
                   <div
@@ -711,13 +899,25 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
                             <input
                               value={item.title}
                               onChange={(event) =>
-                                updateSubService(item.clientId, () => ({
-                                  title: event.target.value,
-                                }))
+                                updateSubServiceField(
+                                  item.clientId,
+                                  "title",
+                                  event.target.value
+                                )
                               }
-                              className={`mt-2 ${inputCls}`}
+                              aria-invalid={Boolean(subServiceErrors[item.clientId]?.title)}
+                              className={`mt-2 ${inputCls} ${
+                                subServiceErrors[item.clientId]?.title
+                                  ? errorInputCls
+                                  : ""
+                              }`}
                               placeholder="Alt hizmet başlığı"
                             />
+                            {subServiceErrors[item.clientId]?.title ? (
+                              <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
+                                {subServiceErrors[item.clientId].title}
+                              </p>
+                            ) : null}
                           </div>
 
                           <div>
@@ -824,14 +1024,28 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
                             <textarea
                               value={item.description}
                               onChange={(event) =>
-                                updateSubService(item.clientId, () => ({
-                                  description: event.target.value,
-                                }))
+                                updateSubServiceField(
+                                  item.clientId,
+                                  "description",
+                                  event.target.value
+                                )
                               }
                               rows={6}
-                              className={`mt-2 ${inputCls}`}
+                              aria-invalid={Boolean(
+                                subServiceErrors[item.clientId]?.description
+                              )}
+                              className={`mt-2 ${inputCls} ${
+                                subServiceErrors[item.clientId]?.description
+                                  ? errorInputCls
+                                  : ""
+                              }`}
                               placeholder="Alt hizmet açıklaması"
                             />
+                            {subServiceErrors[item.clientId]?.description ? (
+                              <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
+                                {subServiceErrors[item.clientId].description}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
 
@@ -855,38 +1069,33 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
                                   event.target.value = "";
                                 }
                               }}
-                              className={fileCls}
+                              aria-invalid={Boolean(subServiceErrors[item.clientId]?.cover)}
+                              className={`${fileCls} ${
+                                subServiceErrors[item.clientId]?.cover
+                                  ? errorInputCls
+                                  : ""
+                              }`}
                             />
-                            <div className="admin-preview-surface mt-3 overflow-hidden">
-                              {item.coverPreview ? (
-                                toMediaType(item.coverFile) === "video" ? (
-                                  <VideoPreview
-                                    src={item.coverPreview}
-                                    className="aspect-[9/16] w-full object-cover"
-                                  />
-                                ) : (
-                                  <ImagePreview
-                                    src={item.coverPreview}
-                                    className="aspect-[9/16] w-full object-cover"
-                                  />
-                                )
-                              ) : item.existingCover?.url ? (
-                                existingSubCoverIsVideo ? (
-                                  <VideoPreview
-                                    src={item.existingCover.url}
-                                    className="aspect-[9/16] w-full object-cover"
-                                  />
-                                ) : (
-                                  <ImagePreview
-                                    src={item.existingCover.url}
-                                    className="aspect-[9/16] w-full object-cover"
-                                  />
-                                )
-                              ) : (
-                                <div className="grid aspect-[9/16] place-items-center text-xs text-slate-400 dark:text-slate-500">
-                                  Önizleme
-                                </div>
-                              )}
+                            {subServiceErrors[item.clientId]?.cover ? (
+                              <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
+                                {subServiceErrors[item.clientId].cover}
+                              </p>
+                            ) : null}
+                            <div className="mt-3">
+                              <AdminMediaGallery
+                                items={subServiceCoverItems}
+                                emptyText="Henüz kapak seçilmedi."
+                                aspectClassName="aspect-[9/16]"
+                                columnsClassName="grid-cols-1"
+                                onRemove={
+                                  item.coverFile
+                                    ? () =>
+                                        clearSubServiceCoverSelection(
+                                          item.clientId
+                                        )
+                                    : undefined
+                                }
+                              />
                             </div>
                           </div>
 
@@ -917,59 +1126,29 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
                               }}
                               className={fileCls}
                             />
-
-                            {!!item.existingImages.length && (
-                              <>
-                                <p className={helperTextCls}>Mevcut medya</p>
-                                <div className="mt-2 grid grid-cols-3 gap-2">
-                                  {item.existingImages.map((media, mediaIndex) =>
-                                    media.resourceType === "video" ? (
-                                      <video
-                                        key={`${item.clientId}-existing-${mediaIndex}`}
-                                        src={media.url}
-                                        className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
-                                        muted
-                                        playsInline
-                                      />
-                                    ) : (
-                                      <img
-                                        key={`${item.clientId}-existing-${mediaIndex}`}
-                                        src={media.url}
-                                        className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
-                                        alt=""
-                                      />
-                                    )
-                                  )}
-                                </div>
-                              </>
-                            )}
-
-                            {!!item.imagePreviews.length && (
-                              <>
-                                <p className={helperTextCls}>Yeni eklenecekler</p>
-                                <div className="mt-2 grid grid-cols-3 gap-2">
-                                  {item.imagePreviews.map((url, mediaIndex) =>
-                                    toMediaType(item.imagesFiles[mediaIndex]) ===
-                                    "video" ? (
-                                      <video
-                                        key={`${item.clientId}-new-${mediaIndex}`}
-                                        src={url}
-                                        className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
-                                        muted
-                                        playsInline
-                                      />
-                                    ) : (
-                                      <img
-                                        key={`${item.clientId}-new-${mediaIndex}`}
-                                        src={url}
-                                        className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
-                                        alt=""
-                                      />
-                                    )
-                                  )}
-                                </div>
-                              </>
-                            )}
+                            <p className={helperTextCls}>
+                              Medyaları tıklayarak büyük inceleyebilir, kaldırabilir ve sırasını değiştirebilirsiniz.
+                            </p>
+                            <div className="mt-3">
+                              <AdminMediaGallery
+                                items={item.galleryItems || []}
+                                emptyText="Henüz alt medya yok."
+                                columnsClassName="grid-cols-2 sm:grid-cols-3"
+                                onRemove={(mediaId) =>
+                                  handleRemoveSubServiceImage(
+                                    item.clientId,
+                                    mediaId
+                                  )
+                                }
+                                onMove={(mediaId, direction) =>
+                                  handleMoveSubServiceImage(
+                                    item.clientId,
+                                    mediaId,
+                                    direction
+                                  )
+                                }
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1008,42 +1187,27 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
             type="file"
             accept="image/*,video/*"
             onChange={handleCoverChange}
-            className={fileCls}
+            aria-invalid={Boolean(fieldErrors.cover)}
+            className={`${fileCls} ${fieldErrors.cover ? errorInputCls : ""}`}
           />
           <p className={helperTextCls}>
             Öneri: 9:16 (ör. 1080×1920). Minimum en-boy oranı{" "}
             {FRONT_VERTICAL_MIN_RATIO}:1.
           </p>
-          <div className="admin-preview-surface mt-3 overflow-hidden">
-            {coverPreview ? (
-              toMediaType(coverFile) === "video" ? (
-                <VideoPreview
-                  src={coverPreview}
-                  className="aspect-[9/16] w-full object-cover"
-                />
-              ) : (
-                <ImagePreview
-                  src={coverPreview}
-                  className="aspect-[9/16] w-full object-cover"
-                />
-              )
-            ) : existingCover?.url ? (
-              existingCoverIsVideo ? (
-                <VideoPreview
-                  src={existingCover.url}
-                  className="aspect-[9/16] w-full object-cover"
-                />
-              ) : (
-                <ImagePreview
-                  src={existingCover.url}
-                  className="aspect-[9/16] w-full object-cover"
-                />
-              )
-            ) : (
-              <div className="grid aspect-[9/16] place-items-center text-xs text-slate-400 dark:text-slate-500">
-                Önizleme
-              </div>
-            )}
+          <p className={helperTextCls}>{MEDIA_LIMIT_HINT}</p>
+          {fieldErrors.cover ? (
+            <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
+              {fieldErrors.cover}
+            </p>
+          ) : null}
+          <div className="mt-3">
+            <AdminMediaGallery
+              items={coverGalleryItems}
+              emptyText="Henüz kapak seçilmedi."
+              aspectClassName="aspect-[9/16]"
+              columnsClassName="grid-cols-1"
+              onRemove={coverFile ? clearSelectedCover : undefined}
+            />
           </div>
         </div>
 
@@ -1058,60 +1222,19 @@ const ServiceForm = ({ initialData, onSubmit, submitting }) => {
             onChange={handleImagesChange}
             className={fileCls}
           />
-
-          {!!existingImages.length && (
-            <>
-              <p className={helperTextCls}>
-                Mevcut medya (yeniler eklenir, mevcutlar korunur)
-              </p>
-              <div className="mt-2 grid grid-cols-4 gap-2">
-                {existingImages.map((media, index) =>
-                  media.resourceType === "video" ? (
-                    <video
-                      key={`existing-top-${index}`}
-                      src={media.url}
-                      className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
-                      muted
-                      playsInline
-                    />
-                  ) : (
-                    <img
-                      key={`existing-top-${index}`}
-                      src={media.url}
-                      className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
-                      alt=""
-                    />
-                  )
-                )}
-              </div>
-            </>
-          )}
-
-          {!!imagesPreviews.length && (
-            <>
-              <p className={helperTextCls}>Yeni eklenecekler</p>
-              <div className="mt-2 grid grid-cols-4 gap-2">
-                {imagesPreviews.map((url, index) =>
-                  toMediaType(imagesFiles[index]) === "video" ? (
-                    <video
-                      key={`new-top-${index}`}
-                      src={url}
-                      className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
-                      muted
-                      playsInline
-                    />
-                  ) : (
-                    <img
-                      key={`new-top-${index}`}
-                      src={url}
-                      className="h-20 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
-                      alt=""
-                    />
-                  )
-                )}
-              </div>
-            </>
-          )}
+          <p className={helperTextCls}>{MEDIA_LIMIT_HINT}</p>
+          <p className={helperTextCls}>
+            Medyaları tıklayarak büyük inceleyebilir, kaldırabilir ve sırasını değiştirebilirsiniz.
+          </p>
+          <div className="mt-3">
+            <AdminMediaGallery
+              items={imageItems}
+              emptyText="Henüz ek medya yok."
+              columnsClassName="grid-cols-2 sm:grid-cols-4"
+              onRemove={handleRemoveImage}
+              onMove={handleMoveImage}
+            />
+          </div>
         </div>
       </div>
 

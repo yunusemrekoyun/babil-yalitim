@@ -4,47 +4,35 @@ import ToastAlert from "./ToastAlert";
 import RichContentField from "./RichContentField";
 import { JournalPreview } from "./previews/ContentPreviews";
 import OrderField from "./OrderField";
+import AdminMediaGallery from "./AdminMediaGallery";
+import { MEDIA_LIMIT_HINT } from "../utils/mediaFeedback";
+import { toEditableRichContent } from "../../utils/richContent";
+import {
+  appendOrderedMediaToFormData,
+  buildMediaPreviewList,
+  createExistingMediaItems,
+  createNewMediaItems,
+  moveMediaItem,
+  removeMediaItem,
+  revokeBlobUrl,
+  toMediaType,
+} from "../utils/mediaCollection";
 
 const inputCls =
   "w-full rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950/55 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
+const errorInputCls =
+  "border-rose-300 focus:border-rose-300 focus:ring-rose-100 dark:border-rose-500/50 dark:focus:border-rose-400 dark:focus:ring-rose-500/20";
 
 const fileCls =
   "mt-2 w-full text-sm text-slate-600 dark:text-slate-200 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-[#2c2f36] dark:file:text-slate-100";
 
-const toMediaType = (fileOrMedia) => {
-  if (!fileOrMedia) return "image";
-  if (fileOrMedia.resourceType) return fileOrMedia.resourceType;
-  if (fileOrMedia.type) return fileOrMedia.type.startsWith("video/") ? "video" : "image";
-  return "image";
-};
-
-const MediaThumb = ({ src, type = "image", className = "" }) => {
-  if (!src) return null;
-  if (type === "video") {
-    return (
-      <video
-        src={src}
-        className={className}
-        controls
-        playsInline
-        preload="metadata"
-      />
-    );
-  }
-  return <img src={src} alt="" className={className} />;
-};
-
-MediaThumb.propTypes = {
-  src: PropTypes.string,
-  type: PropTypes.oneOf(["image", "video"]),
-  className: PropTypes.string,
-};
-
-const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
+const JournalForm = ({ initialData, onSubmit, submitting }) => {
   const isEdit = Boolean(initialData?._id);
 
   const [title, setTitle] = useState(initialData?.title || "");
-  const [content, setContent] = useState(initialData?.content || "");
+  const [content, setContent] = useState(() =>
+    toEditableRichContent(initialData?.content || "")
+  );
   const [displayOrder, setDisplayOrder] = useState(
     initialData?.displayOrder ? String(initialData.displayOrder) : ""
   );
@@ -54,17 +42,18 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
     () => initialData?.cover || null,
     [initialData?.cover]
   );
-  const existingAssets = useMemo(
-    () => initialData?.assets || [],
-    [initialData?.assets]
-  );
-
   const [coverFile, setCoverFile] = useState(null);
-  const [assetsFiles, setAssetsFiles] = useState([]);
 
   const [coverPreview, setCoverPreview] = useState(null);
-  const [assetsPreviews, setAssetsPreviews] = useState([]);
+  const [assetItems, setAssetItems] = useState(() =>
+    createExistingMediaItems(initialData?.assets || [], "haber-medya")
+  );
   const revokers = useRef([]);
+  const [fieldErrors, setFieldErrors] = useState({
+    title: "",
+    content: "",
+    cover: "",
+  });
 
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
@@ -73,10 +62,14 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
   useEffect(() => {
     if (!initialData) return;
     setTitle(initialData.title || "");
-    setContent(initialData.content || "");
+    setContent(toEditableRichContent(initialData.content || ""));
     setDisplayOrder(
       initialData.displayOrder ? String(initialData.displayOrder) : ""
     );
+    setCoverFile(null);
+    setCoverPreview(null);
+    setAssetItems(createExistingMediaItems(initialData.assets || [], "haber-medya"));
+    setFieldErrors({ title: "", content: "", cover: "" });
   }, [initialData]);
 
   useEffect(() => {
@@ -97,29 +90,58 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
 
   const handleCoverChange = (event) => {
     const file = event.target.files?.[0] || null;
+    revokeBlobUrl(coverPreview);
     setCoverFile(file);
+    setFieldErrors((prev) => ({ ...prev, cover: "" }));
     blobify(file, setCoverPreview);
   };
 
   const handleAssetsChange = (event) => {
     const files = Array.from(event.target.files || []);
-    setAssetsFiles(files);
-    assetsPreviews.forEach((url) => {
-      if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+    if (!files.length) return;
+    setAssetItems((prev) => [
+      ...prev,
+      ...createNewMediaItems(files, (file) => {
+        const url = URL.createObjectURL(file);
+        revokers.current.push(url);
+        return url;
+      }, "haber-medya"),
+    ]);
+    event.target.value = "";
+  };
+
+  const clearSelectedCover = () => {
+    revokeBlobUrl(coverPreview);
+    setCoverFile(null);
+    setCoverPreview(null);
+  };
+
+  const handleRemoveAsset = (id) => {
+    setAssetItems((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (target?.source === "new") revokeBlobUrl(target.src);
+      return removeMediaItem(prev, id);
     });
-    const urls = files.map((file) => {
-      const url = URL.createObjectURL(file);
-      revokers.current.push(url);
-      return url;
-    });
-    setAssetsPreviews(urls);
+  };
+
+  const handleMoveAsset = (id, direction) => {
+    setAssetItems((prev) => moveMediaItem(prev, id, direction));
   };
 
   const submit = (event) => {
     event.preventDefault();
 
-    if (!isEdit && !coverFile) {
-      showToast("Kapak görseli zorunludur.", "error");
+    const nextErrors = {
+      title: title.trim() ? "" : "Başlık zorunludur.",
+      content: content.trim() ? "" : "İçerik zorunludur.",
+      cover:
+        coverFile || existingCover?.url ? "" : "Kapak medyası zorunludur.",
+    };
+
+    setFieldErrors(nextErrors);
+
+    if (Object.values(nextErrors).some(Boolean)) {
+      showToast("Lütfen işaretli zorunlu alanları doldurun.", "error");
       return;
     }
 
@@ -128,10 +150,39 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
     formData.append("content", content);
     if (displayOrder.trim()) formData.append("displayOrder", displayOrder.trim());
     if (coverFile) formData.append("cover", coverFile);
-    assetsFiles.forEach((file) => formData.append("assets", file));
+    appendOrderedMediaToFormData(formData, "assets", assetItems, "assetOrder");
 
     onSubmit(formData);
   };
+
+  const coverGalleryItems = useMemo(() => {
+    if (coverPreview && coverFile) {
+      return [
+        {
+          id: "cover:new",
+          source: "new",
+          src: coverPreview,
+          type: toMediaType(coverFile),
+          alt: title || "haber-kapak",
+          badge: "Yeni kapak",
+          removable: true,
+          file: coverFile,
+        },
+      ];
+    }
+
+    if (existingCover?.url) {
+      return [
+        {
+          ...createExistingMediaItems([existingCover], "haber-kapak")[0],
+          badge: "Mevcut kapak",
+          removable: false,
+        },
+      ];
+    }
+
+    return [];
+  }, [coverFile, coverPreview, existingCover, title]);
 
   const previewData = useMemo(
     () => ({
@@ -142,19 +193,9 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
         type: coverFile ? toMediaType(coverFile) : existingCover?.resourceType || "image",
         alt: title,
       },
-      assets: assetsPreviews.length
-        ? assetsPreviews.map((src, index) => ({
-            src,
-            type: toMediaType(assetsFiles[index]),
-            alt: `${title}-asset-${index + 1}`,
-          }))
-        : existingAssets.map((asset) => ({
-            src: asset.url,
-            type: asset.resourceType || "image",
-            alt: `${title}-asset`,
-          })),
+      assets: buildMediaPreviewList(assetItems),
     }),
-    [assetsFiles, assetsPreviews, content, coverFile, coverPreview, existingAssets, existingCover, title]
+    [assetItems, content, coverFile, coverPreview, existingCover, title]
   );
 
   return (
@@ -170,11 +211,22 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
           </label>
           <input
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            onChange={(event) => {
+              setTitle(event.target.value);
+              setFieldErrors((prev) => ({ ...prev, title: "" }));
+            }}
             required
-            className={`mt-2 ${inputCls}`}
+            aria-invalid={Boolean(fieldErrors.title)}
+            className={`mt-2 ${inputCls} ${
+              fieldErrors.title ? errorInputCls : ""
+            }`}
             placeholder="Örn: X firması ile anlaşma"
           />
+          {fieldErrors.title ? (
+            <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
+              {fieldErrors.title}
+            </p>
+          ) : null}
         </div>
 
         <OrderField value={displayOrder} onChange={setDisplayOrder} />
@@ -182,9 +234,17 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
         <RichContentField
           label="İçerik *"
           value={content}
-          onChange={setContent}
+          onChange={(nextValue) => {
+            setContent(nextValue);
+            setFieldErrors((prev) => ({ ...prev, content: "" }));
+          }}
           rows={10}
-          inputClassName={`min-h-[220px] ${inputCls}`}
+          required
+          invalid={Boolean(fieldErrors.content)}
+          errorText={fieldErrors.content}
+          inputClassName={`min-h-[220px] ${inputCls} ${
+            fieldErrors.content ? errorInputCls : ""
+          }`}
           placeholder="Habere dair detaylar…"
           onTogglePreview={() => setShowPreview((prev) => !prev)}
           showPreview={showPreview}
@@ -206,32 +266,30 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
       <div className="space-y-6 lg:col-span-2">
         <div>
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Kapak Görseli {isEdit ? "(mevcut varsa opsiyonel)" : "(zorunlu)"}
+            Kapak Medyası {isEdit ? "(mevcut varsa opsiyonel)" : "(zorunlu)"}
           </label>
           <input
             type="file"
             accept="image/*,video/*"
             onChange={handleCoverChange}
-            className={fileCls}
+            aria-invalid={Boolean(fieldErrors.cover)}
+            className={`${fileCls} ${fieldErrors.cover ? errorInputCls : ""}`}
           />
-          <div className="admin-preview-surface mt-3 overflow-hidden">
-            {coverPreview ? (
-              <MediaThumb
-                src={coverPreview}
-                type={toMediaType(coverFile)}
-                className="w-full"
-              />
-            ) : existingCover?.url ? (
-              <MediaThumb
-                src={existingCover.url}
-                type={existingCover.resourceType || "image"}
-                className="w-full"
-              />
-            ) : (
-              <div className="grid aspect-video place-items-center text-xs text-slate-400 dark:text-slate-500">
-                Önizleme
-              </div>
-            )}
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-300">
+            {MEDIA_LIMIT_HINT}
+          </p>
+          {fieldErrors.cover ? (
+            <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
+              {fieldErrors.cover}
+            </p>
+          ) : null}
+          <div className="mt-3">
+            <AdminMediaGallery
+              items={coverGalleryItems}
+              emptyText="Henüz kapak seçilmedi."
+              columnsClassName="grid-cols-1"
+              onRemove={coverFile ? clearSelectedCover : undefined}
+            />
           </div>
         </div>
 
@@ -246,57 +304,20 @@ const JournalForm = ({ initialData, onSubmit, onRemoveAsset, submitting }) => {
             onChange={handleAssetsChange}
             className={fileCls}
           />
-
-          {!!existingAssets.length && (
-            <>
-              <p className="mt-3 text-xs text-slate-500 dark:text-slate-300">
-                Mevcut medya
-              </p>
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {existingAssets.map((asset) => (
-                  <div
-                    key={asset.publicId}
-                    className="relative overflow-hidden rounded-2xl border border-slate-200/70 shadow-sm dark:border-slate-700 dark:bg-slate-900/40"
-                  >
-                    <MediaThumb
-                      src={asset.url}
-                      type={asset.resourceType === "video" ? "video" : "image"}
-                      className="h-28 w-full object-cover"
-                    />
-                    {onRemoveAsset && (
-                      <button
-                        type="button"
-                        onClick={() => onRemoveAsset(asset.publicId)}
-                        className="absolute right-2 top-2 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-md shadow-rose-500/30 transition hover:-translate-y-[1px]"
-                        aria-label="Medyayı sil"
-                        title="Medyayı sil"
-                      >
-                        Sil
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {!!assetsPreviews.length && (
-            <>
-              <p className="mt-4 text-xs text-slate-500 dark:text-slate-300">
-                Yeni eklenecekler
-              </p>
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {assetsPreviews.map((url, index) => (
-                  <MediaThumb
-                    key={url}
-                    src={url}
-                    type={toMediaType(assetsFiles[index])}
-                    className="h-28 w-full rounded-2xl object-cover border border-slate-200/70 dark:border-slate-700"
-                  />
-                ))}
-              </div>
-            </>
-          )}
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-300">
+            {MEDIA_LIMIT_HINT}
+          </p>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-300">
+            Medyaları tıklayarak büyük inceleyebilir, kaldırabilir ve sırasını değiştirebilirsiniz.
+          </p>
+          <div className="mt-3">
+            <AdminMediaGallery
+              items={assetItems}
+              emptyText="Henüz ek medya yok."
+              onRemove={handleRemoveAsset}
+              onMove={handleMoveAsset}
+            />
+          </div>
         </div>
       </div>
 
@@ -331,7 +352,6 @@ JournalForm.propTypes = {
     ),
   }),
   onSubmit: PropTypes.func.isRequired,
-  onRemoveAsset: PropTypes.func,
   submitting: PropTypes.bool,
 };
 

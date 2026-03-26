@@ -2,9 +2,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../../api.js";
+import AdminLoadingState from "../../components/AdminLoadingState.jsx";
+import LoadErrorState from "../../components/LoadErrorState.jsx";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmModal from "../../components/ConfirmDialog.jsx";
 import OrderSelect from "../../components/OrderSelect";
+import { getAdminFeedbackMessage } from "../../utils/mediaFeedback";
+import {
+  toPlainRichContent,
+  toRichContentExcerpt,
+} from "../../../utils/richContent.js";
 
 const clamp2 = {
   display: "-webkit-box",
@@ -13,12 +20,56 @@ const clamp2 = {
   overflow: "hidden",
 };
 
+const isVideoCover = (cover) =>
+  cover?.resourceType === "video" ||
+  /\.(mp4|webm|mov|m4v)(?:$|[?#])/i.test(cover?.url || "");
+
+const renderCover = (cover, title, className) => {
+  if (!cover?.url) {
+    return (
+      <div
+        className={`${className} grid shrink-0 place-items-center rounded-md border border-dashed bg-slate-100/70 text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800/60`}
+      >
+        Kapak yok
+      </div>
+    );
+  }
+
+  if (isVideoCover(cover)) {
+    return (
+      <div className="relative shrink-0">
+        <video
+          src={cover.url}
+          className={`${className} rounded-md border border-slate-200/70 object-cover dark:border-slate-800`}
+          muted
+          playsInline
+          preload="metadata"
+        />
+        <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
+          video
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={cover.url}
+      alt={title}
+      className={`${className} shrink-0 rounded-md border border-slate-200/70 object-cover dark:border-slate-800`}
+    />
+  );
+};
+
+const getJournalPlainContent = (content) => toPlainRichContent(content);
+const getJournalSummary = (content) => toRichContentExcerpt(content, 120);
+
 const JournalList = () => {
   const [journals, setJournals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [orderingId, setOrderingId] = useState("");
   const [q, setQ] = useState("");
-  const [err, setErr] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
@@ -31,23 +82,26 @@ const JournalList = () => {
     onConfirm: null,
     loading: false,
   });
+
   const inputCls =
     "w-full sm:w-72 rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
+
   const openConfirm = (title, desc, onConfirm) =>
     setConfirm({ open: true, title, desc, onConfirm, loading: false });
   const closeConfirm = () =>
-    setConfirm((c) => ({ ...c, open: false, onConfirm: null }));
+    setConfirm((current) => ({ ...current, open: false, onConfirm: null }));
 
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError("");
       const { data } = await api.get("/journals");
       setJournals(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("GET /journals error:", e?.response?.data || e);
-      const msg = e?.response?.data?.message || "Haberler getirilemedi.";
-      setErr(msg);
-      showToast(msg, "error");
+      const message = getAdminFeedbackMessage(e, "Haberler getirilemedi.");
+      setLoadError(message);
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -58,13 +112,16 @@ const JournalList = () => {
   }, [fetchAll]);
 
   const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return journals;
-    return journals.filter(
-      (x) =>
-        x.title?.toLowerCase().includes(s) ||
-        x.content?.toLowerCase().includes(s)
-    );
+    const search = q.trim().toLowerCase();
+    if (!search) return journals;
+
+    return journals.filter((journal) => {
+      const plainContent = getJournalPlainContent(journal.content).toLowerCase();
+      return (
+        journal.title?.toLowerCase().includes(search) ||
+        plainContent.includes(search)
+      );
+    });
   }, [journals, q]);
 
   const handleDeleteClick = (id, title) => {
@@ -73,13 +130,13 @@ const JournalList = () => {
       `“${title || "Adsız"}” başlıklı haberi silmek istiyor musunuz?`,
       async () => {
         try {
-          setConfirm((c) => ({ ...c, loading: true }));
+          setConfirm((current) => ({ ...current, loading: true }));
           await api.delete(`/journals/${id}`);
           await fetchAll();
           showToast("Haber silindi", "success");
         } catch (e) {
           console.error("DELETE /journals/:id error:", e?.response?.data || e);
-          showToast(e?.response?.data?.message || "Silinemedi.", "error");
+          showToast(getAdminFeedbackMessage(e, "Silinemedi."), "error");
         } finally {
           closeConfirm();
         }
@@ -96,7 +153,7 @@ const JournalList = () => {
     } catch (e) {
       console.error("PATCH /journals/:id/order error:", e?.response?.data || e);
       showToast(
-        e?.response?.data?.message || "Haber sırası güncellenemedi.",
+        getAdminFeedbackMessage(e, "Haber sırası güncellenemedi."),
         "error"
       );
     } finally {
@@ -104,8 +161,21 @@ const JournalList = () => {
     }
   };
 
-  if (loading) return <p className="p-4 text-slate-500">Yükleniyor…</p>;
-  if (err) return <p className="p-4 text-red-500">{err}</p>;
+  const hasActiveFilters = Boolean(q.trim());
+  const emptyMessage = hasActiveFilters
+    ? "Aramanızla eşleşen haber bulunamadı."
+    : "Henüz haber kaydı yok.";
+
+  if (loading && !journals.length) {
+    return (
+      <div className="p-4 md:p-6 overflow-x-hidden">
+        <AdminLoadingState
+          title="Haberler yükleniyor"
+          message="Haber listesi ve içerik özetleri hazırlanıyor."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 overflow-x-hidden space-y-5">
@@ -135,86 +205,98 @@ const JournalList = () => {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {loadError ? (
+        <LoadErrorState
+          title="Haberler yüklenemedi"
+          message={loadError}
+          onRetry={fetchAll}
+        />
+      ) : null}
+
+      {loadError && !journals.length ? null : filtered.length === 0 ? (
         <div className="admin-card p-6 text-center text-slate-500 dark:text-slate-300">
-          Kayıt bulunamadı.
+          {emptyMessage}
         </div>
       ) : (
         <>
           <div className="grid gap-3 sm:hidden">
-            {filtered.map((j) => (
-              <div key={j._id} className="admin-card p-4 relative overflow-hidden">
-                <div className="flex items-start gap-3">
-                  {j.cover?.url ? (
-                    <img
-                      src={j.cover.url}
-                      alt={j.title}
-                      className="h-16 w-24 object-cover rounded-md border border-slate-200/70 dark:border-slate-800 shrink-0"
+            {filtered.map((journal) => {
+              const plainContent = getJournalPlainContent(journal.content);
+              const summary = getJournalSummary(journal.content);
+
+              return (
+                <div
+                  key={journal._id}
+                  className="admin-card relative overflow-hidden p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    {renderCover(journal.cover, journal.title, "h-16 w-24")}
+
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className="font-semibold leading-snug break-words text-slate-900 dark:text-white"
+                        style={clamp2}
+                        title={journal.title}
+                      >
+                        {journal.title}
+                      </div>
+                      <div
+                        className="mt-1 break-words text-xs text-slate-500 dark:text-slate-300"
+                        style={clamp2}
+                        title={plainContent}
+                      >
+                        {summary}
+                      </div>
+                      <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        Sıra #{journal.displayOrder || 1} •{" "}
+                        {journal.createdAt
+                          ? new Date(journal.createdAt).toLocaleDateString(
+                              "tr-TR"
+                            )
+                          : "-"}{" "}
+                        • Beğeni: {journal.likesCount ?? 0}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      Gösterim sırası
+                    </div>
+                    <OrderSelect
+                      value={journal.displayOrder || 1}
+                      max={journals.length || 1}
+                      onChange={(value) =>
+                        handleOrderChange(journal._id, value)
+                      }
+                      disabled={orderingId === journal._id}
+                      className="w-full"
                     />
-                  ) : (
-                    <div className="h-16 w-24 rounded-md border border-dashed bg-slate-100/70 grid place-items-center text-xs text-slate-400 shrink-0 dark:bg-slate-800/60 dark:border-slate-700">
-                      Kapak yok
-                    </div>
-                  )}
+                  </div>
 
-                  <div className="min-w-0 flex-1">
-                    <div
-                      className="font-semibold text-slate-900 leading-snug break-words dark:text-white"
-                      style={clamp2}
-                      title={j.title}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Link
+                      to={`/admin/journals/edit/${journal._id}`}
+                      className="inline-flex items-center gap-1 rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
                     >
-                      {j.title}
-                    </div>
-                    <div
-                      className="mt-1 text-xs text-slate-500 break-words dark:text-slate-300"
-                      style={clamp2}
-                      title={j.content}
+                      Düzenle
+                    </Link>
+                    <button
+                      onClick={() =>
+                        handleDeleteClick(journal._id, journal.title)
+                      }
+                      className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
                     >
-                      {j.content}
-                    </div>
-                    <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                      Sıra #{j.displayOrder || 1} •{" "}
-                      {j.createdAt
-                        ? new Date(j.createdAt).toLocaleDateString("tr-TR")
-                        : "-"}{" "}
-                      • Beğeni: {j.likesCount ?? 0}
-                    </div>
+                      Sil
+                    </button>
                   </div>
                 </div>
-
-                <div className="mt-3">
-                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    Gösterim sırası
-                  </div>
-                  <OrderSelect
-                    value={j.displayOrder || 1}
-                    max={journals.length || 1}
-                    onChange={(value) => handleOrderChange(j._id, value)}
-                    disabled={orderingId === j._id}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Link
-                    to={`/admin/journals/edit/${j._id}`}
-                    className="inline-flex items-center gap-1 rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
-                  >
-                    Düzenle
-                  </Link>
-                  <button
-                    onClick={() => handleDeleteClick(j._id, j.title)}
-                    className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
-                  >
-                    Sil
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          <div className="-mx-4 sm:mx-0 overflow-x-auto hidden sm:block">
-            <div className="admin-card p-0 overflow-hidden">
+          <div className="-mx-4 hidden overflow-x-auto sm:mx-0 sm:block">
+            <div className="admin-card overflow-hidden p-0">
               <table className="min-w-[900px] w-full text-sm">
                 <thead className="bg-slate-50/70 text-left text-slate-600 dark:bg-slate-900/50 dark:text-slate-300">
                   <tr>
@@ -239,68 +321,81 @@ const JournalList = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((j) => (
-                    <tr
-                      key={j._id}
-                      className="align-top transition hover:bg-indigo-50/60 dark:hover:bg-slate-800/40"
-                    >
-                      <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                        {j.cover?.url ? (
-                          <img
-                            src={j.cover.url}
-                            alt={j.title}
-                            className="h-16 w-24 object-cover rounded-md shadow-sm"
+                  {filtered.map((journal) => {
+                    const plainContent = getJournalPlainContent(journal.content);
+                    const summary = getJournalSummary(journal.content);
+
+                    return (
+                      <tr
+                        key={journal._id}
+                        className="align-top transition hover:bg-indigo-50/60 dark:hover:bg-slate-800/40"
+                      >
+                        <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                          {journal.cover?.url
+                            ? renderCover(
+                                journal.cover,
+                                journal.title,
+                                "h-16 w-24 shadow-sm"
+                              )
+                            : "-"}
+                        </td>
+                        <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                          <div className="font-medium text-slate-800 dark:text-slate-100">
+                            {journal.title}
+                          </div>
+                          <div
+                            className="mt-1 max-w-[40ch] line-clamp-2 text-slate-500 dark:text-slate-300"
+                            title={plainContent}
+                          >
+                            {summary}
+                          </div>
+                        </td>
+                        <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                          <OrderSelect
+                            value={journal.displayOrder || 1}
+                            max={journals.length || 1}
+                            onChange={(value) =>
+                              handleOrderChange(journal._id, value)
+                            }
+                            disabled={orderingId === journal._id}
                           />
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                      <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                        <div className="font-medium text-slate-800 dark:text-slate-100">
-                          {j.title}
-                        </div>
-                        <div className="mt-1 text-slate-500 max-w-[40ch] line-clamp-2 dark:text-slate-300">
-                          {j.content}
-                        </div>
-                      </td>
-                      <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                        <OrderSelect
-                          value={j.displayOrder || 1}
-                          max={journals.length || 1}
-                          onChange={(value) => handleOrderChange(j._id, value)}
-                          disabled={orderingId === j._id}
-                        />
-                      </td>
-                      <td className="border border-slate-200/70 p-3 whitespace-nowrap dark:border-slate-800/70">
-                        {j.createdAt
-                          ? new Date(j.createdAt).toLocaleDateString("tr-TR", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })
-                          : "-"}
-                      </td>
-                      <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                        {j.likesCount ?? 0}
-                      </td>
-                    <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                      <div className="flex gap-2">
-                        <Link
-                          to={`/admin/journals/edit/${j._id}`}
-                          className="inline-flex items-center gap-1 rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
-                        >
-                          Düzenle
-                        </Link>
-                        <button
-                          onClick={() => handleDeleteClick(j._id, j.title)}
-                          className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
-                        >
-                          Sil
-                        </button>
-                      </div>
-                    </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="border border-slate-200/70 p-3 whitespace-nowrap dark:border-slate-800/70">
+                          {journal.createdAt
+                            ? new Date(journal.createdAt).toLocaleDateString(
+                                "tr-TR",
+                                {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                }
+                              )
+                            : "-"}
+                        </td>
+                        <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                          {journal.likesCount ?? 0}
+                        </td>
+                        <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
+                          <div className="flex gap-2">
+                            <Link
+                              to={`/admin/journals/edit/${journal._id}`}
+                              className="inline-flex items-center gap-1 rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
+                            >
+                              Düzenle
+                            </Link>
+                            <button
+                              onClick={() =>
+                                handleDeleteClick(journal._id, journal.title)
+                              }
+                              className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
+                            >
+                              Sil
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -320,17 +415,16 @@ const JournalList = () => {
           if (confirm.loading) return;
           closeConfirm();
         }}
-        onClose={closeConfirm}
       />
 
-      {toast && (
+      {toast ? (
         <ToastAlert
           msg={toast.msg}
           type={toast.type}
           duration={toast.duration}
           onClose={() => setToast(null)}
         />
-      )}
+      ) : null}
     </div>
   );
 };
