@@ -4,6 +4,10 @@ import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
 import AboutPageComponent from "../components/About/AboutPageComponent";
 import Breadcrumb from "../components/ui/Breadcrumb"; // yeni ekleme
+import {
+  ABOUT_PAGE_LEAD,
+  ABOUT_SECTION_TITLE,
+} from "../content/aboutContent";
 
 const AboutPage = () => {
   return (
@@ -26,12 +30,11 @@ const AboutPage = () => {
         <header className="relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-6 md:px-10 pt-8 md:pt-12 pb-4">
             <h1 className="text-3xl md:text-5xl font-extrabold text-secondaryColor tracking-tight text-center">
-              Hakkımızda
+              {ABOUT_SECTION_TITLE}
             </h1>
             <div className="h-1 w-24 bg-quaternaryColor/90 rounded-full mt-4 mx-auto" />
             <p className="mt-6 text-gray-700 max-w-2xl mx-auto text-center">
-              2013’ten bu yana su yalıtımı ve yapı koruma çözümlerinde
-              süreklilik, kalite ve güven.
+              {ABOUT_PAGE_LEAD}
             </p>
           </div>
         </header>

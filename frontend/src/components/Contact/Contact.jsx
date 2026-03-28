@@ -7,8 +7,7 @@ import {
   CONTACT_EMAIL,
   CONTACT_HOURS,
   CONTACT_MAP_URL,
-  CONTACT_PHONE_DISPLAY,
-  CONTACT_PHONE_LINK,
+  CONTACT_PHONES,
 } from "../../config/site";
 
 const Contact = () => {
@@ -36,7 +35,8 @@ const Contact = () => {
       setForm({ name: "", email: "", message: "", company: "" });
       setStatus({
         type: "success",
-        text: data?.message || "Mesajiniz alindi. En kisa surede donus yapacagiz.",
+        text:
+          data?.message || "Mesajiniz alindi. En kisa surede donus yapacagiz.",
       });
     } catch (error) {
       setSubmitting(false);
@@ -86,13 +86,18 @@ const Contact = () => {
                   <Phone size={18} />
                 </span>
                 <div>
-                  <p className="text-sm text-gray-600">Telefon</p>
-                  <a
-                    href={`tel:${CONTACT_PHONE_LINK}`}
-                    className="font-medium hover:underline"
-                  >
-                    {CONTACT_PHONE_DISPLAY}
-                  </a>
+                  <p className="text-sm text-gray-600 ">Telefon</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    {CONTACT_PHONES.map((phone) => (
+                      <a
+                        key={phone.link}
+                        href={`tel:${phone.link}`}
+                        className="inline-flex items-center rounded-full border border-secondaryColor/15 bg-white/70 px-3 py-1 text-sm font-medium text-secondaryColor transition hover:border-quaternaryColor hover:text-quaternaryColor"
+                      >
+                        {phone.display}
+                      </a>
+                    ))}
+                  </div>
                 </div>
               </li>
               <li className="flex items-start gap-3">
@@ -115,9 +120,7 @@ const Contact = () => {
                 </span>
                 <div>
                   <p className="text-sm text-gray-600">Adres</p>
-                  <p className="font-medium">
-                    {CONTACT_ADDRESS}
-                  </p>
+                  <p className="font-medium">{CONTACT_ADDRESS}</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">

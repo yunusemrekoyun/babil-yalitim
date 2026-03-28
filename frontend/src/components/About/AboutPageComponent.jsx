@@ -13,21 +13,22 @@ import {
 import img1 from "../../assets/1.jpg";
 import img2 from "../../assets/2.jpg";
 import img3 from "../../assets/3.jpg";
+import { ABOUT_PAGE_SECTIONS } from "../../content/aboutContent";
 
 const sections = [
   {
-    title: "Hakkımızda",
-    text: "Babil Yalıtım olarak 10 yılı aşkın süredir su yalıtımı alanında faaliyet gösteriyoruz. Tecrübemiz, uzman kadromuz ve müşteri odaklı yaklaşımımızla projelerinize kalıcı çözümler sunuyoruz.",
+    title: ABOUT_PAGE_SECTIONS[0].title,
+    text: ABOUT_PAGE_SECTIONS[0].text,
     img: img1,
   },
   {
-    title: "Misyonumuz",
-    text: "Her projeye özel yaklaşımımızla en kaliteli ve uzun ömürlü yalıtım hizmetini sunmak; güven, şeffaflık ve memnuniyeti merkeze almak.",
+    title: ABOUT_PAGE_SECTIONS[1].title,
+    text: ABOUT_PAGE_SECTIONS[1].text,
     img: img2,
   },
   {
-    title: "Vizyonumuz",
-    text: "Yalıtım sektöründe yenilikçi ve sürdürülebilir çözümlerle lider olmak; çevreye duyarlı bir üretim ve uygulama kültürünü yaygınlaştırmak.",
+    title: ABOUT_PAGE_SECTIONS[2].title,
+    text: ABOUT_PAGE_SECTIONS[2].text,
     img: img3,
   },
 ];
@@ -148,7 +149,7 @@ const AboutPageComponent = () => {
         {[
           {
             label: "Yıllık Deneyim",
-            value: "10+",
+            value: "17+",
             icon: <Briefcase className="w-6 h-6" />,
           },
           {
@@ -157,8 +158,8 @@ const AboutPageComponent = () => {
             icon: <CheckCircle className="w-6 h-6" />,
           },
           {
-            label: "Memnuniyet Oranı",
-            value: "%98",
+            label: "Resmi Distribütörlük",
+            value: "10+ Marka",
             icon: <Smile className="w-6 h-6" />,
           },
           {

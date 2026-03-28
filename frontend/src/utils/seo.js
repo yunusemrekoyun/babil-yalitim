@@ -1,4 +1,5 @@
 import { SITE_DESCRIPTION, SITE_TITLE } from "../config/site";
+import { ABOUT_SEO_DESCRIPTION } from "../content/aboutContent";
 
 const DEFAULT_META = {
   title: SITE_TITLE,
@@ -44,7 +45,7 @@ const MATCHERS = [
   {
     test: (pathname) => pathname === "/about",
     title: `Hakkimizda | ${SITE_TITLE}`,
-    description: "Marka, ekip ve calisma yaklasimi hakkinda bilgi.",
+    description: ABOUT_SEO_DESCRIPTION,
   },
   {
     test: (pathname) => pathname === "/whyus",

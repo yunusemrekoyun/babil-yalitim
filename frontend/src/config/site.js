@@ -8,6 +8,22 @@ export const CONTACT_PHONE_DISPLAY =
   import.meta.env.VITE_CONTACT_PHONE_DISPLAY || "+90 555 123 45 67";
 export const CONTACT_PHONE_LINK =
   import.meta.env.VITE_CONTACT_PHONE_LINK || "+905551234567";
+export const CONTACT_PHONE_DISPLAY_2 =
+  import.meta.env.VITE_CONTACT_PHONE_DISPLAY_2 || "+90 532 674 01 61";
+export const CONTACT_PHONE_LINK_2 =
+  import.meta.env.VITE_CONTACT_PHONE_LINK_2 || "+905326740161";
+export const CONTACT_PHONES = [
+  {
+    display: CONTACT_PHONE_DISPLAY,
+    link: CONTACT_PHONE_LINK,
+  },
+  CONTACT_PHONE_DISPLAY_2 && CONTACT_PHONE_LINK_2
+    ? {
+        display: CONTACT_PHONE_DISPLAY_2,
+        link: CONTACT_PHONE_LINK_2,
+      }
+    : null,
+].filter(Boolean);
 export const CONTACT_EMAIL =
   import.meta.env.VITE_CONTACT_EMAIL || "babilyalitim@gmail.com";
 export const CONTACT_ADDRESS =

@@ -81,8 +81,15 @@ router.get("/", searchLimiter, async (req, res) => {
         title: "Hakkımızda",
         path: "/about",
         content:
-          "Babil Yalıtım hakkında kurumsal bilgiler, firma yaklaşımı ve uzmanlık alanları.",
-        keywords: ["kurumsal", "ekip", "tecrübe", "firma", "babil"],
+          "Babil Yalıtım; su yalıtımı, yapı koruma, poliüretan köpük, poliürea, epoksi zemin kaplama ve beton silim alanlarında modern teknolojiyle kalıcı çözümler sunar.",
+        keywords: [
+          "kurumsal",
+          "babil",
+          "su yalıtımı",
+          "yapı koruma",
+          "poliürea",
+          "epoksi",
+        ],
       },
       {
         _id: "static-whyus",

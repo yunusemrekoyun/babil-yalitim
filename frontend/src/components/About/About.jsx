@@ -1,6 +1,10 @@
 import img1 from "../../assets/about.png";
 import { Users, CheckCircle, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  ABOUT_HOME_TEXT,
+  ABOUT_SECTION_TITLE,
+} from "../../content/aboutContent";
 
 const About = () => {
   return (
@@ -41,18 +45,13 @@ const About = () => {
           >
             <header>
               <h2 className="text-2xl md:text-3xl font-extrabold">
-                Hakkımızda
+                {ABOUT_SECTION_TITLE}
               </h2>
               <div className="mt-3 h-1 w-24 bg-quaternaryColor rounded-full" />
             </header>
 
-            <p className="mt-5 text-gray-100/90 leading-relaxed">
-              Firmamız 2013 yılından beri Kütahya’da su yalıtımı üzerine hizmet
-              vermektedir. Temel izolasyonu, perde beton izolasyonu, PVC
-              geomembran uygulama, teras ve çatı izolasyonu, havuz ve ıslak
-              zemin izolasyonu, depo izolasyonu, poliüretan köpük uygulamaları,
-              polyurea kaplama ve enjeksiyon sistemleri alanlarında profesyonel
-              çözümler sunmaktayız.
+            <p className="mt-5 whitespace-pre-line text-gray-100/90 leading-relaxed">
+              {ABOUT_HOME_TEXT}
             </p>
 
             {/* Sayısal Bilgiler */}
@@ -60,16 +59,16 @@ const About = () => {
               <div className="flex items-center gap-3 rounded-xl bg-white/10 border border-white/20 px-4 py-3">
                 <Users className="text-buzbeyaz w-5 h-5" />
                 <div>
-                  <div className="text-lg font-bold text-buzbeyaz">1234</div>
-                  <div className="text-xs text-buzbeyaz/90">Mutlu Müşteri</div>
+                  <div className="text-lg font-bold text-buzbeyaz">250+</div>
+                  <div className="text-xs text-buzbeyaz/90">Korunan Yapı</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 rounded-xl bg-white/10 border border-white/20 px-4 py-3">
                 <CheckCircle className="text-buzbeyaz w-5 h-5" />
                 <div>
-                  <div className="text-lg font-bold text-buzbeyaz">1234</div>
+                  <div className="text-lg font-bold text-buzbeyaz">17+</div>
                   <div className="text-xs text-buzbeyaz/90">
-                    Tamamlanan Proje
+                    Yıllık Deneyim
                   </div>
                 </div>
               </div>

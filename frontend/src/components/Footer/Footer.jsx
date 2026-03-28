@@ -7,6 +7,7 @@ import {
   CONTACT_PHONE_DISPLAY,
   CONTACT_PHONE_LINK,
 } from "../../config/site";
+import { ABOUT_FOOTER_TEXT } from "../../content/aboutContent";
 
 const Footer = () => {
   return (
@@ -16,8 +17,7 @@ const Footer = () => {
         <div className="flex flex-col gap-4">
           <img src={Logo} alt="Logo" className="w-36 mb-2" />
           <p className="text-secondaryColor text-sm">
-            10+ yıllık tecrübe ile su yalıtımında uzman, güvenilir ve yenilikçi
-            çözümler sunuyoruz. Kalite ve müşteri memnuniyeti önceliğimizdir.
+            {ABOUT_FOOTER_TEXT}
           </p>
         </div>
 
