@@ -51,6 +51,8 @@ const ProjectsPageComponent = () => {
     });
   }, [projects, q, cat]);
 
+  const hasProjects = projects.length > 0;
+
   if (loading)
     return (
       <section className="w-full py-16 text-center text-gray-500">
@@ -104,7 +106,19 @@ const ProjectsPageComponent = () => {
 
       {filtered.length === 0 ? (
         <div className="text-center text-gray-600 bg-white/50 backdrop-blur-xl border border-white/30 rounded-2xl py-16">
-          Aramanızla eşleşen proje bulunamadı.
+          {hasProjects ? (
+            "Aramanızla eşleşen proje bulunamadı."
+          ) : (
+            <div className="mx-auto max-w-2xl space-y-3 px-6">
+              <p className="text-lg font-semibold text-secondaryColor">
+                Projelerimiz yakında burada yayınlanacak.
+              </p>
+              <p className="text-sm leading-6 text-gray-600">
+                Şu an listelenecek proje bulunmuyor. Yeni projeler eklendikçe bu
+                sayfada paylaşılacak, daha sonra tekrar göz atabilirsiniz.
+              </p>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

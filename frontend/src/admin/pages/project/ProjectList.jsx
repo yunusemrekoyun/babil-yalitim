@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
+import { Eye, EyeOff } from "lucide-react";
 import api from "../../../api";
 import AdminLoadingState from "../../components/AdminLoadingState";
 import LoadErrorState from "../../components/LoadErrorState";
@@ -9,6 +10,10 @@ import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import OrderSelect from "../../components/OrderSelect";
 import { getAdminFeedbackMessage } from "../../utils/mediaFeedback";
+import {
+  DEFAULT_SITE_SETTINGS,
+  normalizeSiteSettings,
+} from "../../../utils/siteSettings";
 
 const Card = ({ project, onDelete, onOrderChange, maxOrder, orderLoading }) => {
   const coverIsVideo = project?.cover?.resourceType === "video";
@@ -122,6 +127,9 @@ const ProjectList = () => {
   const [loading, setLoading] = useState(true);
   const [orderingId, setOrderingId] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [siteSettings, setSiteSettings] = useState(DEFAULT_SITE_SETTINGS);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [toggleLoading, setToggleLoading] = useState(false);
   const inputCls =
     "w-full sm:w-64 rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
 
@@ -155,6 +163,26 @@ const ProjectList = () => {
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
+
+  const fetchSiteSettings = useCallback(async () => {
+    try {
+      setSettingsLoading(true);
+      const { data } = await api.get("/site-settings");
+      setSiteSettings(normalizeSiteSettings(data));
+    } catch (err) {
+      console.error("GET /site-settings error:", err?.response?.data || err);
+      showToast(
+        getAdminFeedbackMessage(err, "Anasayfa ayarlari getirilemedi."),
+        "error"
+      );
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSiteSettings();
+  }, [fetchSiteSettings]);
 
   const cats = useMemo(() => {
     const categories = new Set();
@@ -243,6 +271,35 @@ const ProjectList = () => {
     }
   };
 
+  const handleProjectsVisibilityToggle = async () => {
+    try {
+      setToggleLoading(true);
+      const nextVisible = !siteSettings.homeProjectsVisible;
+      const { data } = await api.patch("/site-settings", {
+        homeProjectsVisible: nextVisible,
+      });
+      const normalized = normalizeSiteSettings(data);
+      setSiteSettings(normalized);
+      showToast(
+        normalized.homeProjectsVisible
+          ? "Proje bolumu anasayfada gosterilecek."
+          : "Proje bolumu anasayfada gizlendi.",
+        "success"
+      );
+    } catch (err) {
+      console.error("PATCH /site-settings error:", err?.response?.data || err);
+      showToast(
+        getAdminFeedbackMessage(
+          err,
+          "Proje bolumu gorunurlugu guncellenemedi."
+        ),
+        "error"
+      );
+    } finally {
+      setToggleLoading(false);
+    }
+  };
+
   const hasActiveFilters = Boolean(q.trim()) || cat !== "all";
   const emptyMessage = hasActiveFilters
     ? "Seçili filtrelerle eşleşen proje bulunamadı."
@@ -306,6 +363,61 @@ const ProjectList = () => {
             </Link>
           </div>
         </div>
+      </div>
+
+      <div className="admin-card flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="badge-soft">Anasayfa Gorunurlugu</span>
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                siteSettings.homeProjectsVisible
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              }`}
+            >
+              {settingsLoading
+                ? "Yukleniyor"
+                : siteSettings.homeProjectsVisible
+                  ? "Gosteriliyor"
+                  : "Gizli"}
+            </span>
+          </div>
+          <h3 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
+            Anasayfa proje bolumu
+          </h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Projeler sonrasi kullanilacaksa bu alani tek tusla kapatip acabilirsiniz.
+          </p>
+          {!all.length ? (
+            <p className="mt-2 text-xs font-medium text-amber-600 dark:text-amber-300">
+              Su an proje kaydi yok. Bolum acik kalirsa anasayfada bos bir alan
+              gorunebilir.
+            </p>
+          ) : null}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleProjectsVisibilityToggle}
+          disabled={settingsLoading || toggleLoading}
+          className={`inline-flex min-w-[210px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition ${
+            siteSettings.homeProjectsVisible
+              ? "bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600"
+              : "bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+          } disabled:cursor-not-allowed disabled:opacity-60`}
+        >
+          {siteSettings.homeProjectsVisible ? (
+            <EyeOff size={18} />
+          ) : (
+            <Eye size={18} />
+          )}
+          {toggleLoading
+            ? "Guncelleniyor..."
+            : siteSettings.homeProjectsVisible
+              ? "Anasayfada Gizle"
+              : "Anasayfada Goster"}
+        </button>
       </div>
 
       {loadError ? (

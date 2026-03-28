@@ -31,9 +31,21 @@ describe("cloudinary utils", () => {
     expect(imageUrl).toContain("/image/upload/f_auto,dpr_auto,q_auto:eco,w_800");
     expect(imageUrl).toContain("/projects/cover");
     expect(videoUrl).toContain(
-      "/video/upload/f_auto:video,vc_auto,ac_none,q_auto:good,w_1280,c_limit"
+      "/video/upload/f_auto:video,vc_auto,q_auto:good,ac_none,w_1280,c_limit"
     );
     expect(videoUrl).toContain("/projects/hero");
+  });
+
+  it("can keep audio tracks when requested", () => {
+    const videoUrl = getOptimizedVideoUrl(
+      "https://res.cloudinary.com/demo/video/upload/v5678/projects/hero.mp4",
+      { width: 1280, quality: "auto:good", stripAudio: false }
+    );
+
+    expect(videoUrl).toContain(
+      "/video/upload/f_auto:video,vc_auto,q_auto:good,w_1280,c_limit"
+    );
+    expect(videoUrl).not.toContain("ac_none");
   });
 
   it("keeps derived video poster URLs stable instead of rebuilding them as images", () => {

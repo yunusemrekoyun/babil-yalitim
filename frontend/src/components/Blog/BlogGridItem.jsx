@@ -1,15 +1,47 @@
+import { useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { PlayCircle } from "lucide-react";
 import AdaptiveImage from "../Media/AdaptiveImage";
 import { toRichContentExcerpt } from "../../utils/richContent";
+import {
+  getOptimizedVideoUrl,
+  getVideoPosterUrl,
+  looksVideo,
+} from "../../utils/cloudinary";
 
 const BlogGridItem = ({ item, index }) => {
   const navigate = useNavigate();
+  const [hovered, setHovered] = useState(false);
+  const videoRef = useRef(null);
 
   const coverUrl =
     item?.cover?.url ||
     "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nNjQwJyBoZWlnaHQ9JzM2MCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJz48cmVjdCBmaWxsPSIjZWVlIiB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJy8+PC9zdmc+";
+  const coverMedia = item?.cover || coverUrl;
+  const coverIsVideo =
+    item?.cover?.resourceType === "video" || looksVideo(coverUrl);
+  const posterUrl = useMemo(
+    () =>
+      coverIsVideo
+        ? getVideoPosterUrl(coverMedia, { width: 960, quality: "auto:good" })
+        : "",
+    [coverIsVideo, coverMedia]
+  );
+  const videoUrl = useMemo(
+    () =>
+      coverIsVideo
+        ? getOptimizedVideoUrl(coverMedia, {
+            width: 1280,
+            quality: "auto:good",
+          })
+        : "",
+    [coverIsVideo, coverMedia]
+  );
+  const isTouch =
+    typeof window !== "undefined" &&
+    window.matchMedia("(hover: none), (pointer: coarse)").matches;
 
   const createdText = item?.createdAt
     ? new Date(item.createdAt).toLocaleDateString("tr-TR")
@@ -24,6 +56,18 @@ const BlogGridItem = ({ item, index }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.4, ease: "easeOut" }}
       className="transform-gpu-soft group rounded-2xl overflow-hidden border border-white/40 bg-white/60 backdrop-blur-xl shadow-lg hover:shadow-[0_18px_50px_rgba(0,0,0,0.16)] hover:-translate-y-0.5 transition-all cursor-pointer"
+      onMouseEnter={() => {
+        setHovered(true);
+        if (!coverIsVideo || isTouch || !videoRef.current) return;
+        videoRef.current.currentTime = 0;
+        videoRef.current.play().catch(() => {});
+      }}
+      onMouseLeave={() => {
+        setHovered(false);
+        if (!coverIsVideo || !videoRef.current) return;
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }}
       onClick={() => navigate(`/blog/${item._id}`)}
       role="button"
       tabIndex={0}
@@ -32,13 +76,41 @@ const BlogGridItem = ({ item, index }) => {
     >
       {/* Kapak */}
       <div className="relative w-full h-44 md:h-56 overflow-hidden">
-        <AdaptiveImage
-          media={item?.cover || coverUrl}
-          alt={item?.title || "blog kapak"}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-          widths={[320, 480, 640, 800, 960]}
-        />
+        {coverIsVideo ? (
+          <>
+            <img
+              src={posterUrl || coverUrl}
+              alt={item?.title || "blog video kapak"}
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+            />
+            <video
+              ref={videoRef}
+              src={videoUrl || coverUrl}
+              muted
+              loop
+              playsInline
+              preload="none"
+              poster={posterUrl || undefined}
+              className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 ${
+                hovered && !isTouch ? "opacity-100 scale-[1.04]" : "opacity-0"
+              }`}
+            />
+            <div className="pointer-events-none absolute inset-0 grid place-items-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/45 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
+                <PlayCircle size={15} />
+                Videoyu izle
+              </div>
+            </div>
+          </>
+        ) : (
+          <AdaptiveImage
+            media={item?.cover || coverUrl}
+            alt={item?.title || "blog kapak"}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            widths={[320, 480, 640, 800, 960]}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
         {createdText && (
           <span className="absolute top-3 right-3 text-[11px] tracking-wide uppercase bg-white/90 text-gray-700 px-2 py-1 rounded-full shadow">
@@ -90,7 +162,10 @@ BlogGridItem.propTypes = {
     title: PropTypes.string,
     content: PropTypes.string,
     tags: PropTypes.arrayOf(PropTypes.string),
-    cover: PropTypes.shape({ url: PropTypes.string }),
+    cover: PropTypes.shape({
+      url: PropTypes.string,
+      resourceType: PropTypes.oneOf(["image", "video"]),
+    }),
     createdAt: PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.number,

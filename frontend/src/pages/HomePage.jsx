@@ -1,4 +1,5 @@
 // src/pages/HomePage.jsx
+import { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar/Navbar";
 import Hero from "../components/Hero/Hero";
 import Journal from "../components/Journal/JournalGrid";
@@ -12,6 +13,11 @@ import DeferredSection from "../components/Layout/DeferredSection";
 import BlogGrid from "../components/Blog/BlogGrid";
 import BackgroundVideo from "../components/Background/BackgroundVideo";
 import { usePerformanceProfile } from "../performance/PerformanceProvider";
+import api from "../api";
+import {
+  DEFAULT_SITE_SETTINGS,
+  normalizeSiteSettings,
+} from "../utils/siteSettings";
 
 const HERO_DESKTOP = import.meta.env.VITE_HERO_PUBLIC_ID;
 const HERO_MOBILE = import.meta.env.VITE_HERO_MOBILE_PUBLIC_ID;
@@ -19,40 +25,66 @@ const HERO_POSTER = import.meta.env.VITE_HERO_POSTER_PUBLIC_ID;
 
 export default function HomePage() {
   const { sectionRootMargin } = usePerformanceProfile();
+  const [siteSettings, setSiteSettings] = useState(DEFAULT_SITE_SETTINGS);
 
-  const sections = [
-    {
-      id: "projects",
-      minHeight: 760,
-      eager: true,
-      content: <ProjectsSection />,
-    },
-    {
-      id: "services",
-      minHeight: 860,
-      content: <ServiceSection />,
-    },
-    {
-      id: "journal",
-      minHeight: 720,
-      content: <Journal />,
-    },
-    {
-      id: "why-us",
-      minHeight: 700,
-      content: <WhyUs />,
-    },
-    {
-      id: "blog",
-      minHeight: 720,
-      content: <BlogGrid />,
-    },
-    {
-      id: "about",
-      minHeight: 640,
-      content: <AboutSection />,
-    },
-  ];
+  useEffect(() => {
+    let active = true;
+
+    api
+      .get("/site-settings")
+      .then(({ data }) => {
+        if (!active) return;
+        setSiteSettings(normalizeSiteSettings(data));
+      })
+      .catch((error) => {
+        console.error("[HomePage] GET /site-settings error:", error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const sections = useMemo(
+    () => [
+      ...(siteSettings.homeProjectsVisible
+        ? [
+            {
+              id: "projects",
+              minHeight: 760,
+              eager: true,
+              content: <ProjectsSection />,
+            },
+          ]
+        : []),
+      {
+        id: "services",
+        minHeight: 860,
+        content: <ServiceSection />,
+      },
+      {
+        id: "journal",
+        minHeight: 720,
+        content: <Journal />,
+      },
+      {
+        id: "why-us",
+        minHeight: 700,
+        content: <WhyUs />,
+      },
+      {
+        id: "blog",
+        minHeight: 720,
+        content: <BlogGrid />,
+      },
+      {
+        id: "about",
+        minHeight: 640,
+        content: <AboutSection />,
+      },
+    ],
+    [siteSettings.homeProjectsVisible]
+  );
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">

@@ -3,9 +3,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../../api";
-import { Share2, Check, Link as LinkIcon, Clock } from "lucide-react";
+import {
+  Share2,
+  Check,
+  Link as LinkIcon,
+  Clock,
+  PlayCircle,
+  Images,
+} from "lucide-react";
 import PropTypes from "prop-types";
 import OtherBlogs from "./OtherBlogs";
+import {
+  getOptimizedImageUrl,
+  getOptimizedVideoUrl,
+  getVideoPosterUrl,
+  looksVideo,
+} from "../../utils/cloudinary";
+import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 /* ---------- helpers ---------- */
 const stripHtml = (html) =>
@@ -15,6 +29,48 @@ const stripHtml = (html) =>
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+const FALLBACK_MEDIA =
+  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMTIwMCcgaGVpZ2h0PSc4MDBcJyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnPjxyZWN0IGZpbGw9JyNlZWUnIHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnLz48L3N2Zz4=";
+
+const getMediaType = (media) => {
+  const url = media?.url || media || "";
+  return media?.resourceType === "video" || looksVideo(url) ? "video" : "image";
+};
+
+const getMediaPreviewSrc = (
+  media,
+  { width = 1600, quality = "auto:good" } = {}
+) => {
+  if (!media) return FALLBACK_MEDIA;
+  return getMediaType(media) === "video"
+    ? getVideoPosterUrl(media, { width, quality })
+    : getOptimizedImageUrl(media, {
+        width,
+        quality,
+        fallbackSrc: FALLBACK_MEDIA,
+      });
+};
+
+const getMediaPlaybackSrc = (
+  media,
+  { width = 1600, quality = "auto:good" } = {}
+) => {
+  if (!media) return "";
+  return getMediaType(media) === "video"
+    ? getOptimizedVideoUrl(media, {
+        width,
+        quality,
+        stripAudio: false,
+      })
+    : media?.url || media || "";
+};
+
+const truncateText = (value, max = 280) => {
+  const text = stripHtml(value || "");
+  if (text.length <= max) return text;
+  return `${text.slice(0, max).trimEnd()}...`;
+};
 
 const toParagraphs = (htmlOrText) => {
   if (!htmlOrText) return [];
@@ -91,19 +147,27 @@ const injectHeadingIds = (html, toc) => {
 
 /* ---------- UI bits ---------- */
 // progressive image (blur → sharp)
-const ProgressiveImg = ({ src, alt, className }) => {
+const ProgressiveImg = ({
+  src,
+  alt,
+  className,
+  loading = "lazy",
+  fetchPriority = "auto",
+}) => {
   const [loaded, setLoaded] = useState(false);
   return (
     <img
       src={src}
       alt={alt}
       onLoad={() => setLoaded(true)}
+      loading={loading}
+      fetchPriority={fetchPriority}
+      decoding="async"
       className={`${className} transition-[filter,transform,opacity] duration-700 ${
         loaded
           ? "opacity-100 filter-none scale-100"
           : "opacity-80 blur-sm scale-[1.01]"
       }`}
-      loading="lazy"
     />
   );
 };
@@ -111,10 +175,14 @@ ProgressiveImg.propTypes = {
   src: PropTypes.string.isRequired,
   alt: PropTypes.string,
   className: PropTypes.string,
+  loading: PropTypes.oneOf(["lazy", "eager"]),
+  fetchPriority: PropTypes.oneOf(["high", "low", "auto"]),
 };
 ProgressiveImg.defaultProps = {
   alt: "",
   className: "",
+  loading: "lazy",
+  fetchPriority: "auto",
 };
 
 const Skeleton = () => (
@@ -141,6 +209,13 @@ const Skeleton = () => (
 const BlogDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const {
+    cardImageWidth,
+    detailImageWidth,
+    imageQuality,
+    videoQuality,
+    isMobile,
+  } = usePerformanceProfile();
 
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -203,10 +278,6 @@ const BlogDetail = () => {
     return d ? new Date(d).toLocaleDateString("tr-TR") : "";
   }, [blog]);
 
-  const coverSrc =
-    blog?.cover?.url ||
-    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMTIwMCcgaGVpZ2h0PSc0MDBcJyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnPjxyZWN0IGZpbGw9JyNlZWUnIHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnLz48L3N2Zz4=";
-
   const rtime = useMemo(() => readingTime(blog?.content), [blog]);
   const toc = useMemo(() => extractHeadings(blog?.content), [blog]);
   const contentWithIds = useMemo(
@@ -214,8 +285,18 @@ const BlogDetail = () => {
     [blog, toc]
   );
 
-  // içerik paragrafları + var ise assets’i akıllı yerleştir
   const paras = useMemo(() => toParagraphs(blog?.content), [blog]);
+  const leadText = useMemo(() => truncateText(blog?.content, 260), [blog]);
+  const commentsCount = Number(blog?.comments?.length || 0);
+  const coverMedia = useMemo(() => {
+    if (!blog?.cover?.url) return null;
+    return {
+      url: blog.cover.url,
+      resourceType: getMediaType(blog.cover),
+      caption: blog.cover.caption || blog.title || "Kapak medya",
+      publicId: blog.cover.publicId || "",
+    };
+  }, [blog]);
   // ---- BLOG MEDYA TOPLAYICI ----
   const assets = useMemo(() => {
     if (!blog) return [];
@@ -226,15 +307,16 @@ const BlogDetail = () => {
       if (!m) return;
       const url = m.url || m.secure_url || m.src;
       if (!url) return;
-      const type =
-        m.resourceType ||
-        m.resource_type ||
-        (/\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(url) ? "video" : "image");
+      const type = getMediaType({
+        resourceType: m.resourceType || m.resource_type,
+        url,
+      });
 
       out.push({
         url,
-        resourceType: type === "video" ? "video" : "image",
+        resourceType: type,
         caption: m.caption || m.alt || m.title || "",
+        publicId: m.publicId || "",
       });
     };
 
@@ -264,7 +346,43 @@ const BlogDetail = () => {
     return uniq;
   }, [blog]);
 
-  // lightbox state & helpers (assets sonrası)
+  const mediaItems = useMemo(() => {
+    const collected = [];
+    if (coverMedia) collected.push(coverMedia);
+    assets.forEach((item) => collected.push(item));
+
+    const seen = new Set();
+    return collected.filter((item) => {
+      if (!item?.url || seen.has(item.url)) return false;
+      seen.add(item.url);
+      return true;
+    });
+  }, [assets, coverMedia]);
+
+  const primaryMedia = useMemo(
+    () => coverMedia || assets[0] || null,
+    [assets, coverMedia]
+  );
+  const galleryMedia = useMemo(
+    () => mediaItems.filter((item) => item.url !== primaryMedia?.url),
+    [mediaItems, primaryMedia]
+  );
+  const primaryMediaIndex = useMemo(
+    () => mediaItems.findIndex((item) => item.url === primaryMedia?.url),
+    [mediaItems, primaryMedia]
+  );
+  const heroPreviewWidth = isMobile ? Math.max(cardImageWidth, 720) : detailImageWidth;
+  const galleryPreviewWidth = isMobile
+    ? Math.max(cardImageWidth, 640)
+    : Math.min(detailImageWidth, 1200);
+  const lightboxPreviewWidth = isMobile
+    ? Math.max(cardImageWidth, 960)
+    : detailImageWidth;
+  const lightboxPlaybackWidth = isMobile
+    ? Math.max(cardImageWidth, 960)
+    : detailImageWidth;
+
+  // lightbox state & helpers
   const [lbOpen, setLbOpen] = useState(false);
   const [lbIndex, setLbIndex] = useState(0);
   const openLb = (i) => {
@@ -274,34 +392,10 @@ const BlogDetail = () => {
   const closeLb = () => setLbOpen(false);
   const prevLb = () =>
     setLbIndex((i) =>
-      assets.length ? (i - 1 + assets.length) % assets.length : 0
+      mediaItems.length ? (i - 1 + mediaItems.length) % mediaItems.length : 0
     );
   const nextLb = () =>
-    setLbIndex((i) => (assets.length ? (i + 1) % assets.length : 0));
-
-  // medya yerleşimi: 3. paragraftan sonra ilk medya, sonra her 5 paragrafa bir
-  const interleaved = useMemo(() => {
-    if (!paras.length) return [];
-    const blocks = [];
-    let a = 0;
-    for (let i = 0; i < paras.length; i++) {
-      blocks.push({ type: "p", text: paras[i], key: `p-${i}` });
-      const shouldDrop =
-        assets.length > 0 &&
-        ((i === 2 && a < assets.length) ||
-          (i > 2 && (i - 2) % 5 === 0 && a < assets.length));
-      if (shouldDrop) {
-        blocks.push({ type: "media", m: assets[a], key: `m-${a}` });
-        a++;
-      }
-    }
-    // kalan medya varsa sona ekle
-    while (a < assets.length) {
-      blocks.push({ type: "media", m: assets[a], key: `m-${a}` });
-      a++;
-    }
-    return blocks;
-  }, [paras, assets]);
+    setLbIndex((i) => (mediaItems.length ? (i + 1) % mediaItems.length : 0));
 
   /* --------------- render --------------- */
   if (loading) return <Skeleton />;
@@ -323,58 +417,148 @@ const BlogDetail = () => {
         />
       </div>
 
-      {/* Kapak + başlık */}
-      <div className="relative w-full h-64 md:h-80 rounded-2xl overflow-hidden shadow-lg">
-        <motion.img
-          key={coverSrc}
-          src={coverSrc}
-          alt={blog.title}
-          className="absolute inset-0 w-full h-full object-cover"
-          initial={{ scale: 1.05, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
-        <div className="absolute bottom-5 left-5 right-5">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            {dateText && (
-              <span className="text-[11px] tracking-wide uppercase bg-white/90 text-gray-700 px-2 py-1 rounded-full shadow">
-                {dateText}
+      <div className="grid gap-6 lg:grid-cols-12">
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className={`relative overflow-hidden rounded-[32px] border border-white/50 bg-white/85 p-6 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.45)] backdrop-blur-xl md:p-8 ${
+            primaryMedia ? "lg:col-span-5" : "lg:col-span-12"
+          }`}
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.16),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.12),transparent_36%)]" />
+          <div className="relative">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-secondaryColor px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
+                Blog Yazisi
               </span>
-            )}
-            <span className="inline-flex items-center gap-1 text-[11px] bg-secondaryColor/95 text-white px-2 py-1 rounded-full shadow">
-              <Clock size={12} /> ~{rtime} dk okuma
-            </span>
-            {Array.isArray(blog.tags) &&
-              blog.tags.slice(0, 3).map((t) => (
-                <span
-                  key={t}
-                  className="text-[11px] px-2 py-1 rounded-full bg-white/80 text-secondaryColor border border-white/60"
-                >
-                  {t}
+              {dateText ? (
+                <span className="rounded-full border border-slate-200/80 bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                  {dateText}
                 </span>
-              ))}
+              ) : null}
+              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-600">
+                <Clock size={12} /> ~{rtime} dk okuma
+              </span>
+            </div>
+
+            <h1 className="mt-4 text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
+              {blog.title}
+            </h1>
+
+            {leadText ? (
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
+                {leadText}
+              </p>
+            ) : null}
+
+            {Array.isArray(blog.tags) && blog.tags.length > 0 ? (
+              <div className="mt-5 flex flex-wrap gap-2">
+                {blog.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-quaternaryColor/20 bg-quaternaryColor/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-quaternaryColor"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <InfoPill
+                label="Toplam Medya"
+                value={String(mediaItems.length || 0)}
+              />
+              <InfoPill label="Yorum" value={String(commentsCount)} />
+              <InfoPill
+                label="İçerik"
+                value={toc.length ? `${toc.length} başlık` : "Serbest akış"}
+              />
+            </div>
           </div>
-          <h1 className="text-white text-2xl md:text-4xl font-bold drop-shadow-sm">
-            {blog.title}
-          </h1>
-        </div>
+        </motion.section>
+
+        {primaryMedia ? (
+          <motion.section
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.05 }}
+            className="lg:col-span-7"
+          >
+            <HeroMediaCard
+              media={primaryMedia}
+              title={blog.title}
+              mediaCount={mediaItems.length}
+              previewWidth={heroPreviewWidth}
+              imageQuality={imageQuality}
+              onOpen={() => openLb(primaryMediaIndex >= 0 ? primaryMediaIndex : 0)}
+            />
+          </motion.section>
+        ) : null}
       </div>
 
+      {galleryMedia.length > 0 ? (
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.08 }}
+          className="mt-8 rounded-[32px] border border-white/45 bg-white/82 p-5 shadow-[0_24px_70px_-54px_rgba(15,23,42,0.42)] backdrop-blur-xl md:p-6"
+        >
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                <Images size={14} />
+                Blog Galerisi
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+                Ek medya içerikleri
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Yazıya eklenen görsel ve videoları daha rahat inceleyebilirsiniz.
+              </p>
+            </div>
+            <p className="text-sm font-medium text-slate-500">
+              {galleryMedia.length} medya
+            </p>
+          </div>
+
+          <div className="mt-5 grid auto-rows-[180px] gap-4 md:grid-cols-3 lg:auto-rows-[210px]">
+            {galleryMedia.map((media, index) => (
+              <MediaThumb
+                key={`${media.url}-${index}`}
+                m={media}
+                previewWidth={galleryPreviewWidth}
+                imageQuality={imageQuality}
+                onClick={() =>
+                  openLb(mediaItems.findIndex((item) => item.url === media.url))
+                }
+                className={
+                  index === 0 && galleryMedia.length > 2
+                    ? "md:col-span-2 md:row-span-2"
+                    : ""
+                }
+                showCaption
+              />
+            ))}
+          </div>
+        </motion.section>
+      ) : null}
+
       {/* İçerik + yan panel */}
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
         {/* Makale */}
         <motion.article
           ref={articleRef}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="lg:col-span-2 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/40 shadow-md p-5 md:p-8"
+          className="rounded-[32px] border border-white/45 bg-white/82 p-6 shadow-[0_22px_64px_-52px_rgba(15,23,42,0.42)] backdrop-blur-xl md:p-8"
         >
           {/* Zengin içerik (başlık id’leri enjekte edilmiş) */}
           {/<[a-z][\s\S]*>/i.test(blog.content) ? (
             <div
-              className="rich-content prose prose-sm md:prose-base lg:prose-lg prose-p:leading-7 prose-img:rounded-xl prose-headings:text-secondaryColor max-w-none"
+              className="rich-content prose prose-sm max-w-none prose-p:leading-7 prose-img:rounded-2xl prose-headings:text-secondaryColor md:prose-base lg:prose-lg"
               // Başlık bağlantısı için anchor ikonunu css ile göstereceğiz
               dangerouslySetInnerHTML={{ __html: contentWithIds }}
               onClick={(e) => {
@@ -387,52 +571,22 @@ const BlogDetail = () => {
               }}
             />
           ) : (
-            // Plain içerik yolu: paragraflar arasına thumb serpiştir
             <div className="prose prose-sm md:prose-base lg:prose-lg max-w-none">
-              {interleaved.length ? (
-                interleaved.map((b) =>
-                  b.type === "p" ? (
-                    <p key={b.key} className="text-gray-800 leading-7">
-                      {b.text}
-                    </p>
-                  ) : (
-                    <MediaThumb
-                      key={b.key}
-                      m={b.m}
-                      onClick={() =>
-                        openLb(assets.findIndex((x) => x.url === b.m.url))
-                      }
-                      className="my-4"
-                    />
-                  )
-                )
+              {paras.length ? (
+                paras.map((paragraph, index) => (
+                  <p key={`p-${index}`} className="text-gray-800 leading-7">
+                    {paragraph}
+                  </p>
+                ))
               ) : (
                 <p className="text-gray-500">İçerik yakında.</p>
               )}
             </div>
           )}
-          {/* HTML içerik yolunda: altta galeri grid (thumb) */}
-          {assets.length > 0 && /<[a-z]/i.test(blog.content) && (
-            <h2 className="mt-6 mb-2 text-sm font-semibold text-secondaryColor">
-              Medya
-            </h2>
-          )}{" "}
-          <>
-            <div className="h-px bg-gray-200/70 my-6" />
-            <div className="grid gap-4 sm:grid-cols-2">
-              {assets.map((m, i) => (
-                <MediaThumb
-                  key={m.publicId || i}
-                  m={m}
-                  onClick={() => openLb(i)}
-                />
-              ))}
-            </div>
-          </>
         </motion.article>
 
         {/* Yan panel (sticky) */}
-        <div className="space-y-6 lg:sticky lg:top-6">
+        <div className="space-y-6 xl:sticky xl:top-6">
           <AsideTools toc={toc} onBack={() => navigate("/blog")} />
           <OtherBlogs currentId={blog._id} limit={6} />
         </div>
@@ -442,8 +596,12 @@ const BlogDetail = () => {
       <AnimatePresence>
         {lbOpen && (
           <Lightbox
-            items={assets}
+            items={mediaItems}
             index={lbIndex}
+            previewWidth={lightboxPreviewWidth}
+            playbackWidth={lightboxPlaybackWidth}
+            imageQuality={imageQuality}
+            videoQuality={videoQuality}
             onClose={closeLb}
             onPrev={prevLb}
             onNext={nextLb}
@@ -563,7 +721,20 @@ export default BlogDetail;
 
 /* ---------- Reusable pieces ---------- */
 /* ---------------- Lightbox ---------------- */
-const Lightbox = ({ items, index, onClose, onPrev, onNext }) => {
+const Lightbox = ({
+  items,
+  index,
+  previewWidth,
+  playbackWidth,
+  imageQuality,
+  videoQuality,
+  onClose,
+  onPrev,
+  onNext,
+}) => {
+  const videoRef = useRef(null);
+  const [videoReady, setVideoReady] = useState(false);
+
   // ESC ve ok tuşları
   useEffect(() => {
     const onKey = (e) => {
@@ -576,9 +747,29 @@ const Lightbox = ({ items, index, onClose, onPrev, onNext }) => {
   }, [onClose, onPrev, onNext]);
 
   const cur = items[index];
-  if (!cur) return null;
+  const isVideo = cur ? getMediaType(cur) === "video" : false;
 
-  const isVideo = cur?.resourceType === "video";
+  useEffect(() => {
+    setVideoReady(false);
+  }, [cur?.url, index]);
+
+  useEffect(() => {
+    if (!cur || !isVideo || !videoRef.current) return;
+
+    const video = videoRef.current;
+    video.muted = false;
+    video.defaultMuted = false;
+    video.volume = 1;
+
+    const playPromise = video.play();
+    if (playPromise?.catch) {
+      playPromise.catch(() => {
+        // Tarayıcı sesli autoplay'i engellerse kullanıcı native control ile başlatır.
+      });
+    }
+  }, [cur, isVideo]);
+
+  if (!cur) return null;
 
   return (
     <motion.div
@@ -598,16 +789,47 @@ const Lightbox = ({ items, index, onClose, onPrev, onNext }) => {
         {/* Medya */}
         <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
           {isVideo ? (
-            <video
-              src={cur.url}
-              controls
-              autoPlay
-              playsInline
-              className="absolute inset-0 w-full h-full object-contain"
-            />
+            <>
+              <img
+                src={getMediaPreviewSrc(cur, {
+                  width: previewWidth,
+                  quality: imageQuality,
+                })}
+                alt={cur.caption || "media"}
+                className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-300 ${
+                  videoReady ? "opacity-0" : "opacity-100"
+                }`}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+              />
+              <video
+                ref={videoRef}
+                src={getMediaPlaybackSrc(cur, {
+                  width: playbackWidth,
+                  quality: videoQuality,
+                })}
+                controls
+                playsInline
+                preload="metadata"
+                poster={getMediaPreviewSrc(cur, {
+                  width: previewWidth,
+                  quality: imageQuality,
+                })}
+                className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
+                  videoReady ? "opacity-100" : "opacity-0"
+                }`}
+                onCanPlay={() => setVideoReady(true)}
+                onLoadedData={() => setVideoReady(true)}
+                onError={() => setVideoReady(false)}
+              />
+            </>
           ) : (
             <img
-              src={cur.url}
+              src={getMediaPreviewSrc(cur, {
+                width: previewWidth,
+                quality: imageQuality,
+              })}
               alt={cur.caption || "media"}
               className="absolute inset-0 w-full h-full object-contain"
             />
@@ -661,45 +883,60 @@ Lightbox.propTypes = {
     })
   ).isRequired,
   index: PropTypes.number.isRequired,
+  previewWidth: PropTypes.number,
+  playbackWidth: PropTypes.number,
+  imageQuality: PropTypes.string,
+  videoQuality: PropTypes.string,
   onClose: PropTypes.func.isRequired,
   onPrev: PropTypes.func.isRequired,
   onNext: PropTypes.func.isRequired,
 };
 
 /* ---------------- Thumb (küçük önizleme) ---------------- */
-const MediaThumb = ({ m, onClick, className = "" }) => {
-  const isVideo = m?.resourceType === "video";
+const MediaThumb = ({
+  m,
+  onClick,
+  className = "",
+  showCaption = false,
+  previewWidth = 900,
+  imageQuality = "auto:good",
+}) => {
+  const isVideo = getMediaType(m) === "video";
+  const previewSrc = getMediaPreviewSrc(m, {
+    width: className ? Math.max(previewWidth, 1200) : previewWidth,
+    quality: imageQuality,
+  });
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group relative rounded-xl overflow-hidden border border-white/50 bg-white/90 shadow ${className}`}
+      className={`group relative overflow-hidden rounded-[26px] border border-white/50 bg-white/95 shadow-[0_18px_42px_-30px_rgba(15,23,42,0.32)] transition-transform duration-300 hover:-translate-y-0.5 ${className}`}
       title={m?.caption || (isVideo ? "Video" : "Görsel")}
     >
-      <div className="relative w-full aspect-[16/9]">
-        {isVideo ? (
-          <>
-            <video
-              src={m.url}
-              muted
-              playsInline
-              preload="metadata"
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="pointer-events-none absolute inset-0 grid place-items-center">
-              <div className="rounded-full px-3 py-2 text-xs bg-black/60 text-white border border-white/30">
-                ▶ Oynat
-              </div>
-            </div>
-          </>
-        ) : (
-          <img
-            src={m.url}
-            alt="thumb"
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        )}
+      <div className="relative h-full min-h-[180px] w-full overflow-hidden">
+        <img
+          src={previewSrc}
+          alt={m?.caption || "Medya"}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
+        <div className="absolute left-4 top-4">
+          <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/45 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur">
+            {isVideo ? <PlayCircle size={13} /> : <Images size={13} />}
+            {isVideo ? "Video" : "Görsel"}
+          </span>
+        </div>
+        <div className="absolute inset-x-0 bottom-0 p-4 text-left text-white">
+          <span className="inline-flex translate-y-2 items-center gap-2 rounded-full border border-white/25 bg-white/12 px-4 py-2 text-xs font-semibold text-white opacity-0 backdrop-blur-sm transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            {isVideo ? "Videoyu aç" : "Görseli büyüt"}
+          </span>
+          {showCaption && m?.caption ? (
+            <p className="mt-3 line-clamp-2 text-sm font-medium text-white/92">
+              {m.caption}
+            </p>
+          ) : null}
+        </div>
       </div>
     </button>
   );
@@ -712,6 +949,92 @@ MediaThumb.propTypes = {
   }).isRequired,
   onClick: PropTypes.func.isRequired,
   className: PropTypes.string,
+  showCaption: PropTypes.bool,
+  previewWidth: PropTypes.number,
+  imageQuality: PropTypes.string,
+};
+
+const HeroMediaCard = ({
+  media,
+  title,
+  mediaCount,
+  previewWidth = 1600,
+  imageQuality = "auto:good",
+  onOpen,
+}) => {
+  const isVideo = getMediaType(media) === "video";
+  const previewSrc = getMediaPreviewSrc(media, {
+    width: previewWidth,
+    quality: imageQuality,
+  });
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group relative block w-full overflow-hidden rounded-[32px] border border-white/50 bg-slate-950 text-left shadow-[0_28px_90px_-44px_rgba(15,23,42,0.6)]"
+      title={isVideo ? "Videoyu incele" : "Medyayı büyüt"}
+    >
+      <div className="relative aspect-[5/4] w-full overflow-hidden md:aspect-[6/5] xl:min-h-[540px] xl:aspect-auto">
+        <ProgressiveImg
+          src={previewSrc}
+          alt={title}
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="eager"
+          fetchPriority="high"
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_26%),linear-gradient(to_top,rgba(2,6,23,0.86),rgba(15,23,42,0.18)_48%,rgba(2,6,23,0.06))]" />
+
+        <div className="absolute left-5 top-5 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
+            {isVideo ? <PlayCircle size={14} /> : <Images size={14} />}
+            {isVideo ? "Kapak video" : "Kapak görseli"}
+          </span>
+          {mediaCount > 1 ? (
+            <span className="rounded-full border border-white/20 bg-white/14 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md">
+              +{mediaCount - 1} ek medya
+            </span>
+          ) : null}
+        </div>
+
+        <div className="absolute inset-x-0 bottom-0 p-5 md:p-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/12 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition duration-300 group-hover:-translate-y-1">
+            {isVideo ? "Videoyu izle" : "Medyayı büyüt"}
+          </div>
+          {media?.caption ? (
+            <p className="mt-4 max-w-xl text-sm leading-6 text-white/88 md:text-base">
+              {media.caption}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </button>
+  );
+};
+HeroMediaCard.propTypes = {
+  media: PropTypes.shape({
+    url: PropTypes.string.isRequired,
+    resourceType: PropTypes.oneOf(["image", "video"]),
+    caption: PropTypes.string,
+  }).isRequired,
+  title: PropTypes.string,
+  mediaCount: PropTypes.number,
+  previewWidth: PropTypes.number,
+  imageQuality: PropTypes.string,
+  onOpen: PropTypes.func.isRequired,
+};
+
+const InfoPill = ({ label, value }) => (
+  <div className="rounded-2xl border border-slate-200/75 bg-white/75 px-4 py-3 shadow-sm">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+      {label}
+    </p>
+    <p className="mt-1 text-sm font-semibold text-slate-700">{value}</p>
+  </div>
+);
+InfoPill.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired,
 };
 
 /* ---------------- Aside Tools ---------------- */

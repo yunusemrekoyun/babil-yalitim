@@ -1,12 +1,18 @@
 // src/components/Blog/OtherBlogItem.jsx
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
+import { PlayCircle } from "lucide-react";
+import { getVideoPosterUrl, looksVideo } from "../../utils/cloudinary";
 
-const looksVideo = (u) =>
-  /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(String(u || ""));
 const thumbFrom = (blog) => {
   const cover = blog?.cover?.url || "";
-  if (cover) return { url: cover, isVideo: looksVideo(cover) };
+  if (cover)
+    return {
+      media: blog?.cover || { url: cover },
+      url: cover,
+      isVideo:
+        blog?.cover?.resourceType === "video" || looksVideo(cover),
+    };
 
   const first = (Array.isArray(blog?.assets) ? blog.assets : [])
     .concat(Array.isArray(blog?.images) ? blog.images : [])
@@ -14,14 +20,22 @@ const thumbFrom = (blog) => {
     .find((m) => m?.url);
 
   const url = first?.url || "";
-  return { url, isVideo: looksVideo(url) };
+  return {
+    media: first || { url },
+    url,
+    isVideo:
+      first?.resourceType === "video" || looksVideo(url),
+  };
 };
 
 const OtherBlogItem = ({ blog }) => {
-  const { url, isVideo } = thumbFrom(blog);
+  const { media, url, isVideo } = thumbFrom(blog);
   const date = blog?.createdAt
     ? new Date(blog.createdAt).toLocaleDateString("tr-TR")
     : "";
+  const thumbUrl = isVideo
+    ? getVideoPosterUrl(media, { width: 320, quality: "auto:good" })
+    : url;
 
   return (
     <Link
@@ -30,27 +44,24 @@ const OtherBlogItem = ({ blog }) => {
                  focus:outline-none focus-visible:ring-2 focus-visible:ring-quaternaryColor/60"
       aria-label={`${blog?.title || "Blog"} detayına git`}
     >
-      <div className="w-20 h-16 overflow-hidden shrink-0 bg-gray-100">
+      <div className="relative w-20 h-16 overflow-hidden shrink-0 bg-gray-100">
         {url ? (
-          isVideo ? (
-            <video
-              src={url}
-              muted
-              playsInline
-              preload="metadata"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-          ) : (
-            <img
-              src={url}
-              alt={blog?.title || "kapak"}
-              loading="lazy"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-          )
+          <img
+            src={thumbUrl}
+            alt={blog?.title || "kapak"}
+            loading="lazy"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
         ) : (
           <div className="w-full h-full bg-gray-200" />
         )}
+        {isVideo ? (
+          <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/10">
+            <div className="rounded-full border border-white/30 bg-black/45 p-1.5 text-white backdrop-blur-sm">
+              <PlayCircle size={14} />
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="flex-1 py-1.5 pr-2">
@@ -68,7 +79,10 @@ OtherBlogItem.propTypes = {
     _id: PropTypes.string.isRequired,
     title: PropTypes.string,
     createdAt: PropTypes.string,
-    cover: PropTypes.shape({ url: PropTypes.string }),
+    cover: PropTypes.shape({
+      url: PropTypes.string,
+      resourceType: PropTypes.oneOf(["image", "video"]),
+    }),
     assets: PropTypes.array,
     images: PropTypes.array,
     media: PropTypes.array,

@@ -139,7 +139,7 @@ export const getImageSrcSet = (
 
 export const getOptimizedVideoUrl = (
   resource,
-  { width, quality = "auto:good" } = {}
+  { width, quality = "auto:good", stripAudio = true } = {}
 ) => {
   const asset = resolveAsset(resource, "video");
   if (!asset) {
@@ -147,7 +147,8 @@ export const getOptimizedVideoUrl = (
     return resource?.url || "";
   }
 
-  const transforms = ["f_auto:video", "vc_auto", "ac_none", `q_${quality}`];
+  const transforms = ["f_auto:video", "vc_auto", `q_${quality}`];
+  if (stripAudio) transforms.push("ac_none");
   if (width) transforms.push(`w_${width}`, "c_limit");
 
   return buildUrl({ ...asset, resourceType: "video", transforms });

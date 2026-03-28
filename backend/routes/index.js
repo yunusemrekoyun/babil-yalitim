@@ -8,6 +8,7 @@ router.use("/blogs", require("./blogRoutes"));
 router.use("/journals", require("./journalRoutes"));
 router.use("/projects", require("./projectRoutes"));
 router.use("/services", require("./serviceRoutes"));
+router.use("/site-settings", require("./siteSettingsRoutes"));
 router.use("/contact", require("./contactRoutes"));
 router.use("/auth", require("./authRoutes"));
 router.use("/visits", require("./visitRoutes"));
