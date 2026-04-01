@@ -60,6 +60,8 @@ const SearchInput = ({
   value,
   onChange,
   onKeyDown,
+  onFocus,
+  onBlur,
   placeholder,
   inputClassName,
   iconClassName,
@@ -72,10 +74,17 @@ const SearchInput = ({
       value={value}
       onChange={onChange}
       onKeyDown={onKeyDown}
+      onFocus={onFocus}
+      onBlur={onBlur}
       className={inputClassName}
       aria-autocomplete="list"
       aria-expanded={value.trim().length >= 2}
       aria-controls="global-search-results"
+      inputMode="search"
+      enterKeyHint="search"
+      autoCapitalize="none"
+      autoCorrect="off"
+      spellCheck={false}
     />
     <FaSearch className={iconClassName} />
   </div>
@@ -86,6 +95,8 @@ SearchInput.propTypes = {
   value: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
   onKeyDown: PropTypes.func.isRequired,
+  onFocus: PropTypes.func,
+  onBlur: PropTypes.func,
   placeholder: PropTypes.string.isRequired,
   inputClassName: PropTypes.string.isRequired,
   iconClassName: PropTypes.string.isRequired,
@@ -200,7 +211,7 @@ SearchResultList.propTypes = {
   mode: PropTypes.oneOf(["dropdown", "overlay"]),
 };
 
-const SearchBar = () => {
+const SearchBar = ({ onFocusChange }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -208,6 +219,7 @@ const SearchBar = () => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlayOrigin, setOverlayOrigin] = useState(null);
+  const [isDesktopInputActive, setIsDesktopInputActive] = useState(false);
   const [viewport, setViewport] = useState(() => ({
     width: typeof window !== "undefined" ? window.innerWidth : 1440,
     height: typeof window !== "undefined" ? window.innerHeight : 900,
@@ -220,8 +232,12 @@ const SearchBar = () => {
   const overlayInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const dropdownCloseTimerRef = useRef(null);
+  const searchRequestSeqRef = useRef(0);
+  const overlayOpenRef = useRef(false);
+  const desktopInputActiveRef = useRef(false);
 
   const resultLimit = overlayOpen ? 24 : 7;
+  const isMobileViewport = viewport.width < 768;
 
   const overlayFrame = useMemo(() => {
     const mobile = viewport.width < 768;
@@ -277,6 +293,7 @@ const SearchBar = () => {
 
   const closeSuggestions = useCallback(
     ({ clearResults = true } = {}) => {
+      searchRequestSeqRef.current += 1;
       if (dropdownCloseTimerRef.current) {
         window.clearTimeout(dropdownCloseTimerRef.current);
         dropdownCloseTimerRef.current = null;
@@ -304,6 +321,25 @@ const SearchBar = () => {
     setDropdownVisible(true);
   }, []);
 
+  const handleSearchFocus = useCallback(() => {
+    setIsDesktopInputActive(true);
+    onFocusChange?.(true);
+  }, [onFocusChange]);
+
+  const handleSearchBlur = useCallback(() => {
+    window.setTimeout(() => {
+      const active = document.activeElement;
+      const stillInsideSearch =
+        active instanceof Node &&
+        (containerRef.current?.contains(active) || dropdownRef.current?.contains(active));
+
+      if (!stillInsideSearch && !overlayOpen) {
+        setIsDesktopInputActive(false);
+        onFocusChange?.(false);
+      }
+    }, 40);
+  }, [onFocusChange, overlayOpen]);
+
   useEffect(() => {
     return () => {
       if (dropdownCloseTimerRef.current) {
@@ -313,9 +349,12 @@ const SearchBar = () => {
   }, []);
 
   const closeOverlay = useCallback(() => {
+    searchRequestSeqRef.current += 1;
     setOverlayOpen(false);
     setOverlayOrigin(null);
-  }, []);
+    setDropdownVisible(false);
+    onFocusChange?.(false);
+  }, [onFocusChange]);
 
   const openOverlay = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -332,7 +371,25 @@ const SearchBar = () => {
     });
     setOverlayOpen(true);
     setDropdownVisible(false);
-  }, []);
+    onFocusChange?.(true);
+  }, [onFocusChange]);
+
+  const handleMobileTrigger = useCallback(
+    (event) => {
+      if (!isMobileViewport) return;
+      event.preventDefault();
+      openOverlay();
+    },
+    [isMobileViewport, openOverlay]
+  );
+
+  useEffect(() => {
+    overlayOpenRef.current = overlayOpen;
+  }, [overlayOpen]);
+
+  useEffect(() => {
+    desktopInputActiveRef.current = isDesktopInputActive;
+  }, [isDesktopInputActive]);
 
   const go = useCallback(
     (item) => {
@@ -353,7 +410,11 @@ const SearchBar = () => {
 
   useEffect(() => {
     const trimmed = query.trim();
-    if (trimmed.length < 2) {
+    const shouldSearch =
+      overlayOpen || (!isMobileViewport && isDesktopInputActive);
+
+    if (trimmed.length < 2 || !shouldSearch) {
+      searchRequestSeqRef.current += 1;
       if (dropdownCloseTimerRef.current) {
         window.clearTimeout(dropdownCloseTimerRef.current);
         dropdownCloseTimerRef.current = null;
@@ -365,16 +426,27 @@ const SearchBar = () => {
       return;
     }
 
+    const requestSeq = ++searchRequestSeqRef.current;
+    let cancelled = false;
+
     const timer = setTimeout(() => {
       api
         .get(`/search?q=${encodeURIComponent(trimmed)}&limit=${resultLimit}`)
         .then((response) => {
+          if (
+            cancelled ||
+            requestSeq !== searchRequestSeqRef.current ||
+            (!overlayOpenRef.current && !desktopInputActiveRef.current)
+          ) {
+            return;
+          }
+
           const items = Array.isArray(response.data) ? response.data : [];
           setResults(items);
           setHighlightIndex(items.length ? 0 : -1);
-          if (!overlayOpen) {
+          if (!overlayOpenRef.current) {
             updateDropdownPos();
-            if (items.length) {
+            if (desktopInputActiveRef.current && items.length) {
               openSuggestions();
             } else {
               setDropdownVisible(false);
@@ -382,6 +454,7 @@ const SearchBar = () => {
           }
         })
         .catch((error) => {
+          if (cancelled || requestSeq !== searchRequestSeqRef.current) return;
           console.error("Arama hatası:", error);
           setDropdownVisible(false);
           setResults([]);
@@ -389,8 +462,19 @@ const SearchBar = () => {
         });
     }, overlayOpen ? 120 : 220);
 
-    return () => clearTimeout(timer);
-  }, [openSuggestions, overlayOpen, query, resultLimit, updateDropdownPos]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    isDesktopInputActive,
+    isMobileViewport,
+    openSuggestions,
+    overlayOpen,
+    query,
+    resultLimit,
+    updateDropdownPos,
+  ]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -428,8 +512,8 @@ const SearchBar = () => {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("pointerdown", handleClickOutside);
+    return () => document.removeEventListener("pointerdown", handleClickOutside);
   }, [closeSuggestions, overlayOpen]);
 
   useEffect(() => {
@@ -495,15 +579,31 @@ const SearchBar = () => {
       <div ref={containerRef} className="relative w-full">
         <div className="flex w-full justify-center">
           <div className="relative w-full max-w-4xl">
-            <SearchInput
-              inputRef={inputRef}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Nasıl yardımcı olabiliriz?"
-              inputClassName="w-full rounded-full border border-gray-300 bg-white px-10 py-3 text-base text-brandDark shadow transition placeholder:text-gray-400 hover:shadow-lg focus:border-quaternaryColor focus:outline-none focus:ring-2 focus:ring-quaternaryColor sm:text-lg"
-              iconClassName="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500"
-            />
+            {isMobileViewport ? (
+              <button
+                type="button"
+                onClick={handleMobileTrigger}
+                className="flex w-full items-center justify-between rounded-full border border-gray-300 bg-white px-5 py-3 text-left text-[16px] text-brandDark shadow transition hover:shadow-lg"
+                aria-label="Aramayı aç"
+              >
+                <span className={query ? "text-brandDark" : "text-gray-400"}>
+                  {query || "Nasıl yardımcı olabiliriz?"}
+                </span>
+                <FaSearch className="shrink-0 text-gray-500" />
+              </button>
+            ) : (
+              <SearchInput
+                inputRef={inputRef}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={handleSearchFocus}
+                onBlur={handleSearchBlur}
+                placeholder="Nasıl yardımcı olabiliriz?"
+                inputClassName="w-full rounded-full border border-gray-300 bg-white px-10 py-3 text-[16px] text-brandDark shadow transition placeholder:text-gray-400 hover:shadow-lg focus:border-quaternaryColor focus:outline-none focus:ring-2 focus:ring-quaternaryColor sm:text-lg"
+                iconClassName="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500"
+              />
+            )}
           </div>
         </div>
       </div>
@@ -597,8 +697,10 @@ const SearchBar = () => {
                             value={query}
                             onChange={(event) => setQuery(event.target.value)}
                             onKeyDown={handleKeyDown}
+                            onFocus={handleSearchFocus}
+                            onBlur={handleSearchBlur}
                             placeholder="Başlık, kategori, hizmet alanı veya içerik ara"
-                            inputClassName="w-full rounded-[24px] border border-slate-200/90 bg-white/92 px-12 py-3.5 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-quaternaryColor focus:outline-none focus:ring-2 focus:ring-quaternaryColor/50 sm:text-base"
+                            inputClassName="w-full rounded-[24px] border border-slate-200/90 bg-white/92 px-12 py-3.5 text-[16px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-quaternaryColor focus:outline-none focus:ring-2 focus:ring-quaternaryColor/50 sm:text-base"
                             iconClassName="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                           />
                         </div>
@@ -671,6 +773,10 @@ const SearchBar = () => {
         )}
     </>
   );
+};
+
+SearchBar.propTypes = {
+  onFocusChange: PropTypes.func,
 };
 
 export default SearchBar;

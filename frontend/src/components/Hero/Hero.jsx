@@ -19,11 +19,13 @@ const easeInOutCubic = (value) => {
 const Hero = ({ targetId = "after-hero" }) => {
   const linksRef = useRef(null);
   const mobileHeroRef = useRef(null);
+  const mobileDetailsRef = useRef(null);
   const mobileArrowRef = useRef(null);
   const [mobileRevealProgress, setMobileRevealProgress] = useState(0);
   const [mobileArrowTop, setMobileArrowTop] = useState(null);
   const [mobileArrowDismissed, setMobileArrowDismissed] = useState(false);
   const [mobileArrowVisible, setMobileArrowVisible] = useState(true);
+  const [mobileSearchFocused, setMobileSearchFocused] = useState(false);
 
   useEffect(() => {
     let frameId = 0;
@@ -38,9 +40,14 @@ const Hero = ({ targetId = "after-hero" }) => {
         section.offsetHeight - window.innerHeight,
         1
       );
-      const nextProgress = clamp01(-rect.top / totalScrollable);
+      const scrollTop = Math.max(
+        window.scrollY || 0,
+        document.documentElement?.scrollTop || 0
+      );
+      const nextProgress =
+        scrollTop > 26 ? clamp01(-rect.top / totalScrollable) : 0;
 
-      if (nextProgress > 0.018) {
+      if (scrollTop > 26) {
         setMobileArrowDismissed(true);
         setMobileArrowVisible(false);
       }
@@ -82,6 +89,7 @@ const Hero = ({ targetId = "after-hero" }) => {
       const nextTop = Math.max(visibleBottom - buttonHeight - gap, 0);
       const nextVisible =
         !mobileArrowDismissed &&
+        !mobileSearchFocused &&
         Boolean(heroRect && heroRect.top < visibleBottom - 24 && heroRect.bottom > 56);
 
       setMobileArrowTop((prev) =>
@@ -111,7 +119,39 @@ const Hero = ({ targetId = "after-hero" }) => {
       vv?.removeEventListener("resize", scheduleUpdate);
       vv?.removeEventListener("scroll", scheduleUpdate);
     };
-  }, [mobileArrowDismissed]);
+  }, [mobileArrowDismissed, mobileSearchFocused]);
+
+  const mobileTitleProgress = easeInOutCubic(mobileRevealProgress / 0.5);
+  const mobileDetailsProgressRaw = easeOutCubic(
+    (mobileRevealProgress - 0.07) / 0.28
+  );
+  const mobileDetailsProgress = mobileSearchFocused
+    ? 0
+    : mobileDetailsProgressRaw;
+  const mobileTitleScale = 1 - mobileTitleProgress * 0.14;
+  const mobileTitleY = -mobileTitleProgress * 18;
+  const mobileTitleOpacity = 1 - mobileTitleProgress * 0.1;
+  const mobileDetailsMaxHeight = 360 * mobileDetailsProgress;
+  const mobileDetailsY = 18 * (1 - mobileDetailsProgress);
+  const mobileDetailsScale = 0.985 + mobileDetailsProgress * 0.015;
+
+  useEffect(() => {
+    const details = mobileDetailsRef.current;
+    if (!details) return;
+
+    const isHidden = mobileDetailsProgress < 0.08;
+    const activeElement = document.activeElement;
+
+    if (isHidden) {
+      if (activeElement instanceof HTMLElement && details.contains(activeElement)) {
+        activeElement.blur();
+      }
+      details.setAttribute("inert", "");
+      return;
+    }
+
+    details.removeAttribute("inert");
+  }, [mobileDetailsProgress]);
 
   const scrollToTarget = () => {
     // Önce dışarıdaki çıpa (tercih edilen)
@@ -134,17 +174,6 @@ const Hero = ({ targetId = "after-hero" }) => {
       window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     }
   };
-
-  const mobileTitleProgress = easeInOutCubic(mobileRevealProgress / 0.5);
-  const mobileDetailsProgress = easeOutCubic(
-    (mobileRevealProgress - 0.07) / 0.28
-  );
-  const mobileTitleScale = 1 - mobileTitleProgress * 0.14;
-  const mobileTitleY = -mobileTitleProgress * 18;
-  const mobileTitleOpacity = 1 - mobileTitleProgress * 0.1;
-  const mobileDetailsMaxHeight = 360 * mobileDetailsProgress;
-  const mobileDetailsY = 18 * (1 - mobileDetailsProgress);
-  const mobileDetailsScale = 0.985 + mobileDetailsProgress * 0.015;
 
   return (
     <>
@@ -189,11 +218,11 @@ const Hero = ({ targetId = "after-hero" }) => {
               transition={{ duration: 0.6, delay: 0.52 }}
               className="relative z-20 w-full max-w-4xl mx-auto"
             >
-              <SearchBar />
+              <SearchBar onFocusChange={setMobileSearchFocused} />
             </motion.div>
 
             <motion.div
-              aria-hidden={mobileDetailsProgress < 0.05}
+              ref={mobileDetailsRef}
               initial={false}
               style={{
                 opacity: mobileDetailsProgress,

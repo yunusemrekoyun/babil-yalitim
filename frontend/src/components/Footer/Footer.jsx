@@ -4,7 +4,6 @@ import { Facebook, Instagram, Mail, Phone, MapPin } from "lucide-react";
 import {
   CONTACT_ADDRESS,
   CONTACT_EMAIL,
-  CONTACT_PHONE_DISPLAY,
   CONTACT_PHONE_LINK,
 } from "../../config/site";
 import { ABOUT_FOOTER_TEXT } from "../../content/aboutContent";
@@ -16,9 +15,7 @@ const Footer = () => {
         {/* Logo & Kısa Açıklama */}
         <div className="flex flex-col gap-4">
           <img src={Logo} alt="Logo" className="w-36 mb-2" />
-          <p className="text-secondaryColor text-sm">
-            {ABOUT_FOOTER_TEXT}
-          </p>
+          <p className="text-secondaryColor text-sm">{ABOUT_FOOTER_TEXT}</p>
         </div>
 
         {/* Site Haritası */}
@@ -69,7 +66,11 @@ const Footer = () => {
           </h4>
           <ul className="space-y-3 text-sm">
             <li className="flex items-start gap-2">
-              <MapPin size={18} className="mt-0.5 shrink-0 text-secondaryColor" /> {CONTACT_ADDRESS}
+              <MapPin
+                size={18}
+                className="mt-0.5 shrink-0 text-secondaryColor"
+              />{" "}
+              {CONTACT_ADDRESS}
             </li>
             <li className="flex items-center gap-2">
               <Phone size={18} className="text-secondaryColor" />{" "}
@@ -77,7 +78,7 @@ const Footer = () => {
                 href={`tel:${CONTACT_PHONE_LINK}`}
                 className="hover:text-quaternaryColor transition"
               >
-                {CONTACT_PHONE_DISPLAY}
+                0 274 223 43 61
               </a>
             </li>
             <li className="flex items-center gap-2">

@@ -7,17 +7,43 @@ import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 import brandKoster from "../../assets/brand-koster.png";
 import brandSika from "../../assets/brand-sika.png";
 import brandOde from "../../assets/brand-ode.png";
-import brandGeoplas from "../../assets/brand-geoplas.png";
 import brandHuntsman from "../../assets/brand-huntsman.png";
-import brandMonokim from "../../assets/brand-monokim.png";
+import brandAbSchomburg from "../../assets/brand-AB-Schomburg.png";
+import brandOnduline from "../../assets/brand-onduline.svg";
+import brandNaturelMuhendislik from "../../assets/brand-naturelmuhendislik.png";
+import brandPhurex from "../../assets/brand-phurex.png";
+import brandTekno from "../../assets/brand-tekno.png";
 
 const brands = [
   { id: 1, name: "Koster", img: brandKoster, link: "https://www.kostermarket.com/" },
   { id: 2, name: "Sika", img: brandSika, link: "https://tur.sika.com/" },
   { id: 3, name: "ODE", img: brandOde, link: "https://ode.com.tr" },
-  { id: 4, name: "Geoplas", img: brandGeoplas, link: "https://www.geoplas.com.tr/en" },
+  { id: 4, name: "Phurex", img: brandPhurex, link: "https://phurex.com/" },
   { id: 5, name: "Huntsman", img: brandHuntsman, link: "https://huntsman.com" },
-  { id: 6, name: "Monokim", img: brandMonokim, link: "https://monokim.com" },
+  {
+    id: 6,
+    name: "AB Schomburg",
+    img: brandAbSchomburg,
+    link: "https://ab-schomburg.com.tr/",
+  },
+  {
+    id: 7,
+    name: "Onduline Avrasya",
+    img: brandOnduline,
+    link: "https://tr.onduline.com/",
+  },
+  {
+    id: 8,
+    name: "Natürel Mühendislik",
+    img: brandNaturelMuhendislik,
+    link: "https://www.naturelmuhendislik.com.tr/",
+  },
+  {
+    id: 9,
+    name: "Tekno Yapı Kimyasalları",
+    img: brandTekno,
+    link: "https://teknoyapi.com.tr/",
+  },
 ];
 
 const MOBILE_LOOP_COPIES = 3;
@@ -58,23 +84,23 @@ const BrandGrid = () => {
     if (!el) return undefined;
 
     const speed =
-      tier === "low" ? 0.28 : tier === "standard" ? 0.44 : 0.58;
+      tier === "low" ? 0.34 : tier === "standard" ? 0.54 : 0.72;
 
     const step = () => {
       autoScrollRef.current = window.requestAnimationFrame(step);
 
-      if (!allowMarquee || !inView || mobilePaused) return;
+      if (!allowMarquee || mobilePaused) return;
 
       const segmentWidth = el.scrollWidth / MOBILE_LOOP_COPIES;
       if (!segmentWidth) return;
 
-      if (el.scrollLeft >= segmentWidth * 2 - 2) {
-        el.scrollLeft -= segmentWidth;
-      } else if (el.scrollLeft <= 1) {
+      if (el.scrollLeft <= 1) {
         el.scrollLeft += segmentWidth;
+      } else if (el.scrollLeft >= segmentWidth * 2 - 2) {
+        el.scrollLeft -= segmentWidth;
       }
 
-      el.scrollLeft += speed;
+      el.scrollLeft -= speed;
     };
 
     autoScrollRef.current = window.requestAnimationFrame(step);
@@ -84,7 +110,7 @@ const BrandGrid = () => {
         window.cancelAnimationFrame(autoScrollRef.current);
       }
     };
-  }, [allowMarquee, inView, isMobile, mobilePaused, tier]);
+  }, [allowMarquee, isMobile, mobilePaused, tier]);
 
   useEffect(() => {
     return () => {
