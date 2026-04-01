@@ -139,6 +139,20 @@ export function PerformanceProvider({ children }) {
   const value = useMemo(() => {
     const isLow = snapshot.tier === "low";
     const isStandard = snapshot.tier === "standard";
+    const hasFastConnection =
+      !snapshot.effectiveType || /4g|5g/i.test(snapshot.effectiveType);
+    const hasEnoughMemory =
+      !snapshot.deviceMemory || snapshot.deviceMemory >= 4;
+    const hasEnoughCores =
+      !snapshot.hardwareConcurrency || snapshot.hardwareConcurrency >= 4;
+    const allowAmbientVideoMobile =
+      snapshot.isMobile &&
+      !isLow &&
+      !snapshot.prefersReducedMotion &&
+      !snapshot.saveData &&
+      hasFastConnection &&
+      hasEnoughMemory &&
+      hasEnoughCores;
 
     return {
       ...snapshot,
@@ -146,11 +160,13 @@ export function PerformanceProvider({ children }) {
         !snapshot.prefersReducedMotion &&
         !snapshot.saveData &&
         !snapshot.isMobile,
+      allowAmbientVideoMobile,
       allowMarquee: !snapshot.prefersReducedMotion,
       deferOffscreenMedia: isLow || isStandard,
       imageQuality: isLow ? "auto:eco" : "auto:good",
       videoQuality: isLow ? "auto:eco" : "auto:good",
       backgroundVideoWidth: isLow ? 1280 : isStandard ? 1600 : 1920,
+      mobileBackgroundVideoWidth: isLow ? 720 : 960,
       cardImageWidth: isLow ? 640 : isStandard ? 800 : 960,
       detailImageWidth: isLow ? 960 : isStandard ? 1280 : 1600,
       glassBlurScale: isLow ? 0.5 : isStandard ? 0.72 : 1,

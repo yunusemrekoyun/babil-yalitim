@@ -21,6 +21,7 @@ import {
 
 const HERO_DESKTOP = import.meta.env.VITE_HERO_PUBLIC_ID;
 const HERO_MOBILE = import.meta.env.VITE_HERO_MOBILE_PUBLIC_ID;
+const HERO_MOBILE_VIDEO = import.meta.env.VITE_HERO_MOBILE_VIDEO_PUBLIC_ID;
 const HERO_POSTER = import.meta.env.VITE_HERO_POSTER_PUBLIC_ID;
 
 export default function HomePage() {
@@ -91,6 +92,7 @@ export default function HomePage() {
       <BackgroundVideo
         desktopPublicId={HERO_DESKTOP}
         mobilePublicId={HERO_MOBILE}
+        mobileVideoPublicId={HERO_MOBILE_VIDEO}
         posterPublicId={HERO_POSTER}
       />
 

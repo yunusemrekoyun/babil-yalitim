@@ -48,7 +48,7 @@ const Hero = ({ targetId = "after-hero" }) => {
             transition={{ duration: 0.9, delay: 0.2 }}
           >
             <h1 className="text-[34px] xs:text-[38px] font-extrabold text-white drop-shadow-lg leading-tight">
-              Yapı Korumada Uzman
+              Yalıtımda Uzman
             </h1>
             <p className="mt-2 text-base xs:text-lg text-gray-200">
               Babil&#39;e Hoş Geldiniz.
@@ -81,13 +81,6 @@ const Hero = ({ targetId = "after-hero" }) => {
           >
             <SearchBar />
           </motion.div>
-
-          <div
-            ref={linksRef}
-            className="w-full flex justify-center mt-6 px-3 z-10"
-          >
-            <LinksSection />
-          </div>
 
           <motion.div
             initial={{ opacity: 0, y: 18 }}
@@ -141,7 +134,7 @@ const Hero = ({ targetId = "after-hero" }) => {
             transition={{ duration: 1, delay: 0.3 }}
           >
             <h1 className="text-5xl font-bold text-white drop-shadow-lg">
-              Yapı Korumada Uzman
+              Yalıtımda Uzman
             </h1>
             <p className="mt-2 text-xl text-gray-300">
               Babil&#39;e Hoş Geldiniz.

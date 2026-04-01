@@ -11,27 +11,41 @@ import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 export default function BackgroundVideo({
   desktopPublicId,
   mobilePublicId = "",
+  mobileVideoPublicId = "",
   posterPublicId = "",
   fallbackSrc = "/fallback-hero.jpg",
   className = "",
 }) {
   const videoRef = useRef(null);
-  const { allowAmbientVideo, backgroundVideoWidth, imageQuality, videoQuality } =
-    usePerformanceProfile();
+  const {
+    backgroundVideoWidth,
+    mobileBackgroundVideoWidth,
+    imageQuality,
+    videoQuality,
+    isMobile,
+  } = usePerformanceProfile();
   const [ready, setReady] = useState(false);
 
   const mediaKey = posterPublicId || desktopPublicId || "";
+  const chosenVideoPublicId = isMobile
+    ? mobileVideoPublicId || desktopPublicId
+    : desktopPublicId;
+  const chosenVideoWidth = isMobile
+    ? mobileBackgroundVideoWidth
+    : backgroundVideoWidth;
+  const chosenVideoQuality = isMobile ? "auto:eco" : videoQuality;
+  const shouldUseVideo = Boolean(chosenVideoPublicId);
 
-  const desktopUrl = useMemo(
+  const videoUrl = useMemo(
     () =>
       getOptimizedVideoUrl(
-        { publicId: desktopPublicId, resourceType: "video" },
-        { width: backgroundVideoWidth, quality: videoQuality }
+        { publicId: chosenVideoPublicId, resourceType: "video" },
+        { width: chosenVideoWidth, quality: chosenVideoQuality }
       ),
-    [backgroundVideoWidth, desktopPublicId, videoQuality]
+    [chosenVideoPublicId, chosenVideoQuality, chosenVideoWidth]
   );
 
-  const posterUrl = useMemo(
+  const desktopPosterUrl = useMemo(
     () =>
       getVideoPosterUrl(
         { publicId: mediaKey, resourceType: "video" },
@@ -47,17 +61,34 @@ export default function BackgroundVideo({
         {
           width: 960,
           quality: imageQuality,
-          fallbackSrc: posterUrl || fallbackSrc,
+          fallbackSrc: desktopPosterUrl || fallbackSrc,
         }
       ),
-    [fallbackSrc, imageQuality, mobilePublicId, posterUrl]
+    [desktopPosterUrl, fallbackSrc, imageQuality, mobilePublicId]
   );
+  const activePosterUrl = isMobile
+    ? mobileImageUrl || desktopPosterUrl || fallbackSrc
+    : desktopPosterUrl || fallbackSrc;
 
   useEffect(() => {
-    if (!allowAmbientVideo) return undefined;
+    setReady(false);
+  }, [isMobile, shouldUseVideo, videoUrl]);
+
+  useEffect(() => {
+    if (!shouldUseVideo) return undefined;
 
     const video = videoRef.current;
     if (!video) return undefined;
+
+    const markReady = () => setReady(true);
+
+    // iOS Safari autoplay davranisi daha guvenilir olsun.
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
 
     const syncPlayback = () => {
       if (document.hidden) {
@@ -68,25 +99,32 @@ export default function BackgroundVideo({
       video.play().catch(() => {});
     };
 
-    const handleCanPlay = () => setReady(true);
-
-    video.addEventListener("canplay", handleCanPlay);
+    video.addEventListener("loadedmetadata", markReady);
+    video.addEventListener("loadeddata", markReady);
+    video.addEventListener("canplay", markReady);
+    video.addEventListener("playing", markReady);
+    video.load();
+    if (video.readyState >= 2) markReady();
     document.addEventListener("visibilitychange", syncPlayback);
     syncPlayback();
 
     return () => {
-      video.removeEventListener("canplay", handleCanPlay);
+      video.removeEventListener("loadedmetadata", markReady);
+      video.removeEventListener("loadeddata", markReady);
+      video.removeEventListener("canplay", markReady);
+      video.removeEventListener("playing", markReady);
       document.removeEventListener("visibilitychange", syncPlayback);
     };
-  }, [allowAmbientVideo, desktopUrl]);
+  }, [shouldUseVideo, videoUrl]);
 
   return (
     <div
       className={`fixed inset-0 w-full h-full -z-10 overflow-hidden ${className}`}
+      data-ambient-video={shouldUseVideo ? (isMobile ? "mobile" : "desktop") : "poster"}
     >
-      {!allowAmbientVideo || !desktopUrl ? (
+      {!shouldUseVideo || !videoUrl ? (
         <img
-          src={mobileImageUrl || posterUrl || fallbackSrc}
+          src={activePosterUrl}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
           loading="eager"
@@ -95,7 +133,7 @@ export default function BackgroundVideo({
       ) : (
         <>
           <img
-            src={posterUrl || fallbackSrc}
+            src={activePosterUrl}
             alt=""
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
               ready ? "opacity-0" : "opacity-100"
@@ -105,7 +143,7 @@ export default function BackgroundVideo({
           />
           <video
             ref={videoRef}
-            src={desktopUrl}
+            src={videoUrl}
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
               ready ? "opacity-100" : "opacity-0"
             }`}
@@ -113,8 +151,8 @@ export default function BackgroundVideo({
             loop
             muted
             playsInline
-            preload="metadata"
-            poster={posterUrl || undefined}
+            preload="auto"
+            poster={activePosterUrl || undefined}
           />
         </>
       )}
@@ -126,6 +164,7 @@ export default function BackgroundVideo({
 BackgroundVideo.propTypes = {
   desktopPublicId: PropTypes.string.isRequired,
   mobilePublicId: PropTypes.string,
+  mobileVideoPublicId: PropTypes.string,
   posterPublicId: PropTypes.string,
   fallbackSrc: PropTypes.string,
   className: PropTypes.string,
