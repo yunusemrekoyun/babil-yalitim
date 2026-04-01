@@ -30,16 +30,17 @@ const AdaptiveImage = ({
     quality: quality || profile.imageQuality,
     fallbackSrc,
   });
+  const priorityProps = fetchPriority ? { fetchpriority: fetchPriority } : {};
 
   return (
     <img
       {...rest}
       {...imageProps}
+      {...priorityProps}
       alt={alt}
       className={className}
       loading={loading}
       decoding={decoding}
-      fetchPriority={fetchPriority}
     />
   );
 };

@@ -155,13 +155,14 @@ const ProgressiveImg = ({
   fetchPriority = "auto",
 }) => {
   const [loaded, setLoaded] = useState(false);
+  const priorityProps = fetchPriority ? { fetchpriority: fetchPriority } : {};
   return (
     <img
+      {...priorityProps}
       src={src}
       alt={alt}
       onLoad={() => setLoaded(true)}
       loading={loading}
-      fetchPriority={fetchPriority}
       decoding="async"
       className={`${className} transition-[filter,transform,opacity] duration-700 ${
         loaded

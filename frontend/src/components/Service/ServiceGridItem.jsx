@@ -107,6 +107,7 @@ const ServiceGridItem = ({ item, isCenter, shouldAutoplay, registerVideoRef }) =
         <div className={`relative overflow-hidden ${size}`}>
           {posterUrl ? (
             <img
+              {...{ fetchpriority: "high" }}
               src={posterUrl}
               alt={item?.title || "Hizmet önizleme"}
               className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
@@ -114,7 +115,6 @@ const ServiceGridItem = ({ item, isCenter, shouldAutoplay, registerVideoRef }) =
               }`}
               loading="eager"
               decoding="async"
-              fetchPriority="high"
             />
           ) : (
             <div className="absolute inset-0 bg-slate-200" />

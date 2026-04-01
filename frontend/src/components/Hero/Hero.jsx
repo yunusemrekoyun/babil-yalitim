@@ -1,5 +1,5 @@
 // src/components/Hero/Hero.jsx
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { motion } from "framer-motion";
 import SearchBar from "../SearchBar/SearchBar";
@@ -7,8 +7,111 @@ import LinksSection from "../Links/LinksSection";
 import BrandsSection from "../Brands/BrandsSection";
 import HeroServiceRibbon from "./HeroServiceRibbon.jsx";
 
+const clamp01 = (value) => Math.min(Math.max(value, 0), 1);
+const easeOutCubic = (value) => 1 - Math.pow(1 - clamp01(value), 3);
+const easeInOutCubic = (value) => {
+  const t = clamp01(value);
+  return t < 0.5
+    ? 4 * t * t * t
+    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+};
+
 const Hero = ({ targetId = "after-hero" }) => {
   const linksRef = useRef(null);
+  const mobileHeroRef = useRef(null);
+  const mobileArrowRef = useRef(null);
+  const [mobileRevealProgress, setMobileRevealProgress] = useState(0);
+  const [mobileArrowTop, setMobileArrowTop] = useState(null);
+  const [mobileArrowDismissed, setMobileArrowDismissed] = useState(false);
+  const [mobileArrowVisible, setMobileArrowVisible] = useState(true);
+
+  useEffect(() => {
+    let frameId = 0;
+
+    const updateProgress = () => {
+      frameId = 0;
+      const section = mobileHeroRef.current;
+      if (!section) return;
+
+      const rect = section.getBoundingClientRect();
+      const totalScrollable = Math.max(
+        section.offsetHeight - window.innerHeight,
+        1
+      );
+      const nextProgress = clamp01(-rect.top / totalScrollable);
+
+      if (nextProgress > 0.018) {
+        setMobileArrowDismissed(true);
+        setMobileArrowVisible(false);
+      }
+
+      setMobileRevealProgress((prev) =>
+        Math.abs(prev - nextProgress) < 0.01 ? prev : nextProgress
+      );
+    };
+
+    const onScroll = () => {
+      if (frameId) return;
+      frameId = window.requestAnimationFrame(updateProgress);
+    };
+
+    updateProgress();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+
+    return () => {
+      if (frameId) window.cancelAnimationFrame(frameId);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    let frameId = 0;
+
+    const updateArrowPosition = () => {
+      frameId = 0;
+
+      const vv = window.visualViewport;
+      const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      const heroRect = mobileHeroRef.current?.getBoundingClientRect();
+      const buttonHeight = mobileArrowRef.current?.offsetHeight || 44;
+      const gap = vv
+        ? Math.max(14, Math.min(24, vv.height * 0.018 + 8))
+        : 18;
+      const nextTop = Math.max(visibleBottom - buttonHeight - gap, 0);
+      const nextVisible =
+        !mobileArrowDismissed &&
+        Boolean(heroRect && heroRect.top < visibleBottom - 24 && heroRect.bottom > 56);
+
+      setMobileArrowTop((prev) =>
+        prev !== null && Math.abs(prev - nextTop) < 1 ? prev : nextTop
+      );
+      setMobileArrowVisible((prev) => (prev === nextVisible ? prev : nextVisible));
+    };
+
+    const scheduleUpdate = () => {
+      if (frameId) return;
+      frameId = window.requestAnimationFrame(updateArrowPosition);
+    };
+
+    updateArrowPosition();
+
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", scheduleUpdate);
+    vv?.addEventListener("scroll", scheduleUpdate);
+
+    return () => {
+      if (frameId) window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("scroll", scheduleUpdate);
+      vv?.removeEventListener("resize", scheduleUpdate);
+      vv?.removeEventListener("scroll", scheduleUpdate);
+    };
+  }, [mobileArrowDismissed]);
 
   const scrollToTarget = () => {
     // Önce dışarıdaki çıpa (tercih edilen)
@@ -32,96 +135,128 @@ const Hero = ({ targetId = "after-hero" }) => {
     }
   };
 
+  const mobileTitleProgress = easeInOutCubic(mobileRevealProgress / 0.5);
+  const mobileDetailsProgress = easeOutCubic(
+    (mobileRevealProgress - 0.07) / 0.28
+  );
+  const mobileTitleScale = 1 - mobileTitleProgress * 0.14;
+  const mobileTitleY = -mobileTitleProgress * 18;
+  const mobileTitleOpacity = 1 - mobileTitleProgress * 0.1;
+  const mobileDetailsMaxHeight = 360 * mobileDetailsProgress;
+  const mobileDetailsY = 18 * (1 - mobileDetailsProgress);
+  const mobileDetailsScale = 0.985 + mobileDetailsProgress * 0.015;
+
   return (
     <>
       {/* ======== MOBILE ======== */}
       <section
-        className="md:hidden relative px-3 bg-gradient-to-t from-white/10 to-transparent
-                   flex flex-col min-h-[100dvh]"
-        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1rem)" }}
+        ref={mobileHeroRef}
+        className="md:hidden relative min-h-[128dvh] overflow-hidden px-3 bg-gradient-to-t from-white/10 to-transparent"
       >
-        {/* Başlık */}
-        <div className="w-full pt-24 flex flex-col items-center text-center gap-4 px-2 z-20">
-          <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.2 }}
-          >
-            <h1 className="text-[34px] xs:text-[38px] font-extrabold text-white drop-shadow-lg leading-tight">
-              Yalıtımda Uzman
-            </h1>
-            <p className="mt-2 text-base xs:text-lg text-gray-200">
-              Babil&#39;e Hoş Geldiniz.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.9, delay: 0.35 }}
-            className="mt-1 w-full relative z-30"
-          >
-            <HeroServiceRibbon />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.9, delay: 0.45 }}
-            className="w-14 h-1 bg-quaternaryColor rounded-full"
-          />
-        </div>
-
-        <div className="w-full mt-7 z-20">
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.52 }}
-            className="relative z-20 w-full max-w-4xl mx-auto px-1"
-          >
-            <SearchBar />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
-            className="relative z-10 w-full mt-8 px-2"
-          >
-            <BrandsSection />
-          </motion.div>
-        </div>
-
-        <div className="w-full flex justify-center mt-8">
-          <motion.button
-            onClick={scrollToTarget}
-            aria-label="Aşağı kaydır"
-            className="transform-gpu-soft rounded-full border border-white/30 bg-white/15 backdrop-blur-xl
-                       shadow-[0_6px_30px_rgba(0,0,0,0.2)] p-2.5 hover:bg-white/25 transition"
-            animate={{ y: [0, 10, 0] }}
-            transition={{
-              repeat: Infinity,
-              repeatType: "loop",
-              duration: 1.6,
-              ease: "easeInOut",
-            }}
-          >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              className="text-white/90"
+        <div
+          className="sticky top-0 flex min-h-[100dvh] flex-col"
+          style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1rem)" }}
+        >
+          <div className="w-full px-2 pt-[16vh] z-20">
+            <motion.div
+              initial={{ opacity: 0, y: 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.9, delay: 0.2 }}
+              style={{
+                scale: mobileTitleScale,
+                y: mobileTitleY,
+                opacity: mobileTitleOpacity,
+                transformOrigin: "top center",
+              }}
+              className="mx-auto max-w-[22rem] text-center will-change-transform"
             >
-              <path
-                d="M6 9l6 6 6-6"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </motion.button>
+              <h1 className="text-[42px] xs:text-[48px] font-extrabold text-white drop-shadow-lg leading-[0.95]">
+                Yalıtımda Uzman
+              </h1>
+              <p className="mt-3 text-lg xs:text-xl text-gray-100">
+                Babil&#39;e Hoş Geldiniz.
+              </p>
+            </motion.div>
+          </div>
+
+          <div
+            className="w-full px-1 z-20"
+            style={{ marginTop: "clamp(4.75rem, 18vh, 9rem)" }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.52 }}
+              className="relative z-20 w-full max-w-4xl mx-auto"
+            >
+              <SearchBar />
+            </motion.div>
+
+            <motion.div
+              aria-hidden={mobileDetailsProgress < 0.05}
+              initial={false}
+              style={{
+                opacity: mobileDetailsProgress,
+                y: mobileDetailsY,
+                scale: mobileDetailsScale,
+                maxHeight: `${mobileDetailsMaxHeight}px`,
+                transformOrigin: "top center",
+              }}
+              className={`relative z-10 mt-5 overflow-hidden ${
+                mobileDetailsProgress < 0.08 ? "pointer-events-none" : ""
+              }`}
+            >
+              <div className="w-full relative z-30">
+                <HeroServiceRibbon />
+              </div>
+
+              <div className="relative z-10 w-full mt-4 px-1">
+                <BrandsSection />
+              </div>
+            </motion.div>
+          </div>
+
+          <div
+            className={`pointer-events-none fixed inset-x-0 z-[70] flex justify-center md:hidden transition-opacity duration-200 ${
+              mobileArrowVisible ? "opacity-100" : "opacity-0"
+            }`}
+            style={
+              mobileArrowTop !== null
+                ? { top: `${mobileArrowTop}px` }
+                : { bottom: "4.25rem" }
+            }
+          >
+            <motion.button
+              ref={mobileArrowRef}
+              onClick={scrollToTarget}
+              aria-label="Aşağı kaydır"
+              className="pointer-events-auto transform-gpu-soft rounded-full border border-white/30 bg-white/15 backdrop-blur-xl
+                         shadow-[0_6px_30px_rgba(0,0,0,0.2)] p-2.5 hover:bg-white/25 transition"
+              animate={{ y: [0, 10, 0] }}
+              transition={{
+                repeat: Infinity,
+                repeatType: "loop",
+                duration: 1.6,
+                ease: "easeInOut",
+              }}
+            >
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                className="text-white/90"
+              >
+                <path
+                  d="M6 9l6 6 6-6"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </motion.button>
+          </div>
         </div>
       </section>
 
