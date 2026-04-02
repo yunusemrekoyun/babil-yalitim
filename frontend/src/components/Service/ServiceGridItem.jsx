@@ -6,7 +6,7 @@ import {
   getOptimizedVideoUrl,
   getVideoPosterUrl,
   looksVideo,
-} from "../../utils/cloudinary";
+} from "../../utils/media";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 const pickFirstImageAndVideo = (images = []) => {
@@ -186,13 +186,15 @@ ServiceGridItem.propTypes = {
     type: PropTypes.string,
     cover: PropTypes.shape({
       url: PropTypes.string,
-      publicId: PropTypes.string,
+      storageKey: PropTypes.string,
+      posterUrl: PropTypes.string,
       resourceType: PropTypes.string,
     }),
     images: PropTypes.arrayOf(
       PropTypes.shape({
         url: PropTypes.string,
-        publicId: PropTypes.string,
+        storageKey: PropTypes.string,
+        posterUrl: PropTypes.string,
         resourceType: PropTypes.string,
       })
     ),

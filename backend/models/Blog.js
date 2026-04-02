@@ -1,18 +1,5 @@
 const mongoose = require("mongoose");
-
-const mediaSchema = new mongoose.Schema(
-  {
-    url: { type: String, required: true }, // Cloudinary secure_url
-    publicId: { type: String, required: true }, // Cloudinary public_id
-    resourceType: { type: String, enum: ["image", "video"], required: true },
-    format: String,
-    width: Number,
-    height: Number,
-    bytes: Number,
-    duration: Number, // video ise sn
-  },
-  { _id: false }
-);
+const mediaSchema = require("./schemas/mediaSchema");
 
 const commentSchema = new mongoose.Schema(
   {

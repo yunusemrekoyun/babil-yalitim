@@ -18,7 +18,7 @@ import {
   getOptimizedVideoUrl,
   getVideoPosterUrl,
   looksVideo,
-} from "../../utils/cloudinary";
+} from "../../utils/media";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 /* ---------- helpers ---------- */
@@ -295,7 +295,8 @@ const BlogDetail = () => {
       url: blog.cover.url,
       resourceType: getMediaType(blog.cover),
       caption: blog.cover.caption || blog.title || "Kapak medya",
-      publicId: blog.cover.publicId || "",
+      storageKey: blog.cover.storageKey || "",
+      posterUrl: blog.cover.posterUrl || "",
     };
   }, [blog]);
   // ---- BLOG MEDYA TOPLAYICI ----
@@ -317,7 +318,8 @@ const BlogDetail = () => {
         url,
         resourceType: type,
         caption: m.caption || m.alt || m.title || "",
-        publicId: m.publicId || "",
+        storageKey: m.storageKey || "",
+        posterUrl: m.posterUrl || "",
       });
     };
 

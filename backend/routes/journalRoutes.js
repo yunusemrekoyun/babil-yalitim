@@ -60,6 +60,6 @@ router.patch("/:id/order", verifyToken, setJournalOrder);
 router.delete("/:id", verifyToken, deleteJournal);
 
 // opsiyonel: tek asset sil
-router.delete("/:id/assets/:publicId", verifyToken, deleteAsset);
+router.delete("/:id/assets/:mediaKey", verifyToken, deleteAsset);
 
 module.exports = router;

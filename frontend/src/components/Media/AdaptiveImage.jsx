@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { getResponsiveImageProps } from "../../utils/cloudinary";
+import { getResponsiveImageProps } from "../../utils/media";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 const AdaptiveImage = ({
@@ -50,7 +50,8 @@ AdaptiveImage.propTypes = {
     PropTypes.string,
     PropTypes.shape({
       url: PropTypes.string,
-      publicId: PropTypes.string,
+      storageKey: PropTypes.string,
+      posterUrl: PropTypes.string,
       resourceType: PropTypes.string,
     }),
   ]),

@@ -6,7 +6,11 @@ const helmet = require("helmet");
 const compression = require("compression");
 const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
+
+dotenv.config();
+
 const connectDB = require("./config/db");
+const { MEDIA_PUBLIC_PATH, MEDIA_ROOT } = require("./storage");
 const {
   IMAGE_SOFT_LIMIT_MB,
   VIDEO_SOFT_LIMIT_MB,
@@ -14,7 +18,6 @@ const {
 } = require("./middleware/uploadMedia");
 const { normalizeUploadError } = require("./utils/uploadErrors");
 
-dotenv.config();
 connectDB();
 
 const app = express();
@@ -98,6 +101,14 @@ if (isProd) {
 
 /* ---------- Health & API ---------- */
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
+app.use(
+  MEDIA_PUBLIC_PATH,
+  express.static(MEDIA_ROOT, {
+    fallthrough: true,
+    maxAge: isProd ? "30d" : 0,
+    immutable: isProd,
+  })
+);
 app.use("/api", require("./routes/index"));
 
 /* ---------- 404 & Error ---------- */

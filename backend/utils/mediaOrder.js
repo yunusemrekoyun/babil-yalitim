@@ -18,7 +18,10 @@ const parseMediaOrder = (value) => {
     .filter(Boolean);
 };
 
-const existingToken = (publicId) => `existing:${publicId}`;
+const getExistingMediaKey = (item = {}) =>
+  String(item?.storageKey || item?.url || "").trim();
+
+const existingToken = (mediaKey) => `existing:${mediaKey}`;
 const newToken = (index) => `new:${index}`;
 
 const reorderMediaCollection = async ({
@@ -33,8 +36,8 @@ const reorderMediaCollection = async ({
 
   const existingMap = new Map(
     existing
-      .filter((item) => item?.publicId)
-      .map((item) => [existingToken(item.publicId), item])
+      .filter((item) => getExistingMediaKey(item))
+      .map((item) => [existingToken(getExistingMediaKey(item)), item])
   );
   const uploadedMap = new Map(
     uploaded.map((item, index) => [newToken(index), item])
@@ -59,7 +62,9 @@ const reorderMediaCollection = async ({
   }
 
   const removedExisting = existing.filter(
-    (item) => item?.publicId && !used.has(existingToken(item.publicId))
+    (item) =>
+      getExistingMediaKey(item) &&
+      !used.has(existingToken(getExistingMediaKey(item)))
   );
   const droppedUploads = uploaded.filter(
     (_item, index) => !used.has(newToken(index))

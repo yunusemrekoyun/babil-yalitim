@@ -1,6 +1,5 @@
-const fs = require("fs/promises");
 const Project = require("../models/Project");
-const cloudinary = require("../config/cloudinary");
+const mediaStorage = require("../storage");
 const {
   parseDisplayOrder,
   syncCollectionDisplayOrder,
@@ -11,101 +10,14 @@ const {
 } = require("../utils/mediaOrder");
 
 /* ---------- helpers ---------- */
-const extractPublicIdFromUrl = (fullUrl) => {
-  try {
-    if (!fullUrl) return null;
-    const u = new URL(fullUrl);
-    const parts = u.pathname.split("/").filter(Boolean);
-    const uploadIdx = parts.findIndex((p) => p === "upload");
-    if (uploadIdx === -1 || uploadIdx + 1 >= parts.length) return null;
-    let after = parts.slice(uploadIdx + 1);
-    if (/^v\d+$/i.test(after[0])) after = after.slice(1);
-    const publicIdWithExt = after.join("/");
-    const lastDot = publicIdWithExt.lastIndexOf(".");
-    const withoutExt =
-      lastDot > -1 ? publicIdWithExt.slice(0, lastDot) : publicIdWithExt;
-    return decodeURIComponent(withoutExt);
-  } catch {
-    return null;
-  }
-};
-
-const makeDeliveryUrl = (publicId, resourceType, extra = {}) =>
-  cloudinary.url(publicId, {
-    resource_type: resourceType,
-    secure: true,
-    transformation: [{ fetch_format: "auto", quality: "auto" }],
-    ...extra,
-  });
-
-const toMediaDoc = (cldRes, fallbackType) => {
-  const resourceType = cldRes?.resource_type || fallbackType || "image";
-  const fromApi = cldRes?.public_id || cldRes?.publicId || null;
-  const fromUrl =
-    extractPublicIdFromUrl(cldRes?.secure_url) ||
-    extractPublicIdFromUrl(cldRes?.url);
-  const publicId = fromApi || fromUrl || cldRes?.asset_id || null;
-
-  if (!publicId) {
-    throw new Error(
-      `Upload result missing required fields (publicId:undefined, resourceType:${resourceType})`
-    );
-  }
-
-  const url =
-    cldRes?.secure_url ||
-    cldRes?.url ||
-    makeDeliveryUrl(publicId, resourceType);
-
-  return {
-    publicId,
-    url,
-    resourceType,
-    format: cldRes?.format,
-    width: cldRes?.width,
-    height: cldRes?.height,
-    bytes: cldRes?.bytes,
-    duration: cldRes?.duration,
-  };
-};
-
 const uploadOne = async (file, folder, forceType) => {
-  const isVideo =
-    forceType === "video" ||
-    /^video\//i.test(file?.mimetype || "") ||
-    (!/^image\//i.test(file?.mimetype || "") && forceType !== "image");
-
-  const resourceType = isVideo ? "video" : "image";
-
-  const options = {
+  return mediaStorage.upload(file, {
     folder,
-    resource_type: resourceType,
-    overwrite: true,
-    unique_filename: true,
-    use_filename: true,
-    chunk_size: 6_000_000,
-  };
-
-  const filePath = file.path;
-
-  try {
-    const result = await cloudinary.uploader.upload(filePath, options);
-    return toMediaDoc(result, resourceType);
-  } finally {
-    try {
-      await fs.unlink(filePath);
-    } catch {}
-  }
+    resourceType: forceType || "auto",
+  });
 };
 
-const destroyIfExists = async (media) => {
-  if (!media?.publicId) return;
-  try {
-    await cloudinary.uploader.destroy(media.publicId, {
-      resource_type: media.resourceType || "image",
-    });
-  } catch {}
-};
+const destroyIfExists = async (media) => mediaStorage.destroy(media);
 
 const parseBoolean = (value) =>
   /^(1|true|yes|on)$/i.test(String(value || "").trim());
@@ -160,7 +72,7 @@ exports.createProject = async (req, res) => {
       return res.status(400).json({ message: "Kapak medyası zorunludur." });
     }
 
-    const folder = process.env.CLOUDINARY_PROJECTS_FOLDER || "babil/projects";
+    const folder = process.env.MEDIA_PROJECTS_FOLDER || "projects";
 
     const cover = await uploadOne(coverFile, folder, null);
 
@@ -230,7 +142,7 @@ exports.updateProject = async (req, res) => {
     if (!proj) return res.status(404).json({ message: "Proje bulunamadı" });
 
     const files = req.files || {};
-    const folder = process.env.CLOUDINARY_PROJECTS_FOLDER || "babil/projects";
+    const folder = process.env.MEDIA_PROJECTS_FOLDER || "projects";
     const imageOrder = parseMediaOrder(req.body.imageOrder);
     const removeVideo = parseBoolean(req.body.removeVideo);
 
@@ -270,7 +182,10 @@ exports.updateProject = async (req, res) => {
         await Promise.all(
           uploadedImages
             .filter((media) =>
-              nextImages.some((item) => item?.publicId === media?.publicId)
+              nextImages.some(
+                (item) =>
+                  mediaStorage.getMediaKey(item) === mediaStorage.getMediaKey(media)
+              )
             )
             .map((media) => destroyIfExists(media))
         );
@@ -320,15 +235,16 @@ exports.getProjectCovers = async (req, res) => {
       {
         _id: 1,
         title: 1,
+        displayOrder: 1,
         // cover detayları
         "cover.url": 1,
         "cover.resourceType": 1,
-        "cover.publicId": 1,
+        "cover.posterUrl": 1,
         // images sadece ilkini alalım
         images: { $slice: 1 },
         // video detayları
-        "video.publicId": 1,
         "video.url": 1,
+        "video.posterUrl": 1,
       }
     )
       .sort({ displayOrder: 1, createdAt: 1, _id: 1 })
@@ -352,15 +268,12 @@ exports.getProjectCovers = async (req, res) => {
       }
 
       // 3) hâlâ yoksa video posteri üret
-      if (!mobileCoverUrl && p?.video?.publicId) {
-        // Cloudinary: video’dan jpg poster
-        // format: 'jpg' + start_offset '0' (ilk kare)
-        mobileCoverUrl = cloudinary.url(p.video.publicId, {
-          resource_type: "video",
-          format: "jpg",
-          secure: true,
-          transformation: [{ quality: "auto" }, { start_offset: "0" }],
-        });
+      if (!mobileCoverUrl && p?.video?.posterUrl) {
+        mobileCoverUrl = p.video.posterUrl;
+      }
+
+      if (!mobileCoverUrl && p?.video?.url) {
+        mobileCoverUrl = p.video.url;
       }
 
       return {

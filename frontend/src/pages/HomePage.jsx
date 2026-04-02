@@ -19,10 +19,10 @@ import {
   normalizeSiteSettings,
 } from "../utils/siteSettings";
 
-const HERO_DESKTOP = import.meta.env.VITE_HERO_PUBLIC_ID;
-const HERO_MOBILE = import.meta.env.VITE_HERO_MOBILE_PUBLIC_ID;
-const HERO_MOBILE_VIDEO = import.meta.env.VITE_HERO_MOBILE_VIDEO_PUBLIC_ID;
-const HERO_POSTER = import.meta.env.VITE_HERO_POSTER_PUBLIC_ID;
+const HERO_DESKTOP = import.meta.env.VITE_HERO_DESKTOP_VIDEO_URL;
+const HERO_MOBILE = import.meta.env.VITE_HERO_MOBILE_IMAGE_URL;
+const HERO_MOBILE_VIDEO = import.meta.env.VITE_HERO_MOBILE_VIDEO_URL;
+const HERO_POSTER = import.meta.env.VITE_HERO_POSTER_URL;
 
 export default function HomePage() {
   const { sectionRootMargin } = usePerformanceProfile();
@@ -90,10 +90,10 @@ export default function HomePage() {
   return (
     <div className="relative min-h-screen overflow-x-hidden">
       <BackgroundVideo
-        desktopPublicId={HERO_DESKTOP}
-        mobilePublicId={HERO_MOBILE}
-        mobileVideoPublicId={HERO_MOBILE_VIDEO}
-        posterPublicId={HERO_POSTER}
+        desktopVideoUrl={HERO_DESKTOP}
+        mobileImageUrl={HERO_MOBILE}
+        mobileVideoUrl={HERO_MOBILE_VIDEO}
+        posterUrl={HERO_POSTER}
       />
 
       <div className="relative z-10">

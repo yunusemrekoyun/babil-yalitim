@@ -8,6 +8,7 @@ import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import OrderSelect from "../../components/OrderSelect";
 import { getAdminFeedbackMessage } from "../../utils/mediaFeedback";
+import { getMediaUrl, getVideoPosterUrl } from "../../../utils/media";
 
 const toArray = (data) => (Array.isArray(data) ? data : []);
 
@@ -225,12 +226,17 @@ const ServiceList = () => {
                     className="align-top transition hover:bg-indigo-50/60 dark:hover:bg-slate-800/40"
                   >
                     <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
-                      {service.cover?.url ? (
+                      {getMediaUrl(service.cover) ? (
                         <div className="relative">
                           {service.cover.resourceType === "video" ? (
                             <>
                               <video
-                                src={service.cover.url}
+                                src={getMediaUrl(service.cover)}
+                                poster={
+                                  getVideoPosterUrl(service.cover, {
+                                    fallbackSrc: getMediaUrl(service.cover),
+                                  }) || undefined
+                                }
                                 className="h-16 w-24 rounded-md object-cover"
                                 muted
                                 playsInline
@@ -241,7 +247,7 @@ const ServiceList = () => {
                             </>
                           ) : (
                             <img
-                              src={service.cover.url}
+                              src={getMediaUrl(service.cover)}
                               alt={service.title}
                               className="h-16 w-24 rounded-md object-cover"
                             />

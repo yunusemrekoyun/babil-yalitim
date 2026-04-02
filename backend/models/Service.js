@@ -1,19 +1,6 @@
 // backend/models/Service.js
 const mongoose = require("mongoose");
-
-const mediaSchema = new mongoose.Schema(
-  {
-    url: { type: String, required: true },
-    publicId: { type: String, required: true },
-    resourceType: { type: String, enum: ["image", "video"], default: "image" },
-    // ↓ meta (Cloudinary’den geliyor)
-    width: Number,
-    height: Number,
-    duration: Number, // video ise sn
-    format: String,
-  },
-  { _id: false }
-);
+const mediaSchema = require("./schemas/mediaSchema");
 
 const subServiceSchema = new mongoose.Schema(
   {

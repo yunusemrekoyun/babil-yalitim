@@ -8,7 +8,7 @@ import {
   getOptimizedVideoUrl,
   getVideoPosterUrl,
   looksVideo,
-} from "../../utils/cloudinary";
+} from "../../utils/media";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 import useViewportActivation from "../../hooks/useViewportActivation";
 
@@ -283,13 +283,15 @@ ServiceItem.propTypes = {
     description: PropTypes.string,
     cover: PropTypes.shape({
       url: PropTypes.string,
-      publicId: PropTypes.string,
+      storageKey: PropTypes.string,
+      posterUrl: PropTypes.string,
       resourceType: PropTypes.string, // "image" | "video"
     }),
     images: PropTypes.arrayOf(
       PropTypes.shape({
         url: PropTypes.string,
-        publicId: PropTypes.string,
+        storageKey: PropTypes.string,
+        posterUrl: PropTypes.string,
         resourceType: PropTypes.string,
       })
     ),

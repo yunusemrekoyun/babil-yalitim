@@ -9,7 +9,7 @@ import {
   getOptimizedVideoUrl,
   getVideoPosterUrl,
   looksVideo,
-} from "../../utils/cloudinary";
+} from "../../utils/media";
 
 const BlogGridItem = ({ item, index }) => {
   const navigate = useNavigate();

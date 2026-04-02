@@ -2,7 +2,7 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { PlayCircle } from "lucide-react";
-import { getVideoPosterUrl, looksVideo } from "../../utils/cloudinary";
+import { getVideoPosterUrl, looksVideo } from "../../utils/media";
 
 const thumbFrom = (blog) => {
   const cover = blog?.cover?.url || "";

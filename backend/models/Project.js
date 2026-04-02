@@ -1,18 +1,5 @@
 const mongoose = require("mongoose");
-
-const mediaSchema = new mongoose.Schema(
-  {
-    publicId: { type: String, required: true },
-    url: { type: String, required: true },
-    resourceType: { type: String, enum: ["image", "video"], required: true },
-    format: String,
-    width: Number,
-    height: Number,
-    bytes: Number,
-    duration: Number,
-  },
-  { _id: false }
-);
+const mediaSchema = require("./schemas/mediaSchema");
 
 const projectSchema = new mongoose.Schema(
   {

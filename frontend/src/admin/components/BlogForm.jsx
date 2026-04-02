@@ -363,14 +363,16 @@ BlogForm.propTypes = {
     tags: PropTypes.arrayOf(PropTypes.string),
     cover: PropTypes.shape({
       url: PropTypes.string,
-      publicId: PropTypes.string,
+      storageKey: PropTypes.string,
+      posterUrl: PropTypes.string,
       resourceType: PropTypes.oneOf(["image", "video"]),
     }),
     displayOrder: PropTypes.number,
     assets: PropTypes.arrayOf(
       PropTypes.shape({
         url: PropTypes.string,
-        publicId: PropTypes.string,
+        storageKey: PropTypes.string,
+        posterUrl: PropTypes.string,
         resourceType: PropTypes.oneOf(["image", "video"]),
       })
     ),

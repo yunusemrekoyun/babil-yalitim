@@ -1,8 +1,7 @@
 // controller/journalController.js
 const crypto = require("crypto");
-const fs = require("fs/promises");
 const Journal = require("../models/Journal");
-const cloudinary = require("../config/cloudinary");
+const mediaStorage = require("../storage");
 const sanitizeHtml = require("../utils/sanitizeHtml");
 const { buildRichContentHtml } = require("../utils/richContent");
 const {
@@ -15,42 +14,9 @@ const {
 } = require("../utils/mediaOrder");
 
 // ---- helpers ----
-const toMediaDoc = (cldRes) => ({
-  url: cldRes.secure_url,
-  publicId: cldRes.public_id,
-  resourceType: cldRes.resource_type || "image",
-});
+const uploadOne = async (file, folder) => mediaStorage.upload(file, { folder });
 
-const uploadOne = async (file, folder) => {
-  const opts = { folder, resource_type: "auto", overwrite: true };
-  let res;
-  if (file?.buffer && file?.mimetype) {
-    const dataUri = `data:${file.mimetype};base64,${file.buffer.toString(
-      "base64"
-    )}`;
-    res = await cloudinary.uploader.upload(dataUri, opts);
-  } else if (file?.path) {
-    try {
-      res = await cloudinary.uploader.upload(file.path, opts);
-    } finally {
-      await fs.unlink(file.path).catch(() => {});
-    }
-  } else {
-    throw new Error("Yükleme için geçersiz dosya");
-  }
-  return toMediaDoc(res);
-};
-
-const destroyIfExists = async (media) => {
-  if (!media?.publicId) return;
-  try {
-    await cloudinary.uploader.destroy(media.publicId, {
-      resource_type: media.resourceType || "image",
-    });
-  } catch {
-    /* sessiz geç */
-  }
-};
+const destroyIfExists = async (media) => mediaStorage.destroy(media);
 
 const emailToHash = (emailRaw) => {
   const email = String(emailRaw || "")
@@ -95,7 +61,7 @@ exports.createJournal = async (req, res) => {
     if (!coverFile)
       return res.status(400).json({ message: "Kapak görseli zorunludur" });
 
-    const folder = process.env.CLOUDINARY_JOURNAL_FOLDER || "babil/journals";
+    const folder = process.env.MEDIA_JOURNALS_FOLDER || "journals";
 
     const cover = await uploadOne(coverFile, folder);
 
@@ -143,7 +109,7 @@ exports.updateJournal = async (req, res) => {
     if (!item) return res.status(404).json({ message: "Haber bulunamadı" });
 
     const files = req.files || {};
-    const folder = process.env.CLOUDINARY_JOURNAL_FOLDER || "babil/journals";
+    const folder = process.env.MEDIA_JOURNALS_FOLDER || "journals";
     const assetOrder = parseMediaOrder(req.body.assetOrder);
 
     if (title !== undefined) item.title = title;
@@ -245,11 +211,14 @@ exports.setJournalOrder = async (req, res) => {
 // tek bir asset sil (opsiyonel, admin için kullanışlı)
 exports.deleteAsset = async (req, res) => {
   try {
-    const { id, publicId } = req.params;
+    const { id, mediaKey: mediaKeyParam } = req.params;
     const item = await Journal.findById(id);
     if (!item) return res.status(404).json({ message: "Haber bulunamadı" });
 
-    const idx = (item.assets || []).findIndex((a) => a.publicId === publicId);
+    const requestedKey = decodeURIComponent(String(mediaKeyParam || "").trim());
+    const idx = (item.assets || []).findIndex(
+      (media) => mediaStorage.getMediaKey(media) === requestedKey
+    );
     if (idx === -1)
       return res.status(404).json({ message: "Medya bulunamadı" });
 

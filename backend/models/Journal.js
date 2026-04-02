@@ -1,14 +1,6 @@
 // models/Journal.js
 const mongoose = require("mongoose");
-
-const mediaSchema = new mongoose.Schema(
-  {
-    url: { type: String, required: true }, // Cloudinary secure_url
-    publicId: { type: String, required: true }, // Cloudinary public_id
-    resourceType: { type: String, default: "image" }, // image | video
-  },
-  { _id: false }
-);
+const mediaSchema = require("./schemas/mediaSchema");
 
 const journalSchema = new mongoose.Schema(
   {

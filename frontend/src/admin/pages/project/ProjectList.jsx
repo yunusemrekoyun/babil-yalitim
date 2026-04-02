@@ -14,10 +14,14 @@ import {
   DEFAULT_SITE_SETTINGS,
   normalizeSiteSettings,
 } from "../../../utils/siteSettings";
+import { getMediaUrl, getVideoPosterUrl } from "../../../utils/media";
 
 const Card = ({ project, onDelete, onOrderChange, maxOrder, orderLoading }) => {
   const coverIsVideo = project?.cover?.resourceType === "video";
-  const coverSrc = project?.cover?.url || "";
+  const coverSrc = getMediaUrl(project?.cover);
+  const coverPoster = getVideoPosterUrl(project?.cover, {
+    fallbackSrc: coverSrc,
+  });
   const hasCover = Boolean(coverSrc);
 
   return (
@@ -27,6 +31,7 @@ const Card = ({ project, onDelete, onOrderChange, maxOrder, orderLoading }) => {
           coverIsVideo ? (
             <video
               src={coverSrc}
+              poster={coverPoster || undefined}
               className="h-full w-full object-cover"
               controls={false}
               muted
@@ -35,7 +40,7 @@ const Card = ({ project, onDelete, onOrderChange, maxOrder, orderLoading }) => {
             />
           ) : (
             <img
-              src={coverSrc}
+              src={coverPoster || coverSrc}
               alt={project.title}
               className="h-full w-full object-cover"
             />

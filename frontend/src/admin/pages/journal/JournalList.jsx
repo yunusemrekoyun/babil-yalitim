@@ -12,6 +12,7 @@ import {
   toPlainRichContent,
   toRichContentExcerpt,
 } from "../../../utils/richContent.js";
+import { getMediaUrl, getVideoPosterUrl } from "../../../utils/media";
 
 const clamp2 = {
   display: "-webkit-box",
@@ -25,7 +26,10 @@ const isVideoCover = (cover) =>
   /\.(mp4|webm|mov|m4v)(?:$|[?#])/i.test(cover?.url || "");
 
 const renderCover = (cover, title, className) => {
-  if (!cover?.url) {
+  const coverUrl = getMediaUrl(cover);
+  const posterUrl = getVideoPosterUrl(cover, { fallbackSrc: coverUrl });
+
+  if (!coverUrl) {
     return (
       <div
         className={`${className} grid shrink-0 place-items-center rounded-md border border-dashed bg-slate-100/70 text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800/60`}
@@ -39,7 +43,8 @@ const renderCover = (cover, title, className) => {
     return (
       <div className="relative shrink-0">
         <video
-          src={cover.url}
+          src={coverUrl}
+          poster={posterUrl || undefined}
           className={`${className} rounded-md border border-slate-200/70 object-cover dark:border-slate-800`}
           muted
           playsInline
@@ -54,7 +59,7 @@ const renderCover = (cover, title, className) => {
 
   return (
     <img
-      src={cover.url}
+      src={posterUrl || coverUrl}
       alt={title}
       className={`${className} shrink-0 rounded-md border border-slate-200/70 object-cover dark:border-slate-800`}
     />

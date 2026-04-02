@@ -1,3 +1,5 @@
+import { getMediaKey, getMediaUrl } from "../../utils/media";
+
 const createClientMediaId = () =>
   globalThis.crypto?.randomUUID?.() ||
   `media-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -21,10 +23,10 @@ export const createExistingMediaItems = (items = [], altPrefix = "medya") =>
   items
     .filter((item) => item?.url)
     .map((item, index) => ({
-      id: `existing:${item.publicId || item.url || index}`,
+      id: `existing:${getMediaKey(item) || index}`,
       source: "existing",
-      publicId: item.publicId || "",
-      src: item.url,
+      storageKey: getMediaKey(item),
+      src: getMediaUrl(item),
       type: toMediaType(item),
       alt: `${altPrefix}-${index + 1}`,
       badge: "Mevcut",
@@ -38,7 +40,7 @@ export const createNewMediaItems = (
   files.map((file, index) => ({
     id: `new:${createClientMediaId()}`,
     source: "new",
-    publicId: "",
+    storageKey: "",
     src: rememberUrl(file),
     type: toMediaType(file),
     alt: `${altPrefix}-${index + 1}`,
@@ -86,8 +88,8 @@ export const appendOrderedMediaToFormData = (
       return;
     }
 
-    if (item.source === "existing" && item.publicId) {
-      orderTokens.push(`existing:${item.publicId}`);
+    if (item.source === "existing" && item.storageKey) {
+      orderTokens.push(`existing:${item.storageKey}`);
     }
   });
 

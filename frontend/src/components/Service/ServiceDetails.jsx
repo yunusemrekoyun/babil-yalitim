@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import api from "../../api";
 import OtherServices from "./OtherServices";
+import { getVideoPosterUrl, looksVideo } from "../../utils/media";
 
 const fmt = (v) => {
   if (!v) return null;
@@ -25,10 +26,6 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
 };
 
-// --- helpers (dosyanın üst kısmına koy) ---
-const looksVideo = (u = "") =>
-  /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(String(u));
-
 const firstImageFrom = (images = []) => {
   for (const m of images) {
     const u = m?.url;
@@ -38,26 +35,6 @@ const firstImageFrom = (images = []) => {
     if (isImg) return u;
   }
   return null;
-};
-
-// Cloudinary URL'den cloudName + publicId çıkar
-const parseCloudinary = (url = "") => {
-  const m = url.match(
-    /^https?:\/\/res\.cloudinary\.com\/([^/]+)\/(?:image|video)\/upload\/(.+)$/i
-  );
-  if (!m) return null;
-  const cloudName = m[1];
-  const right = m[2].replace(/\?.*$/, "").replace(/#[^]*$/, "");
-  const publicId = right.replace(/\.[a-z0-9]+$/i, "");
-  return { cloudName, publicId };
-};
-
-// Video için ilk kare jpg thumb
-const cldVideoThumb = (url = "", { w = 480, h = 854 } = {}) => {
-  const parsed = parseCloudinary(url);
-  if (!parsed) return null;
-  const { cloudName, publicId } = parsed;
-  return `https://res.cloudinary.com/${cloudName}/video/upload/so_0,f_jpg,q_auto,c_fill,w_${w},h_${h}/${publicId}.jpg`;
 };
 
 const isVideoMedia = (media) =>
@@ -123,6 +100,7 @@ const ServiceDetails = () => {
     if (svc.cover?.url) {
       list.push({
         url: svc.cover.url,
+        posterUrl: svc.cover.posterUrl || "",
         type: svc.cover.resourceType || "image",
       });
     } else if (svc.imageUrl) {
@@ -133,7 +111,13 @@ const ServiceDetails = () => {
 
     if (Array.isArray(svc.images)) {
       svc.images.forEach((m) => {
-        if (m?.url) list.push({ url: m.url, type: m.resourceType || "image" });
+        if (m?.url) {
+          list.push({
+            url: m.url,
+            posterUrl: m.posterUrl || "",
+            type: m.resourceType || "image",
+          });
+        }
       });
     }
     if (Array.isArray(svc.galleryDataUrls)) {
@@ -373,7 +357,7 @@ const ServiceDetails = () => {
                     const subPreview =
                       (!subCoverIsVideo && sub?.cover?.url) ||
                       firstImageFrom(sub?.images) ||
-                      (subCoverIsVideo ? cldVideoThumb(sub?.cover?.url) : null) ||
+                      (subCoverIsVideo ? getVideoPosterUrl(sub?.cover) : null) ||
                       "";
 
                     return (
@@ -438,10 +422,7 @@ const ServiceDetails = () => {
                                 {sub.images.map((media, mediaIndex) => {
                                   const mediaIsVideo = isVideoMedia(media);
                                   const previewUrl = mediaIsVideo
-                                    ? cldVideoThumb(media.url, {
-                                        w: 960,
-                                        h: 540,
-                                      })
+                                    ? getVideoPosterUrl(media)
                                     : media.url;
 
                                   return mediaIsVideo ? (
@@ -544,7 +525,9 @@ const ServiceDetails = () => {
               const galleryImg = firstImageFrom(it?.images);
 
               // 2) Kapak video ise Cloudinary'den ilk kare thumb dene
-              const videoThumb = coverIsVideo ? cldVideoThumb(coverUrl) : null;
+              const videoThumb = coverIsVideo
+                ? getVideoPosterUrl(it?.cover || { url: coverUrl, resourceType: "video" })
+                : null;
 
               // 3) Kapak image ise onu kullan
               const coverImage = !coverIsVideo ? coverUrl : null;

@@ -5,6 +5,7 @@
 # === Build ve Output ===
 **/dist
 **/build
+**/coverage
 *.local
 
 # === Log dosyaları ===
@@ -29,6 +30,9 @@ lerna-debug.log*
 
 # === Çıkartılmış ya da geçici dosyalar ===
 *.env
+.env.prod
+**/.env.prod
+*.env.prod
 .env..local
 .env.local
 .env.development.local
@@ -40,6 +44,8 @@ lerna-debug.log*
 # === Özelleştirilmiş ayarlar ===
 *.bak
 *.tmp
+backend/tmp/
+backend/media/
 
 # === OS tarafından oluşturulan ===
 Thumbs.db
@@ -51,4 +57,3 @@ Desktop.ini
 *.mov
 *.mkv
 *.webm
-

@@ -2,17 +2,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import {
+  getMediaUrl,
   getOptimizedImageUrl,
   getOptimizedVideoUrl,
-  getVideoPosterUrl,
-} from "../../utils/cloudinary";
+} from "../../utils/media";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 export default function BackgroundVideo({
-  desktopPublicId,
-  mobilePublicId = "",
-  mobileVideoPublicId = "",
-  posterPublicId = "",
+  desktopVideoUrl = "",
+  mobileImageUrl = "",
+  mobileVideoUrl = "",
+  posterUrl = "",
   fallbackSrc = "/fallback-hero.jpg",
   className = "",
 }) {
@@ -23,69 +23,39 @@ export default function BackgroundVideo({
     backgroundVideoWidth,
     mobileBackgroundVideoWidth,
     imageQuality,
-    videoQuality,
     isMobile,
   } = usePerformanceProfile();
   const [ready, setReady] = useState(false);
 
-  const chosenVideoPublicId = isMobile
-    ? mobileVideoPublicId || desktopPublicId
-    : desktopPublicId;
-  const chosenVideoWidth = isMobile
-    ? mobileBackgroundVideoWidth
-    : backgroundVideoWidth;
-  const chosenVideoQuality = isMobile ? "auto:eco" : videoQuality;
-  const shouldUseVideo = Boolean(chosenVideoPublicId);
+  const chosenVideoUrl = isMobile ? mobileVideoUrl || desktopVideoUrl : desktopVideoUrl;
+  const shouldUseVideo = Boolean(chosenVideoUrl);
   const priorityProps = { fetchpriority: "high" };
 
   const videoUrl = useMemo(
-    () =>
-      getOptimizedVideoUrl(
-        { publicId: chosenVideoPublicId, resourceType: "video" },
-        { width: chosenVideoWidth, quality: chosenVideoQuality }
-      ),
-    [chosenVideoPublicId, chosenVideoQuality, chosenVideoWidth]
+    () => getOptimizedVideoUrl(chosenVideoUrl),
+    [chosenVideoUrl]
   );
 
-  const videoPosterUrl = useMemo(() => {
-    if (!shouldUseVideo || !chosenVideoPublicId) return "";
-
-    return getVideoPosterUrl(
-      { publicId: chosenVideoPublicId, resourceType: "video" },
-      {
-        width: chosenVideoWidth,
-        quality: imageQuality,
-        offset: 0,
-      }
-    );
-  }, [chosenVideoPublicId, chosenVideoWidth, imageQuality, shouldUseVideo]);
-
   const fallbackImageUrl = useMemo(() => {
-    const imagePublicId =
-      (isMobile && mobilePublicId) || posterPublicId || "";
+    const imageUrl = (isMobile && mobileImageUrl) || posterUrl || "";
+    if (!imageUrl) return fallbackSrc;
 
-    if (!imagePublicId) return fallbackSrc;
-
-    return getOptimizedImageUrl(
-      { publicId: imagePublicId, resourceType: "image" },
-      {
-        width: isMobile ? 960 : backgroundVideoWidth,
-        quality: imageQuality,
-        fallbackSrc,
-      }
-    );
+    return getOptimizedImageUrl(imageUrl, {
+      width: isMobile ? mobileBackgroundVideoWidth : backgroundVideoWidth,
+      quality: imageQuality,
+      fallbackSrc,
+    });
   }, [
     backgroundVideoWidth,
     fallbackSrc,
     imageQuality,
     isMobile,
-    mobilePublicId,
-    posterPublicId,
+    mobileBackgroundVideoWidth,
+    mobileImageUrl,
+    posterUrl,
   ]);
 
-  const placeholderUrl = shouldUseVideo
-    ? videoPosterUrl || fallbackImageUrl || fallbackSrc
-    : fallbackImageUrl || fallbackSrc;
+  const placeholderUrl = getMediaUrl(posterUrl) || fallbackImageUrl || fallbackSrc;
 
   useEffect(() => {
     setReady(false);
@@ -223,10 +193,10 @@ export default function BackgroundVideo({
 }
 
 BackgroundVideo.propTypes = {
-  desktopPublicId: PropTypes.string.isRequired,
-  mobilePublicId: PropTypes.string,
-  mobileVideoPublicId: PropTypes.string,
-  posterPublicId: PropTypes.string,
+  desktopVideoUrl: PropTypes.string,
+  mobileImageUrl: PropTypes.string,
+  mobileVideoUrl: PropTypes.string,
+  posterUrl: PropTypes.string,
   fallbackSrc: PropTypes.string,
   className: PropTypes.string,
 };

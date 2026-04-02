@@ -10,7 +10,7 @@ import {
   getOptimizedVideoUrl,
   getVideoPosterUrl,
   looksVideo,
-} from "../../utils/cloudinary";
+} from "../../utils/media";
 
 const BlogItem = ({ item, index }) => {
   const navigate = useNavigate();
@@ -166,7 +166,8 @@ BlogItem.propTypes = {
     tags: PropTypes.arrayOf(PropTypes.string),
     cover: PropTypes.shape({
       url: PropTypes.string,
-      publicId: PropTypes.string,
+      storageKey: PropTypes.string,
+      posterUrl: PropTypes.string,
       resourceType: PropTypes.oneOf(["image", "video"]),
     }),
     createdAt: PropTypes.oneOfType([

@@ -1,6 +1,5 @@
-const fs = require("fs/promises");
 const Service = require("../models/Service");
-const cloudinary = require("../config/cloudinary");
+const mediaStorage = require("../storage");
 const {
   normalizeOrderedItems,
   parseDisplayOrder,
@@ -87,56 +86,9 @@ const assertPortrait = (meta, where = "kapak") => {
   }
 };
 
-const uploadOne = async (file, folder) => {
-  const options = {
-    folder,
-    resource_type: "auto",
-    overwrite: true,
-    unique_filename: true,
-    use_filename: true,
-  };
+const uploadOne = async (file, folder) => mediaStorage.upload(file, { folder });
 
-  let res;
-  if (file?.buffer && file?.mimetype) {
-    const dataUri = `data:${file.mimetype};base64,${file.buffer.toString(
-      "base64"
-    )}`;
-    res = await cloudinary.uploader.upload(dataUri, options);
-  } else if (file?.path) {
-    try {
-      res = await cloudinary.uploader.upload(file.path, options);
-    } finally {
-      try {
-        await fs.unlink(file.path);
-      } catch {
-        /* yut */
-      }
-    }
-  } else {
-    throw new Error("Geçersiz dosya");
-  }
-
-  return {
-    url: res.secure_url || res.url,
-    publicId: res.public_id,
-    resourceType: res.resource_type || "image",
-    width: res.width,
-    height: res.height,
-    duration: res.duration,
-    format: res.format,
-  };
-};
-
-const destroyIfExists = async (media) => {
-  if (!media?.publicId) return;
-  try {
-    await cloudinary.uploader.destroy(media.publicId, {
-      resource_type: media.resourceType || "image",
-    });
-  } catch {
-    /* sessiz geç */
-  }
-};
+const destroyIfExists = async (media) => mediaStorage.destroy(media);
 
 const flattenFiles = (files) =>
   Array.isArray(files) ? files : Object.values(files || {}).flat();
@@ -309,7 +261,7 @@ const createService = async (req, res) => {
       return res.status(400).json({ message: "Kapak zorunludur." });
     }
 
-    const folder = process.env.CLOUDINARY_SERVICES_FOLDER || "services";
+    const folder = process.env.MEDIA_SERVICES_FOLDER || "services";
 
     const cover = await uploadOne(coverFile, folder);
     assertPortrait(cover, "kapak");
@@ -374,7 +326,7 @@ const updateService = async (req, res) => {
     const svc = await Service.findById(req.params.id);
     if (!svc) return res.status(404).json({ message: "Servis bulunamadı" });
 
-    const folder = process.env.CLOUDINARY_SERVICES_FOLDER || "services";
+    const folder = process.env.MEDIA_SERVICES_FOLDER || "services";
     const files = req.files || [];
 
     const title = req.body.title !== undefined ? String(req.body.title).trim() : svc.title;

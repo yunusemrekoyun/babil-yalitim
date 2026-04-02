@@ -1,6 +1,5 @@
-const fs = require("fs/promises");
 const Blog = require("../models/Blog");
-const cloudinary = require("../config/cloudinary");
+const mediaStorage = require("../storage");
 const sanitizeHtml = require("../utils/sanitizeHtml");
 const {
   resolveTags,
@@ -18,49 +17,10 @@ const {
 } = require("../utils/mediaOrder");
 
 const uploadOne = async (file, folder) => {
-  const isVideo = /^video\//i.test(file?.mimetype || "");
-  const resourceType = isVideo ? "video" : "image";
-  const options = {
-    folder,
-    resource_type: resourceType, // "image" | "video"
-    overwrite: true,
-    unique_filename: true,
-    use_filename: true,
-  };
-  const filePath = file.path;
-  let res;
-  try {
-    // tek API ile yeterli: video için de upload çoğu dosyada yeterlidir
-    res = await cloudinary.uploader.upload(filePath, options);
-  } finally {
-    try {
-      await fs.unlink(filePath);
-    } catch {
-      /* yut */
-    }
-  }
-  return {
-    url: res.secure_url || res.url,
-    publicId: res.public_id,
-    resourceType: res.resource_type,
-    format: res.format,
-    width: res.width,
-    height: res.height,
-    bytes: res.bytes,
-    duration: res.duration,
-  };
+  return mediaStorage.upload(file, { folder });
 };
 
-const destroyIfExists = async (m) => {
-  if (!m?.publicId) return;
-  try {
-    await cloudinary.uploader.destroy(m.publicId, {
-      resource_type: m.resourceType || "image",
-    });
-  } catch {
-    /* sessiz geç */
-  }
-};
+const destroyIfExists = async (media) => mediaStorage.destroy(media);
 
 /* ------------ BLOG: public GET ------------ */
 exports.getBlogs = async (_req, res) => {
@@ -129,7 +89,7 @@ exports.createBlog = async (req, res) => {
       return res.status(400).json({ message: "Kapak görseli zorunludur." });
     }
 
-    const folder = process.env.CLOUDINARY_BLOGS_FOLDER || "blogs";
+    const folder = process.env.MEDIA_BLOGS_FOLDER || "blogs";
     const cover = await uploadOne(coverFile, folder);
 
     let assets = [];
@@ -192,7 +152,7 @@ exports.updateBlog = async (req, res) => {
       });
     }
 
-    const folder = process.env.CLOUDINARY_BLOGS_FOLDER || "blogs";
+    const folder = process.env.MEDIA_BLOGS_FOLDER || "blogs";
     const assetOrder = parseMediaOrder(req.body.assetOrder);
 
     // kapak REPLACE
@@ -281,14 +241,17 @@ exports.setBlogOrder = async (req, res) => {
   }
 };
 
-// (opsiyonel) tek asset silme (publicId ile)
+// (opsiyonel) tek asset silme
 exports.deleteAsset = async (req, res) => {
   try {
-    const { id, publicId } = req.params;
+    const { id, mediaKey: mediaKeyParam } = req.params;
     const blog = await Blog.findById(id);
     if (!blog) return res.status(404).json({ message: "Blog bulunamadı" });
 
-    const idx = (blog.assets || []).findIndex((m) => m.publicId === publicId);
+    const requestedKey = decodeURIComponent(String(mediaKeyParam || "").trim());
+    const idx = (blog.assets || []).findIndex(
+      (media) => mediaStorage.getMediaKey(media) === requestedKey
+    );
     if (idx === -1)
       return res.status(404).json({ message: "Ortam bulunamadı" });
 

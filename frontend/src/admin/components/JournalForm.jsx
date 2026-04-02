@@ -341,12 +341,15 @@ JournalForm.propTypes = {
     displayOrder: PropTypes.number,
     cover: PropTypes.shape({
       url: PropTypes.string,
+      storageKey: PropTypes.string,
+      posterUrl: PropTypes.string,
       resourceType: PropTypes.string,
     }),
     assets: PropTypes.arrayOf(
       PropTypes.shape({
         url: PropTypes.string,
-        publicId: PropTypes.string,
+        storageKey: PropTypes.string,
+        posterUrl: PropTypes.string,
         resourceType: PropTypes.string,
       })
     ),

@@ -62,8 +62,8 @@ router.patch("/:id/order", verifyToken, setBlogOrder);
 
 router.delete("/:id", verifyToken, deleteBlog);
 
-// tek asset silme (publicId ile)
-router.delete("/:id/assets/:publicId", verifyToken, deleteAsset);
+// tek asset silme
+router.delete("/:id/assets/:mediaKey", verifyToken, deleteAsset);
 
 // admin: comment moderation
 router.get("/:id/comments/all", verifyToken, getAllComments);

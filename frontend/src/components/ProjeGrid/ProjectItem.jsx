@@ -6,11 +6,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PlayCircle, PauseCircle } from "lucide-react";
 import AdaptiveImage from "../Media/AdaptiveImage";
 import {
-  extractCloudinaryAsset,
   getOptimizedVideoUrl,
   getVideoPosterUrl,
   looksVideo,
-} from "../../utils/cloudinary";
+} from "../../utils/media";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 const clamp2 = {
@@ -22,7 +21,7 @@ const clamp2 = {
 
 const fmt = (v) => (v ? new Date(v).toLocaleDateString("tr-TR") : null);
 
-// En iyi poster’i seç: gerçek görsel → kapak video thumb → opsiyonel video thumb → legacy
+// En iyi poster’i seç: gerçek görsel → kapak video poster → opsiyonel video poster → legacy
 const pickPosterAndVideo = (project, cardImageWidth, imageQuality) => {
   const cover = project?.cover || null;
   const images = Array.isArray(project?.images) ? project.images : [];
@@ -41,24 +40,19 @@ const pickPosterAndVideo = (project, cardImageWidth, imageQuality) => {
     "";
 
   const coverIsVideo = cover?.resourceType === "video" || looksVideo(coverUrl);
-  const coverVideoPublicId =
-    cover?.publicId || (coverIsVideo ? extractCloudinaryAsset(coverUrl)?.publicId : null);
-
   const optVideoUrl = optVideo?.url || "";
-  const optVideoPublicId =
-    optVideo?.publicId || (optVideoUrl ? extractCloudinaryAsset(optVideoUrl)?.publicId : null);
 
   const posterFromCoverVideo = coverIsVideo
-    ? getVideoPosterUrl(
-        { publicId: coverVideoPublicId, resourceType: "video" },
-        { width: cardImageWidth, quality: imageQuality }
-      )
+    ? getVideoPosterUrl(cover, {
+        width: cardImageWidth,
+        quality: imageQuality,
+      })
     : null;
   const posterFromOptVideo = optVideoUrl
-    ? getVideoPosterUrl(
-        { publicId: optVideoPublicId, resourceType: "video" },
-        { width: cardImageWidth, quality: imageQuality }
-      )
+    ? getVideoPosterUrl(optVideo, {
+        width: cardImageWidth,
+        quality: imageQuality,
+      })
     : null;
 
   const poster =

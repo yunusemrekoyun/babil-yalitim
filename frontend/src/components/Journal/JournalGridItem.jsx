@@ -71,7 +71,8 @@ JournalGridItem.propTypes = {
     title: PropTypes.string,
     cover: PropTypes.shape({
       url: PropTypes.string,
-      publicId: PropTypes.string,
+      storageKey: PropTypes.string,
+      posterUrl: PropTypes.string,
       resourceType: PropTypes.string,
     }),
     coverUrl: PropTypes.string,
