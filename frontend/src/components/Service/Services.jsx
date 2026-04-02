@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import api from "../../api";
 import ServiceItem from "./ServiceItem";
+import {
+  fetchServicesCached,
+  getCachedServices,
+} from "../../utils/servicesCache";
 
 const Services = () => {
-  const [services, setServices] = useState([]);
+  const cachedServices = getCachedServices();
+  const [services, setServices] = useState(() => cachedServices || []);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Tümü");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !cachedServices);
   const [err, setErr] = useState("");
 
   useEffect(() => {
@@ -15,8 +19,7 @@ const Services = () => {
     (async () => {
       try {
         setLoading(true);
-        const res = await api.get("/services");
-        const list = Array.isArray(res.data) ? res.data : [];
+        const list = await fetchServicesCached();
         if (!cancelled) setServices(list);
       } catch (e) {
         console.error("GET /services error:", e?.response?.data || e);
@@ -28,6 +31,10 @@ const Services = () => {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    import("../../pages/ServiceDetailsPage.jsx").catch(() => {});
   }, []);
 
   const categories = useMemo(() => {
@@ -107,7 +114,7 @@ const Services = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: i * 0.04 }}
             >
-              <ServiceItem service={svc} />
+              <ServiceItem service={svc} priority={i < 4} />
             </motion.div>
           ))}
         </div>

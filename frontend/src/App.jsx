@@ -16,6 +16,7 @@ import useConsent from "./hooks/useConsent.js";
 import ScrollToTop from "./components/Common/ScrollToTop.jsx";
 import ProgressCenter from "./admin/components/ProgressCenter.jsx";
 import SeoManager from "./components/SEO/SeoManager.jsx";
+import BackgroundVideo from "./components/Background/BackgroundVideo.jsx";
 
 const HomePage = lazy(() => import("./pages/HomePage.jsx"));
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage.jsx"));
@@ -92,13 +93,18 @@ const adminRoutes = [
   { path: "services/edit/:id", element: wrapLazy(EditServicePage) },
 ];
 
+const HERO_DESKTOP = import.meta.env.VITE_HERO_DESKTOP_VIDEO_URL;
+const HERO_MOBILE = import.meta.env.VITE_HERO_MOBILE_IMAGE_URL;
+const HERO_MOBILE_VIDEO = import.meta.env.VITE_HERO_MOBILE_VIDEO_URL;
+const HERO_POSTER = import.meta.env.VITE_HERO_POSTER_URL;
+
 const AppRoutes = () => {
   const location = useLocation();
 
   // ❌ ESKİ: api.post("/visits", { path }) useEffect'i KALDIRILDI
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="sync">
       <Routes location={location} key={location.pathname}>
         {publicRoutes.map(({ path, element }) => (
           <Route key={path} path={path} element={element} />
@@ -131,6 +137,24 @@ const AppRoutes = () => {
   );
 };
 
+const AppShell = () => {
+  const location = useLocation();
+  const showHomeBackground = location.pathname === "/";
+
+  return (
+    <>
+      <BackgroundVideo
+        active={showHomeBackground}
+        desktopVideoUrl={HERO_DESKTOP}
+        mobileImageUrl={HERO_MOBILE}
+        mobileVideoUrl={HERO_MOBILE_VIDEO}
+        posterUrl={HERO_POSTER}
+      />
+      <AppRoutes />
+    </>
+  );
+};
+
 export default function App() {
   const { consent, accept, decline } = useConsent();
   const showBanner = consent === null; // daha önce seçim yapılmadıysa göster
@@ -150,7 +174,7 @@ export default function App() {
       {/* Analytics tracker (admin rotalarını kendi içinde filtreliyor) */}
       <AnalyticsTracker />
 
-      <AppRoutes />
+      <AppShell />
     </Router>
   );
 }

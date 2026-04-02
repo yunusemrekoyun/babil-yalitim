@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Logo from "../../assets/logo.png";
@@ -55,9 +55,9 @@ const NavbarPage = () => {
         {/* Sol butonlar */}
         <div className="flex gap-2">
           {navItems.slice(0, 3).map((item) => (
-            <a
+            <Link
               key={item.path}
-              href={item.path}
+              to={item.path}
               className={`w-150px] text-center px-4 py-2 rounded-full transition
                 ${
                   location.pathname === item.path
@@ -67,21 +67,21 @@ const NavbarPage = () => {
               `}
             >
               {item.label}
-            </a>
+            </Link>
           ))}
         </div>
 
         {/* Logo */}
-        <a href="/">
+        <Link to="/">
           <img src={Logo} alt="Logo" className="w-[200px]" />
-        </a>
+        </Link>
 
         {/* Sağ butonlar */}
         <div className="flex gap-2">
           {navItems.slice(3).map((item) => (
-            <a
+            <Link
               key={item.path}
-              href={item.path}
+              to={item.path}
               className={`w-[140px] text-center px-4 py-2 rounded-full transition
                 ${
                   location.pathname === item.path
@@ -91,7 +91,7 @@ const NavbarPage = () => {
               `}
             >
               {item.label}
-            </a>
+            </Link>
           ))}
         </div>
       </motion.nav>
@@ -99,9 +99,9 @@ const NavbarPage = () => {
       {/* ✅ Mobil Navbar */}
       <div className="md:hidden border-b border-gray-300 bg-white px-4 py-3 text-neutral-800">
         <div className="relative flex min-h-[3rem] items-center justify-center">
-          <a href="/" className="shrink-0">
+          <Link to="/" className="shrink-0">
             <img src={Logo} alt="Logo" className="h-14 w-auto" />
-          </a>
+          </Link>
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="absolute right-0 z-50 grid size-10 place-items-center"

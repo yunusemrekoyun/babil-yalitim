@@ -9,6 +9,7 @@ import {
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 
 export default function BackgroundVideo({
+  active = true,
   desktopVideoUrl = "",
   mobileImageUrl = "",
   mobileVideoUrl = "",
@@ -86,7 +87,7 @@ export default function BackgroundVideo({
     };
 
     const attemptPlayback = () => {
-      if (document.hidden) return;
+      if (!active || document.hidden) return;
       video.play().catch(() => {});
     };
 
@@ -101,7 +102,7 @@ export default function BackgroundVideo({
     };
 
     const syncPlayback = () => {
-      if (document.hidden) {
+      if (!active || document.hidden) {
         didBecomeHiddenRef.current = true;
         clearResumeTimers();
         video.pause();
@@ -115,7 +116,17 @@ export default function BackgroundVideo({
     };
 
     const handleResumeSignal = () => {
-      if (document.hidden || !video.paused) return;
+      if (!active || document.hidden || !video.paused) return;
+      scheduleResume();
+    };
+
+    const handlePlaybackIssue = () => {
+      if (!active || document.hidden) return;
+      scheduleResume();
+    };
+
+    const handleUnexpectedPause = () => {
+      if (!active || document.hidden || didBecomeHiddenRef.current) return;
       scheduleResume();
     };
 
@@ -131,13 +142,22 @@ export default function BackgroundVideo({
     bindFrameReady();
     video.addEventListener("loadeddata", markReady);
     video.addEventListener("canplay", markReady);
+    video.addEventListener("canplaythrough", markReady);
     video.addEventListener("playing", markReady);
     video.addEventListener("timeupdate", markReady, { once: true });
+    video.addEventListener("waiting", handlePlaybackIssue);
+    video.addEventListener("stalled", handlePlaybackIssue);
+    video.addEventListener("suspend", handlePlaybackIssue);
+    video.addEventListener("pause", handleUnexpectedPause);
 
     document.addEventListener("visibilitychange", syncPlayback);
     window.addEventListener("focus", handleResumeSignal);
     window.addEventListener("pageshow", handleResumeSignal);
-    attemptPlayback();
+    if (active) {
+      attemptPlayback();
+    } else {
+      video.pause();
+    }
 
     return () => {
       clearResumeTimers();
@@ -150,17 +170,24 @@ export default function BackgroundVideo({
       }
       video.removeEventListener("loadeddata", markReady);
       video.removeEventListener("canplay", markReady);
+      video.removeEventListener("canplaythrough", markReady);
       video.removeEventListener("playing", markReady);
       video.removeEventListener("timeupdate", markReady);
+      video.removeEventListener("waiting", handlePlaybackIssue);
+      video.removeEventListener("stalled", handlePlaybackIssue);
+      video.removeEventListener("suspend", handlePlaybackIssue);
+      video.removeEventListener("pause", handleUnexpectedPause);
       document.removeEventListener("visibilitychange", syncPlayback);
       window.removeEventListener("focus", handleResumeSignal);
       window.removeEventListener("pageshow", handleResumeSignal);
     };
-  }, [isMobile, placeholderUrl, shouldUseVideo, videoUrl]);
+  }, [active, isMobile, placeholderUrl, shouldUseVideo, videoUrl]);
 
   return (
     <div
-      className={`fixed inset-0 h-full w-full -z-10 overflow-hidden bg-slate-950 ${className}`}
+      className={`fixed inset-0 h-full w-full -z-10 overflow-hidden bg-slate-950 transition-opacity duration-300 ${
+        active ? "opacity-100" : "opacity-0"
+      } ${className}`}
       data-ambient-video={
         shouldUseVideo ? (isMobile ? "mobile" : "desktop") : "poster"
       }
@@ -207,6 +234,7 @@ export default function BackgroundVideo({
 }
 
 BackgroundVideo.propTypes = {
+  active: PropTypes.bool,
   desktopVideoUrl: PropTypes.string,
   mobileImageUrl: PropTypes.string,
   mobileVideoUrl: PropTypes.string,

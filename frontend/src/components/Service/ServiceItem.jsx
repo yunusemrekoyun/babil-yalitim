@@ -35,7 +35,7 @@ const pickFirstImageAndVideo = (images = []) => {
   return { img, vid };
 };
 
-const ServiceItem = ({ service }) => {
+const ServiceItem = ({ service, priority = false }) => {
   const [hovered, setHovered] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef(null);
@@ -155,6 +155,7 @@ const ServiceItem = ({ service }) => {
     <div ref={cardRef}>
       <Link
         to={service?._id ? `/services/${service._id}` : "#"}
+        state={service?._id ? { title: service?.title || "", service } : undefined}
         className="transform-gpu-soft group block overflow-hidden rounded-3xl border border-white/50 bg-white/60 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] hover:shadow-[0_18px_50px_rgba(0,0,0,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-quaternaryColor/60 transition-shadow"
         onMouseEnter={handleEnter}
         onMouseLeave={handleLeave}
@@ -171,7 +172,8 @@ const ServiceItem = ({ service }) => {
                   className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 ${
                     hovered || (isTouch && inView) ? "scale-105" : "scale-100"
                   } ${videoReady ? "opacity-0" : "opacity-100"}`}
-                  loading="lazy"
+                  loading={priority ? "eager" : "lazy"}
+                  {...(priority ? { fetchpriority: "high" } : {})}
                   decoding="async"
                 />
               ) : (
@@ -184,7 +186,7 @@ const ServiceItem = ({ service }) => {
                 loop
                 playsInline
                 poster={fallbackPosterUrl || undefined}
-                preload={inView ? "metadata" : "none"}
+                preload={priority || inView ? "metadata" : "none"}
                 className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 ${
                   hovered || (isTouch && inView) ? "scale-105" : "scale-100"
                 } ${videoReady ? "opacity-100" : "opacity-0"}`}
@@ -202,6 +204,8 @@ const ServiceItem = ({ service }) => {
               }`}
               sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 80vw"
               widths={[320, 480, 640, 800, 960]}
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : undefined}
             />
           ) : (
             <div className="h-full w-full bg-gradient-to-b from-gray-200 to-gray-300" />
@@ -298,6 +302,7 @@ ServiceItem.propTypes = {
     imageUrl: PropTypes.string,
     galleryDataUrls: PropTypes.arrayOf(PropTypes.string),
   }).isRequired,
+  priority: PropTypes.bool,
 };
 
 export default ServiceItem;

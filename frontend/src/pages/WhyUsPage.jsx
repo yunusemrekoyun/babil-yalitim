@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
 import Breadcrumb from "../components/ui/Breadcrumb";
@@ -200,12 +201,12 @@ const WhyUsPage = () => {
                   Kısa bir ön görüşme ile aynı gün randevu planlayalım.
                 </p>
               </div>
-              <a
-                href="/iletisim"
+              <Link
+                to="/iletisim"
                 className="inline-flex items-center rounded-full bg-white text-quaternaryColor px-5 py-2 font-semibold hover:bg-white/90"
               >
                 İletişime Geç
-              </a>
+              </Link>
             </div>
           </div>
         </section>

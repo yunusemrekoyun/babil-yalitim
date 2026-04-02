@@ -1,31 +1,35 @@
 // src/components/Service/ServiceGrid.jsx
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import api from "../../api";
 import ServiceGridItem from "./ServiceGridItem";
 import useViewportActivation from "../../hooks/useViewportActivation";
-import { usePerformanceProfile } from "../../performance/PerformanceProvider";
+import {
+  fetchServicesCached,
+  getCachedServices,
+} from "../../utils/servicesCache";
 
 const ServiceGrid = () => {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(() => getCachedServices() || []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
   const [sectionRef, inView] = useViewportActivation({
     once: false,
     rootMargin: "140px 0px",
   });
-  const { hoverBlurScale } = usePerformanceProfile();
-
   const videoRefs = useRef({});
   const scrollRef = useRef(null);
 
   // fetch
   useEffect(() => {
-    api
-      .get("/services")
-      .then((res) => setItems(Array.isArray(res.data) ? res.data : []))
+    fetchServicesCached()
+      .then((list) => setItems(Array.isArray(list) ? list : []))
       .catch((err) => console.error("Hizmet verileri alınamadı:", err));
+  }, []);
+
+  useEffect(() => {
+    import("../../pages/ServiceDetailsPage.jsx").catch(() => {});
   }, []);
 
   // responsive flag
@@ -54,14 +58,13 @@ const ServiceGrid = () => {
   // desktop hedefleri
   const slotTargets = (slot) => {
     const map = {
-      prev2: { x: -360, scale: 0.78, opacity: 0.55, z: 5, blur: 2 },
-      prev1: { x: -200, scale: 0.9, opacity: 0.75, z: 8, blur: 1.5 },
-      center: { x: 0, scale: 1.0, opacity: 1.0, z: 10, blur: 0 },
-      next1: { x: 200, scale: 0.9, opacity: 0.75, z: 8, blur: 1.5 },
-      next2: { x: 360, scale: 0.78, opacity: 0.55, z: 5, blur: 2 },
+      prev2: { x: -360, scale: 0.78, opacity: 0.55, z: 5 },
+      prev1: { x: -200, scale: 0.9, opacity: 0.75, z: 8 },
+      center: { x: 0, scale: 1.0, opacity: 1.0, z: 10 },
+      next1: { x: 200, scale: 0.9, opacity: 0.75, z: 8 },
+      next2: { x: 360, scale: 0.78, opacity: 0.55, z: 5 },
     };
-    const target = map[slot] || map.center;
-    return { ...target, blur: target.blur * hoverBlurScale };
+    return map[slot] || map.center;
   };
 
   // yalnız merkezde video oynat
@@ -166,7 +169,6 @@ const ServiceGrid = () => {
                   translateY: "-50%",
                   scale: t.scale,
                   opacity: t.opacity,
-                  filter: `blur(${t.blur}px)`,
                 }}
                 transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
               >
@@ -174,6 +176,8 @@ const ServiceGrid = () => {
                   item={items[index]}
                   isCenter={slot === "center"}
                   shouldAutoplay={slot === "center" && inView}
+                  priority
+                  detailState={items[index]?._id ? { title: items[index]?.title || "", service: items[index] } : undefined}
                   registerVideoRef={(el) => {
                     if (el) videoRefs.current[index] = el;
                     else delete videoRefs.current[index];
@@ -210,6 +214,8 @@ const ServiceGrid = () => {
                   item={item}
                   isCenter={i === currentIndex}
                   shouldAutoplay={i === currentIndex && inView}
+                  priority={i === currentIndex}
+                  detailState={item?._id ? { title: item?.title || "", service: item } : undefined}
                   registerVideoRef={(el) => {
                     if (el) videoRefs.current[i] = el;
                     else delete videoRefs.current[i];
@@ -223,13 +229,13 @@ const ServiceGrid = () => {
         {/* Alttaki buton: DESKTOP'ta biraz DAHA AŞAĞIDA, MOBİLDE animasyonsuz */}
         {isMobile ? (
           <div className="mt-6 flex justify-center">
-            <a
-              href="/services"
+            <Link
+              to="/services"
               className="flex w-full items-center justify-center gap-2 text-sm text-white bg-quaternaryColor px-4 py-2.5 rounded-full"
             >
               Tüm Hizmetleri Gör
               <ChevronRight size={16} />
-            </a>
+            </Link>
           </div>
         ) : (
           <motion.div
@@ -240,15 +246,15 @@ const ServiceGrid = () => {
             whileHover={{ scale: 1.05 }}
             className="absolute sm:bottom-[-8px] right-4 sm:right-6 z-[45]"
           >
-            <a
-              href="/services"
+            <Link
+              to="/services"
               className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
                px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
                transition-all duration-300"
             >
               Tüm Hizmetleri Gör
               <ChevronRight size={16} />
-            </a>
+            </Link>
           </motion.div>
         )}
       </div>

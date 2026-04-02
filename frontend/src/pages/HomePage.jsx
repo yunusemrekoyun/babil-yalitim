@@ -11,21 +11,16 @@ import AboutSection from "../components/About/AboutSection";
 import GlassSection from "../components/Layout/GlassSection";
 import DeferredSection from "../components/Layout/DeferredSection";
 import BlogGrid from "../components/Blog/BlogGrid";
-import BackgroundVideo from "../components/Background/BackgroundVideo";
 import { usePerformanceProfile } from "../performance/PerformanceProvider";
 import api from "../api";
 import {
   DEFAULT_SITE_SETTINGS,
   normalizeSiteSettings,
 } from "../utils/siteSettings";
-
-const HERO_DESKTOP = import.meta.env.VITE_HERO_DESKTOP_VIDEO_URL;
-const HERO_MOBILE = import.meta.env.VITE_HERO_MOBILE_IMAGE_URL;
-const HERO_MOBILE_VIDEO = import.meta.env.VITE_HERO_MOBILE_VIDEO_URL;
-const HERO_POSTER = import.meta.env.VITE_HERO_POSTER_URL;
+import { fetchServicesCached } from "../utils/servicesCache";
 
 export default function HomePage() {
-  const { sectionRootMargin } = usePerformanceProfile();
+  const { isMobile, sectionRootMargin } = usePerformanceProfile();
   const [siteSettings, setSiteSettings] = useState(DEFAULT_SITE_SETTINGS);
 
   useEffect(() => {
@@ -46,6 +41,43 @@ export default function HomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    let timerId = 0;
+
+    const preload = () => {
+      fetchServicesCached().catch((error) => {
+        if (!cancelled) {
+          console.error("[HomePage] preload /services error:", error);
+        }
+      });
+
+      import("./ServicePage.jsx").catch(() => {});
+      import("./ServiceDetailsPage.jsx").catch(() => {});
+    };
+
+    if (!isMobile) {
+      preload();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(preload, { timeout: 1800 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback?.(idleId);
+      };
+    }
+
+    timerId = window.setTimeout(preload, 900);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, [isMobile]);
+
   const sections = useMemo(
     () => [
       ...(siteSettings.homeProjectsVisible
@@ -61,6 +93,7 @@ export default function HomePage() {
       {
         id: "services",
         minHeight: 860,
+        eager: !isMobile,
         content: <ServiceSection />,
       },
       {
@@ -84,18 +117,11 @@ export default function HomePage() {
         content: <AboutSection />,
       },
     ],
-    [siteSettings.homeProjectsVisible]
+    [isMobile, siteSettings.homeProjectsVisible]
   );
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
-      <BackgroundVideo
-        desktopVideoUrl={HERO_DESKTOP}
-        mobileImageUrl={HERO_MOBILE}
-        mobileVideoUrl={HERO_MOBILE_VIDEO}
-        posterUrl={HERO_POSTER}
-      />
-
       <div className="relative z-10">
         {/* Navbar’a bir id verelim ki yüksekliğini hesaplayabilelim (opsiyonel) */}
         <div id="site-navbar">

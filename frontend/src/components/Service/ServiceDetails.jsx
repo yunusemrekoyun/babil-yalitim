@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useLocation, useParams, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import PropTypes from "prop-types";
 import {
@@ -19,6 +19,11 @@ import {
   getVideoPosterUrl,
   looksVideo,
 } from "../../utils/media";
+import {
+  fetchServicesCached,
+  findCachedServiceById,
+  getCachedServices,
+} from "../../utils/servicesCache";
 
 const fmt = (v) => {
   if (!v) return null;
@@ -49,15 +54,45 @@ const DETAIL_MEDIA_WIDTH = 1440;
 const DETAIL_PREVIEW_WIDTH = 960;
 const THUMB_WIDTH = 320;
 
+const buildRelatedServices = (services, currentService) => {
+  if (!Array.isArray(services) || !currentService?._id) return [];
+
+  let relatedItems = services.filter(
+    (item) =>
+      item._id !== currentService._id &&
+      (item.category || "").trim() === (currentService.category || "").trim()
+  );
+
+  if (relatedItems.length < 4) {
+    const rest = services.filter(
+      (item) =>
+        item._id !== currentService._id &&
+        !relatedItems.some((related) => related._id === item._id)
+    );
+    relatedItems = [...relatedItems, ...rest];
+  }
+
+  return relatedItems.slice(0, 4);
+};
+
 const ServiceDetails = () => {
   const { id } = useParams();
-  const [svc, setSvc] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const initialService =
+    location.state?.service || findCachedServiceById(id) || null;
+  const initialServicePool = getCachedServices() || [];
+  const [svc, setSvc] = useState(initialService);
+  const [loading, setLoading] = useState(!initialService);
   const [notFound, setNotFound] = useState(false);
 
   const [activeIdx, setActiveIdx] = useState(0);
-  const [related, setRelated] = useState([]);
-  const [loadingRelated, setLoadingRelated] = useState(true);
+  const [servicePool, setServicePool] = useState(initialServicePool);
+  const [related, setRelated] = useState(() =>
+    buildRelatedServices(initialServicePool, initialService)
+  );
+  const [loadingRelated, setLoadingRelated] = useState(
+    () => initialServicePool.length === 0
+  );
   const [videoModal, setVideoModal] = useState(null);
 
   useEffect(() => {
@@ -82,7 +117,7 @@ const ServiceDetails = () => {
     let cancelled = false;
     (async () => {
       try {
-        setLoading(true);
+        if (!initialService) setLoading(true);
         const { data } = await api.get(`/services/${id}`);
         if (!cancelled) {
           setSvc(data);
@@ -99,7 +134,7 @@ const ServiceDetails = () => {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, initialService]);
 
   // --- MEDYA: {url, type} olarak kur (video için gerekli) ---
   const media = useMemo(() => {
@@ -156,22 +191,12 @@ const ServiceDetails = () => {
     (async () => {
       try {
         setLoadingRelated(true);
-        const { data } = await api.get("/services");
-        const list = Array.isArray(data) ? data : [];
-        let rel = list.filter(
-          (x) =>
-            x._id !== svc._id &&
-            (x.category || "").trim() === (svc.category || "").trim()
-        );
-        if (rel.length < 4) {
-          const rest = list.filter(
-            (x) => x._id !== svc._id && !rel.some((r) => r._id === x._id)
-          );
-          rel = [...rel, ...rest].slice(0, 4);
-        } else {
-          rel = rel.slice(0, 4);
+        const list = await fetchServicesCached();
+        const rel = buildRelatedServices(list, svc);
+        if (!cancelled) {
+          setServicePool(list);
+          setRelated(rel);
         }
-        if (!cancelled) setRelated(rel);
       } catch (e) {
         console.error("GET /services (related) error:", e?.response?.data || e);
       } finally {
@@ -542,7 +567,11 @@ const ServiceDetails = () => {
 
         {/* SAĞ */}
         <div className="lg:col-span-1">
-          <OtherServices currentId={svc._id} />
+          <OtherServices
+            currentId={svc._id}
+            services={servicePool}
+            loading={loadingRelated}
+          />
         </div>
       </div>
 
@@ -592,6 +621,7 @@ const ServiceDetails = () => {
                 <Link
                   key={it._id}
                   to={`/services/${it._id}`}
+                  state={{ title: it?.title || "", service: it }}
                   className="group rounded-2xl overflow-hidden border bg-white hover:shadow-md transition"
                 >
                   <div className="relative aspect-[9/16]">

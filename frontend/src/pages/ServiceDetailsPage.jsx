@@ -3,25 +3,11 @@ import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
 import Breadcrumb from "../components/ui/Breadcrumb";
 import ServiceDetails from "../components/Service/ServiceDetails";
-import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import api from "../api";
+import { useLocation } from "react-router-dom";
 
 const ServiceDetailsPage = () => {
-  const { id } = useParams();
-  const [title, setTitle] = useState("");
-
-  useEffect(() => {
-    if (!id) return;
-    (async () => {
-      try {
-        const { data } = await api.get(`/services/${id}`);
-        setTitle(data?.title || "");
-      } catch (err) {
-        console.error("Breadcrumb title fetch error:", err);
-      }
-    })();
-  }, [id]);
+  const location = useLocation();
+  const title = location.state?.title || "";
 
   return (
     <>
@@ -31,7 +17,7 @@ const ServiceDetailsPage = () => {
           items={[
             { label: "Ana Sayfa", path: "/" },
             { label: "Hizmetler", path: "/services" },
-            { label: title || "Yükleniyor..." },
+            { label: title || "Hizmet Detayı" },
           ]}
         />
       </div>

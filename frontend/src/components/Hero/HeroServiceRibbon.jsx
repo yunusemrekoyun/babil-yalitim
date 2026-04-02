@@ -151,6 +151,7 @@ const HeroServiceRibbon = () => {
                 >
                   <Link
                     to={service?._id ? `/services/${service._id}` : "/services"}
+                    state={service?._id ? { title: service?.title || "", service } : undefined}
                     className={`inline-flex min-h-[52px] min-w-[158px] max-w-[186px] items-center justify-center rounded-full border px-4 py-2 text-center text-[11px] font-semibold leading-[1.05rem] text-white transition sm:min-h-[54px] sm:min-w-[172px] sm:max-w-[198px] sm:text-[12px] ${
                       isActive
                         ? "border-white/34 bg-white/24 shadow-[0_18px_34px_-28px_rgba(255,255,255,0.52)]"
@@ -204,6 +205,14 @@ const HeroServiceRibbon = () => {
                         activePanel.service?._id
                           ? `/services/${activePanel.service._id}`
                           : "/services"
+                      }
+                      state={
+                        activePanel.service?._id
+                          ? {
+                              title: activePanel.service?.title || "",
+                              service: activePanel.service,
+                            }
+                          : undefined
                       }
                       className="block rounded-2xl border border-transparent px-3 py-2.5 text-sm font-medium leading-5 text-slate-700 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950"
                     >

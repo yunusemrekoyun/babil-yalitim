@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ProjectGridItem from "./ProjectGridItem";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import api from "../../api";
 
@@ -74,8 +75,8 @@ const ProjectGrid = () => {
         {...motionProps}
         className={isMobile ? "mt-6 flex justify-center" : "absolute bottom-2 right-6 z-40"}
       >
-        <a
-          href="/projects"
+        <Link
+          to="/projects"
           className={`flex items-center justify-center gap-2 text-sm text-white bg-quaternaryColor px-4 py-2.5 rounded-full ${
             isMobile
               ? "w-full max-w-6xl"
@@ -84,7 +85,7 @@ const ProjectGrid = () => {
         >
           Tüm Projeleri Gör
           <ChevronRight size={16} />
-        </a>
+        </Link>
       </motion.div>
     </section>
   );

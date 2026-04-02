@@ -26,7 +26,14 @@ const pickFirstImageAndVideo = (images = []) => {
   return { img, vid };
 };
 
-const ServiceGridItem = ({ item, isCenter, shouldAutoplay, registerVideoRef }) => {
+const ServiceGridItem = ({
+  item,
+  isCenter,
+  shouldAutoplay,
+  registerVideoRef,
+  detailState,
+  priority = false,
+}) => {
   const videoRef = useRef(null);
   const [videoReady, setVideoReady] = useState(false);
   const {
@@ -77,6 +84,8 @@ const ServiceGridItem = ({ item, isCenter, shouldAutoplay, registerVideoRef }) =
     "w-[84vw] max-w-[22rem] h-[25rem] sm:w-[320px] sm:h-[480px] object-cover rounded-[22px] shadow-lg";
 
   const autoplayAllowed = !saveData && !prefersReducedMotion;
+  const preloadMode =
+    isCenter && autoplayAllowed ? "auto" : isCenter ? "metadata" : "none";
 
   useEffect(() => {
     const video = videoRef.current;
@@ -98,6 +107,7 @@ const ServiceGridItem = ({ item, isCenter, shouldAutoplay, registerVideoRef }) =
   return (
     <Link
       to={item?._id ? `/services/${item._id}` : "#"}
+      state={detailState || (item?._id ? { title: item?.title || "", service: item } : undefined)}
       className="relative block focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-2xl"
       aria-label={`${item?.title || "Hizmet"} detayına git`}
     >
@@ -129,7 +139,7 @@ const ServiceGridItem = ({ item, isCenter, shouldAutoplay, registerVideoRef }) =
             playsInline
             poster={posterUrl || undefined}
             autoPlay={autoplayAllowed && shouldAutoplay}
-            preload={isCenter ? "metadata" : "none"}
+            preload={preloadMode}
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
               videoReady ? "opacity-100" : "opacity-0"
             }`}
@@ -154,7 +164,8 @@ const ServiceGridItem = ({ item, isCenter, shouldAutoplay, registerVideoRef }) =
           src={posterUrl}
           alt={item?.title || "Hizmet"}
           className={size}
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
+          {...(priority ? { fetchpriority: "high" } : {})}
           decoding="async"
         />
       ) : (
@@ -203,6 +214,8 @@ ServiceGridItem.propTypes = {
   isCenter: PropTypes.bool,
   shouldAutoplay: PropTypes.bool,
   registerVideoRef: PropTypes.func,
+  detailState: PropTypes.object,
+  priority: PropTypes.bool,
 };
 
 export default ServiceGridItem;

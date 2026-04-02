@@ -204,10 +204,77 @@ const normalizeSubServiceOrder = (subServices = []) =>
     displayOrder: index + 1,
   }));
 
+const looksVideoUrl = (url = "") =>
+  /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(String(url));
+
+const pickSummaryMedia = (items = []) => {
+  if (!Array.isArray(items) || !items.length) return [];
+
+  let firstImage = null;
+  let firstVideo = null;
+
+  for (const media of items) {
+    if (!media?.url) continue;
+    const isVideo =
+      media.resourceType === "video" ||
+      (!media.resourceType && looksVideoUrl(media.url));
+    const isImage = media.resourceType === "image" || !isVideo;
+
+    if (!firstImage && isImage) {
+      firstImage = media;
+    }
+
+    if (!firstVideo && isVideo) {
+      firstVideo = media;
+    }
+
+    if (firstImage && firstVideo) break;
+  }
+
+  return [firstImage, firstVideo].filter(Boolean);
+};
+
+const toServiceSummary = (service) => ({
+  _id: service._id,
+  title: service.title,
+  displayOrder: service.displayOrder,
+  type: service.type,
+  category: service.category,
+  usageAreas: Array.isArray(service.usageAreas) ? service.usageAreas : [],
+  description: service.description,
+  cover: service.cover || null,
+  images: pickSummaryMedia(service.images),
+  createdAt: service.createdAt,
+  updatedAt: service.updatedAt,
+});
+
+const wantsSummaryPayload = (req) => {
+  const view = String(req.query.view || "").trim().toLowerCase();
+  const summary = String(req.query.summary || "").trim().toLowerCase();
+
+  return view === "summary" || ["1", "true", "yes"].includes(summary);
+};
+
 /* -------------------- GET -------------------- */
-const getServices = async (_req, res) => {
+const getServices = async (req, res) => {
   try {
     await syncCollectionDisplayOrder(Service);
+
+    if (wantsSummaryPayload(req)) {
+      const services = await Service.find(
+        {},
+        "title displayOrder type category usageAreas description cover images createdAt updatedAt"
+      )
+        .sort({
+          displayOrder: 1,
+          createdAt: 1,
+          _id: 1,
+        })
+        .lean();
+
+      return res.json(services.map(toServiceSummary));
+    }
+
     const services = await Service.find().sort({
       displayOrder: 1,
       createdAt: 1,
