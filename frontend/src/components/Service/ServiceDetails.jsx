@@ -393,13 +393,6 @@ const ServiceDetails = () => {
             )}
           </div>
 
-          <div className="mt-6 lg:hidden">
-            <OtherServices
-              currentId={svc._id}
-              services={servicePool}
-              loading={loadingRelated}
-            />
-          </div>
         </motion.div>
       </div>
 
@@ -502,6 +495,14 @@ const ServiceDetails = () => {
           </div>
         </div>
       )}
+
+      <div className="mt-8 lg:hidden">
+        <OtherServices
+          currentId={svc._id}
+          services={servicePool}
+          loading={loadingRelated}
+        />
+      </div>
 
       <div className="hidden lg:block mt-10 md:mt-14 mb-16">
         <motion.h2
