@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams, Link } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import PropTypes from "prop-types";
+import { motion } from "framer-motion";
 import {
   ChevronLeft,
   CalendarDays,
@@ -9,7 +8,6 @@ import {
   Images,
   Layers,
   PlayCircle,
-  X,
 } from "lucide-react";
 import api from "../../api";
 import OtherServices from "./OtherServices";
@@ -93,24 +91,6 @@ const ServiceDetails = () => {
   const [loadingRelated, setLoadingRelated] = useState(
     () => initialServicePool.length === 0
   );
-  const [videoModal, setVideoModal] = useState(null);
-
-  useEffect(() => {
-    if (!videoModal) return undefined;
-
-    const previousOverflow = document.body.style.overflow;
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") setVideoModal(null);
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [videoModal]);
 
   useEffect(() => {
     if (!id) return;
@@ -269,24 +249,22 @@ const ServiceDetails = () => {
       </div>
 
       {/* Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* SOL */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,430px)_minmax(0,1fr)] lg:items-start">
         <motion.div
           variants={fadeUp}
           initial="hidden"
           animate="show"
-          className="lg:col-span-2"
+          className="lg:sticky lg:top-6"
         >
-          {/* Media */}
           <div className="rounded-3xl overflow-hidden border bg-white shadow-sm">
-            <div className="relative aspect-[9/16]">
+            <div className="relative aspect-[9/16] lg:h-[720px] lg:aspect-auto bg-slate-950">
               {active ? (
                 activeIsVideo ? (
                   <video
                     key={activePlaybackUrl}
                     src={activePlaybackUrl}
                     poster={activePreviewUrl || undefined}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover lg:object-contain"
                     autoPlay
                     muted
                     playsInline
@@ -298,7 +276,7 @@ const ServiceDetails = () => {
                     key={active.url}
                     src={active.url}
                     alt={svc.title}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover lg:object-contain"
                     initial={{ opacity: 0.2, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5 }}
@@ -360,9 +338,10 @@ const ServiceDetails = () => {
               </div>
             )}
           </div>
+        </motion.div>
 
-          {/* Info */}
-          <div className="mt-6 rounded-3xl bg-white/80 backdrop-blur border shadow-sm p-6">
+        <motion.div variants={fadeUp} initial="hidden" animate="show">
+          <div className="rounded-3xl bg-white/80 backdrop-blur border shadow-sm p-6 md:p-7">
             <h1 className="text-2xl md:text-4xl font-extrabold text-brandBlue tracking-tight">
               {svc.title}
             </h1>
@@ -384,7 +363,7 @@ const ServiceDetails = () => {
               </span>
               {Array.isArray(svc.images) && svc.images.length > 0 && (
                 <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border">
-                  <Images size={16} />+{svc.images.length} görsel
+                  <Images size={16} />+{svc.images.length} medya
                 </span>
               )}
             </div>
@@ -412,178 +391,126 @@ const ServiceDetails = () => {
                 </div>
               </div>
             )}
+          </div>
 
-            {Array.isArray(svc.subServices) && svc.subServices.length > 0 && (
-              <div className="mt-8">
-                <h3 className="text-xl font-semibold text-brandBlue mb-4">
-                  Alt Hizmetler
-                </h3>
-                <div className="space-y-4">
-                  {svc.subServices.map((sub, index) => {
-                    const subCoverIsVideo =
-                      sub?.cover?.resourceType === "video" ||
-                      looksVideo(sub?.cover?.url);
-                    const subPreview =
-                      (!subCoverIsVideo && sub?.cover?.url) ||
-                      firstImageFrom(sub?.images) ||
-                      (subCoverIsVideo ? getVideoPosterUrl(sub?.cover) : null) ||
-                      "";
-
-                    return (
-                      <div
-                        key={sub?._id || `${sub?.title}-${index}`}
-                        className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm"
-                      >
-                        <div className="grid gap-0 lg:grid-cols-[240px_1fr]">
-                          <div className="relative aspect-[4/5] bg-slate-100">
-                            {subPreview ? (
-                              <img
-                                src={subPreview}
-                                alt={sub.title}
-                                className="absolute inset-0 h-full w-full object-cover"
-                                loading="lazy"
-                              />
-                            ) : subCoverIsVideo ? (
-                              <video
-                                src={sub.cover.url}
-                                className="absolute inset-0 h-full w-full object-cover"
-                                muted
-                                playsInline
-                                preload="metadata"
-                              />
-                            ) : null}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
-                          </div>
-                          <div className="p-5 md:p-6">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h4 className="text-lg font-semibold text-brandBlue">
-                                {sub.title}
-                              </h4>
-                              {sub.type && (
-                                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700">
-                                  {sub.type}
-                                </span>
-                              )}
-                              {sub.category && (
-                                <span className="inline-flex rounded-full bg-quaternaryColor/10 px-3 py-1 text-[11px] font-semibold text-quaternaryColor">
-                                  {sub.category}
-                                </span>
-                              )}
-                            </div>
-                            <p className="mt-4 whitespace-pre-wrap leading-relaxed text-gray-700">
-                              {sub.description}
-                            </p>
-                            {Array.isArray(sub.usageAreas) &&
-                              sub.usageAreas.length > 0 && (
-                                <div className="mt-4 flex flex-wrap gap-2">
-                                  {sub.usageAreas.map((area) => (
-                                    <span
-                                      key={`${sub._id || sub.title}-${area}`}
-                                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600"
-                                    >
-                                      {area}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            {Array.isArray(sub.images) && sub.images.length > 0 && (
-                              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                                {sub.images.map((media, mediaIndex) => {
-                                  const mediaIsVideo = isVideoMedia(media);
-                                  const previewUrl = mediaIsVideo
-                                    ? getVideoPosterUrl(media)
-                                    : media.url;
-
-                                  return mediaIsVideo ? (
-                                    <button
-                                      key={`${media.url}-${mediaIndex}`}
-                                      type="button"
-                                      onClick={() =>
-                                        setVideoModal({
-                                          url: getOptimizedVideoUrl(media, {
-                                            width: DETAIL_MEDIA_WIDTH,
-                                            purpose: "detail",
-                                          }),
-                                          poster: previewUrl || "",
-                                          title: `${sub.title} videosu`,
-                                        })
-                                      }
-                                      className="group relative aspect-video w-full overflow-hidden rounded-2xl bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brandBlue/50"
-                                      aria-label={`${sub.title} videosunu aç`}
-                                    >
-                                      {previewUrl ? (
-                                        <img
-                                          src={previewUrl}
-                                          alt={`${sub.title} video önizleme`}
-                                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                                          loading="lazy"
-                                        />
-                                      ) : (
-                                        <div className="grid h-full w-full place-items-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white/85">
-                                          <div className="flex flex-col items-center gap-2">
-                                            <PlayCircle size={34} />
-                                            <span className="text-sm font-medium">
-                                              Videoyu izle
-                                            </span>
-                                          </div>
-                                        </div>
-                                      )}
-
-                                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
-
-                                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
-                                        <span className="inline-flex translate-y-2 items-center gap-2 rounded-full border border-white/30 bg-black/45 px-4 py-2 text-sm font-semibold text-white opacity-0 backdrop-blur-sm transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
-                                          <PlayCircle size={18} />
-                                          Videoyu izle
-                                        </span>
-                                      </div>
-
-                                      <span className="pointer-events-none absolute right-3 top-3 rounded-full border border-white/20 bg-black/45 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
-                                        Video
-                                      </span>
-                                    </button>
-                                  ) : (
-                                    <img
-                                      key={`${media.url}-${mediaIndex}`}
-                                      src={media.url}
-                                      alt={`${sub.title}-${mediaIndex + 1}`}
-                                      className="aspect-video w-full rounded-2xl object-cover"
-                                      loading="lazy"
-                                    />
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+          <div className="mt-6 lg:hidden">
+            <OtherServices
+              currentId={svc._id}
+              services={servicePool}
+              loading={loadingRelated}
+            />
           </div>
         </motion.div>
-
-        {/* SAĞ */}
-        <div className="lg:col-span-1">
-          <OtherServices
-            currentId={svc._id}
-            services={servicePool}
-            loading={loadingRelated}
-          />
-        </div>
       </div>
 
-      {/* Benzerler */}
-      <div className="mt-10 md:mt-14 mb-16">
+      {Array.isArray(svc.subServices) && svc.subServices.length > 0 && (
+        <div className="mt-10">
+          <h3 className="text-xl font-semibold text-brandBlue mb-4">
+            Alt Hizmetler
+          </h3>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {svc.subServices.map((sub, index) => {
+              const subCoverIsVideo =
+                sub?.cover?.resourceType === "video" ||
+                looksVideo(sub?.cover?.url);
+              const subPreview =
+                (!subCoverIsVideo && sub?.cover?.url) ||
+                firstImageFrom(sub?.images) ||
+                (subCoverIsVideo ? getVideoPosterUrl(sub?.cover) : null) ||
+                "";
+
+              return (
+                <Link
+                  key={sub?._id || `${sub?.title}-${index}`}
+                  to={`/services/${svc._id}/sub-services/${sub?._id || sub?.id}`}
+                  state={{
+                    parentTitle: svc?.title || "",
+                    parentService: svc,
+                    subServiceTitle: sub?.title || "",
+                  }}
+                  className="group overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <div className="relative aspect-[5/4] bg-slate-100">
+                    {subPreview ? (
+                      <img
+                        src={subPreview}
+                        alt={sub.title}
+                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    ) : subCoverIsVideo ? (
+                      <video
+                        src={sub.cover.url}
+                        className="absolute inset-0 h-full w-full object-cover"
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                    ) : null}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+                    {subCoverIsVideo ? (
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
+                        <span className="inline-flex translate-y-2 items-center gap-2 rounded-full border border-white/30 bg-black/45 px-4 py-2 text-sm font-semibold text-white opacity-0 backdrop-blur-sm transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                          <PlayCircle size={18} />
+                          Videoyu izle
+                        </span>
+                      </div>
+                    ) : null}
+                    {subCoverIsVideo ? (
+                      <span className="pointer-events-none absolute right-3 top-3 rounded-full border border-white/20 bg-black/45 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
+                        Video
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="p-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="text-lg font-semibold text-brandBlue line-clamp-2">
+                        {sub.title}
+                      </h4>
+                      {sub.type && (
+                        <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700">
+                          {sub.type}
+                        </span>
+                      )}
+                      {sub.category && (
+                        <span className="inline-flex rounded-full bg-quaternaryColor/10 px-3 py-1 text-[11px] font-semibold text-quaternaryColor">
+                          {sub.category}
+                        </span>
+                      )}
+                    </div>
+                    {sub.description && (
+                      <p className="mt-3 text-sm leading-6 text-gray-700 line-clamp-3">
+                        {sub.description}
+                      </p>
+                    )}
+                    {Array.isArray(sub.usageAreas) && sub.usageAreas.length > 0 && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {sub.usageAreas.slice(0, 3).map((area) => (
+                          <span
+                            key={`${sub._id || sub.title}-${area}`}
+                            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600"
+                          >
+                            {area}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="hidden lg:block mt-10 md:mt-14 mb-16">
         <motion.h2
           variants={fadeUp}
           initial="hidden"
           animate="show"
           className="text-xl md:text-2xl font-bold text-secondaryColor mb-4"
         >
-          Benzer Hizmetler
+          Diğer Hizmetler
         </motion.h2>
 
         {loadingRelated ? (
@@ -591,7 +518,7 @@ const ServiceDetails = () => {
         ) : related.length === 0 ? (
           <div className="text-sm text-gray-500">Henüz başka hizmet yok.</div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="hidden lg:grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {related.map((it) => {
               const coverUrl = it?.cover?.url || "";
               const coverIsVideo =
@@ -664,75 +591,8 @@ const ServiceDetails = () => {
         )}
       </div>
 
-      <AnimatePresence>
-        {videoModal ? (
-          <VideoModal item={videoModal} onClose={() => setVideoModal(null)} />
-        ) : null}
-      </AnimatePresence>
     </section>
   );
-};
-
-const VideoModal = ({ item, onClose }) => {
-  if (!item?.url) return null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/82 p-4 backdrop-blur-sm"
-      onClick={onClose}
-      aria-modal="true"
-      role="dialog"
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        transition={{ duration: 0.22, ease: "easeOut" }}
-        className="relative w-full max-w-5xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-3 top-3 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/55 text-white shadow-lg transition hover:bg-black/70"
-          aria-label="Videoyu kapat"
-        >
-          <X size={20} />
-        </button>
-
-        <div className="overflow-hidden rounded-[28px] bg-black shadow-[0_40px_120px_-32px_rgba(0,0,0,0.72)]">
-          <div className="aspect-video w-full bg-black">
-            <video
-              src={item.url}
-              poster={item.poster || undefined}
-              controls
-              autoPlay
-              playsInline
-              className="h-full w-full object-contain"
-            />
-          </div>
-        </div>
-
-        {item.title ? (
-          <div className="mt-3 text-center text-sm font-medium text-white/82">
-            {item.title}
-          </div>
-        ) : null}
-      </motion.div>
-    </motion.div>
-  );
-};
-
-VideoModal.propTypes = {
-  item: PropTypes.shape({
-    url: PropTypes.string,
-    poster: PropTypes.string,
-    title: PropTypes.string,
-  }),
-  onClose: PropTypes.func.isRequired,
 };
 
 export default ServiceDetails;

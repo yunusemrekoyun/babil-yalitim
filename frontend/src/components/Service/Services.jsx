@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import PropTypes from "prop-types";
 import ServiceItem from "./ServiceItem";
 import {
   fetchServicesCached,
   getCachedServices,
 } from "../../utils/servicesCache";
 
-const Services = () => {
+const Services = ({ q }) => {
   const cachedServices = getCachedServices();
   const [services, setServices] = useState(() => cachedServices || []);
-  const [q, setQ] = useState("");
   const [cat, setCat] = useState("Tümü");
   const [loading, setLoading] = useState(() => !cachedServices);
   const [err, setErr] = useState("");
@@ -62,45 +62,31 @@ const Services = () => {
 
   return (
     <section className="w-full">
-      {/* Toolbar (BlogPage ile aynı hissiyat) */}
-      <div className="mb-8 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-        <div className="flex-1">
-          <label htmlFor="svc-search" className="sr-only">
-            Hizmetlerde ara
-          </label>
-          <input
-            id="svc-search"
-            type="text"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Hizmetlerde ara…"
-            className="w-full rounded-xl border border-white/40 bg-white/60 backdrop-blur px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition shadow-sm"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {categories.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setCat(c)}
-              className={`px-4 py-2 rounded-full text-sm border transition ${
-                cat === c
-                  ? "bg-quaternaryColor text-white border-quaternaryColor"
-                  : "bg-white/60 text-gray-700 border-white/40 hover:bg-white"
-              }`}
-            >
-              {c}
-            </button>
-          ))}
+      <div className="mb-5 rounded-[24px] border border-white/40 bg-white/55 p-4 shadow-sm backdrop-blur-xl md:mb-6 md:p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {categories.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCat(c)}
+                className={`rounded-full border px-4 py-2 text-sm transition ${
+                  cat === c
+                    ? "border-quaternaryColor bg-quaternaryColor text-white"
+                    : "border-white/45 bg-white/80 text-gray-700 hover:bg-white"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+
+          <p className="text-xs text-gray-500 md:text-sm">
+            Toplam: {services.length} • Filtrelenmiş: {filtered.length}
+          </p>
         </div>
       </div>
 
-      {/* sayaç */}
-      <p className="text-xs text-gray-500 mb-4">
-        Toplam: {services.length} • Filtrelenmiş: {filtered.length}
-      </p>
-
-      {/* Dikey kart grid’i */}
       {filtered.length === 0 ? (
         <div className="text-center text-gray-600 bg-white/50 backdrop-blur-xl border border-white/30 rounded-2xl py-16">
           Sonuç bulunamadı.
@@ -121,6 +107,10 @@ const Services = () => {
       )}
     </section>
   );
+};
+
+Services.propTypes = {
+  q: PropTypes.string.isRequired,
 };
 
 export default Services;

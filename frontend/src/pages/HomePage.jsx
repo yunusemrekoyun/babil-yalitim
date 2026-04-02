@@ -54,6 +54,7 @@ export default function HomePage() {
 
       import("./ServicePage.jsx").catch(() => {});
       import("./ServiceDetailsPage.jsx").catch(() => {});
+      import("./SubServiceDetailsPage.jsx").catch(() => {});
     };
 
     if (!isMobile) {

@@ -92,45 +92,50 @@ const BlogPageComponent = () => {
 
   return (
     <>
-      {/* Toolbar — diğer sayfalarla aynı dil */}
-      <div className="mb-8 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-        <div className="flex-1">
-          <label htmlFor="blog-search" className="sr-only">
-            Bloglarda ara
-          </label>
-          <input
-            id="blog-search"
-            type="text"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Bloglarda ara…"
-            className="w-full rounded-xl border border-white/40 bg-white/60 backdrop-blur px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition shadow-sm"
-          />
-        </div>
+      <div className="mb-6 rounded-[26px] border border-white/40 bg-white/55 p-4 backdrop-blur-xl shadow-sm md:p-5">
+        <div className="flex flex-col gap-4">
+          <div className="flex-1">
+            <label htmlFor="blog-search" className="sr-only">
+              Bloglarda ara
+            </label>
+            <input
+              id="blog-search"
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Bloglarda ara…"
+              className="w-full rounded-xl border border-white/40 bg-white/80 px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition shadow-sm"
+            />
+          </div>
 
-        <div className="flex flex-wrap gap-2">
-          {tags.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTag(t)}
-              className={`px-4 py-2 rounded-full text-sm border transition ${
-                tag === t
-                  ? "bg-quaternaryColor text-white border-quaternaryColor"
-                  : "bg-white/60 text-gray-700 border-white/40 hover:bg-white"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+          <div className="flex flex-wrap gap-2">
+            {tags.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTag(t)}
+                className={`px-4 py-2 rounded-full text-sm border transition ${
+                  tag === t
+                    ? "bg-quaternaryColor text-white border-quaternaryColor"
+                    : "bg-white/80 text-gray-700 border-white/40 hover:bg-white"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* sayaç */}
       <p className="text-xs text-gray-500 mb-4">
         Toplam: {blogs.length} • Filtrelenmiş: {filtered.length}
       </p>
 
+      {filtered.length === 0 ? (
+        <div className="text-center text-gray-600 bg-white/50 backdrop-blur-xl border border-white/30 rounded-2xl py-16">
+          Aramanızla eşleşen blog bulunamadı.
+        </div>
+      ) : (
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -140,6 +145,7 @@ const BlogPageComponent = () => {
           <BlogItem key={b._id || i} item={b} index={i} />
         ))}
       </motion.div>
+      )}
     </>
   );
 };

@@ -202,15 +202,16 @@ const HeroServiceRibbon = () => {
                     <Link
                       key={subService?._id || `${activePanel.service._id}-${index}`}
                       to={
-                        activePanel.service?._id
-                          ? `/services/${activePanel.service._id}`
+                        activePanel.service?._id && (subService?._id || subService?.id)
+                          ? `/services/${activePanel.service._id}/sub-services/${subService?._id || subService?.id}`
                           : "/services"
                       }
                       state={
                         activePanel.service?._id
                           ? {
-                              title: activePanel.service?.title || "",
-                              service: activePanel.service,
+                              parentTitle: activePanel.service?.title || "",
+                              parentService: activePanel.service,
+                              subServiceTitle: subService?.title || "",
                             }
                           : undefined
                       }

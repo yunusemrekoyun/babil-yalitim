@@ -54,31 +54,21 @@ const JournalPage = () => {
           />
         </section>
 
-        {/* Hero */}
         <section className="relative overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 pt-14 md:pt-20 pb-8">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 pt-4 md:pt-5 pb-5">
             <motion.h1
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
-              className="text-3xl md:text-5xl font-bold text-secondaryColor text-center"
+              className="text-3xl md:text-5xl font-bold text-secondaryColor"
             >
               Haberler
             </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="mt-4 text-center text-gray-600 max-w-2xl mx-auto"
-            >
-              Sektörden gelişmeler, firma duyuruları ve teknik içerikleri burada
-              topluyoruz.
-            </motion.p>
             <motion.div
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ delay: 0.25, duration: 0.5 }}
-              className="h-1 w-24 bg-quaternaryColor/90 rounded-full mx-auto mt-6 origin-left"
+              className="h-1 w-20 bg-quaternaryColor/90 rounded-full mt-3 origin-left"
             />
           </div>
         </section>

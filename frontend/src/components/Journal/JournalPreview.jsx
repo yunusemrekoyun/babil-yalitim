@@ -75,33 +75,35 @@ const JournalPreview = ({ data = [], loading = false, error = "" }) => {
 
   return (
     <>
-      {/* Toolbar — diğer sayfalarla aynı */}
-      <div className="mb-6 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-        <div className="flex-1">
-          <label htmlFor="jrnl-search" className="sr-only">
-            Haberlerde ara
-          </label>
-          <input
-            id="jrnl-search"
-            type="text"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Haberlerde ara…"
-            className="w-full rounded-xl border border-white/40 bg-white/60 backdrop-blur px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition shadow-sm"
-          />
-        </div>
+      <div className="mb-6 rounded-[26px] border border-white/40 bg-white/55 p-4 backdrop-blur-xl shadow-sm md:p-5">
+        <label htmlFor="jrnl-search" className="sr-only">
+          Haberlerde ara
+        </label>
+        <input
+          id="jrnl-search"
+          type="text"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Haberlerde ara…"
+          className="w-full rounded-xl border border-white/40 bg-white/80 px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition shadow-sm"
+        />
       </div>
 
-      {/* sayaç */}
       <p className="text-xs text-gray-500 mb-4">
         Toplam: {items.length} • Filtrelenmiş: {filtered.length}
       </p>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((item, index) => (
-          <JournalCard key={item._id || index} item={item} index={index} />
-        ))}
-      </div>
+      {filtered.length === 0 ? (
+        <div className="text-center text-gray-600 bg-white/50 backdrop-blur-xl border border-white/30 rounded-2xl py-16">
+          Aramanızla eşleşen haber bulunamadı.
+        </div>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((item, index) => (
+            <JournalCard key={item._id || index} item={item} index={index} />
+          ))}
+        </div>
+      )}
     </>
   );
 };

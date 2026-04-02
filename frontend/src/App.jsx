@@ -23,6 +23,7 @@ const ProjectsPage = lazy(() => import("./pages/ProjectsPage.jsx"));
 const ProjectDetailPage = lazy(() => import("./pages/ProjectDetailPage.jsx"));
 const ServicePage = lazy(() => import("./pages/ServicePage.jsx"));
 const ServiceDetailsPage = lazy(() => import("./pages/ServiceDetailsPage.jsx"));
+const SubServiceDetailsPage = lazy(() => import("./pages/SubServiceDetailsPage.jsx"));
 const JournalPage = lazy(() => import("./pages/JournalPage.jsx"));
 const JournalDetailPage = lazy(() => import("./pages/JournalDetailPage.jsx"));
 const WhyUsPage = lazy(() => import("./pages/WhyUsPage.jsx"));
@@ -66,6 +67,10 @@ const publicRoutes = [
   { path: "/project-detail/:id", element: wrapLazy(ProjectDetailPage) },
   { path: "/services", element: wrapLazy(ServicePage) },
   { path: "/services/:id", element: wrapLazy(ServiceDetailsPage) },
+  {
+    path: "/services/:serviceId/sub-services/:subServiceId",
+    element: wrapLazy(SubServiceDetailsPage),
+  },
   { path: "/journal", element: wrapLazy(JournalPage) },
   { path: "/journals/:id", element: wrapLazy(JournalDetailPage) },
   { path: "/whyus", element: wrapLazy(WhyUsPage) },
