@@ -46,7 +46,6 @@ const ServiceItem = ({ service }) => {
   const {
     cardImageWidth,
     imageQuality,
-    videoQuality,
     isTouch,
     saveData,
     prefersReducedMotion,
@@ -82,10 +81,10 @@ const ServiceItem = ({ service }) => {
       isVideo
         ? getOptimizedVideoUrl(videoMedia, {
             width: cardImageWidth,
-            quality: videoQuality,
+            purpose: "preview",
           })
         : "",
-    [cardImageWidth, isVideo, videoMedia, videoQuality]
+    [cardImageWidth, isVideo, videoMedia]
   );
 
   const posterUrl = useMemo(() => {

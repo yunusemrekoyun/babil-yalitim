@@ -33,8 +33,8 @@ const BlogGridItem = ({ item, index }) => {
     () =>
       coverIsVideo
         ? getOptimizedVideoUrl(coverMedia, {
-            width: 1280,
-            quality: "auto:good",
+            width: 960,
+            purpose: "preview",
           })
         : "",
     [coverIsVideo, coverMedia]

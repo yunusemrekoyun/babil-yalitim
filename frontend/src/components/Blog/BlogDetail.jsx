@@ -54,14 +54,13 @@ const getMediaPreviewSrc = (
 
 const getMediaPlaybackSrc = (
   media,
-  { width = 1600, quality = "auto:good" } = {}
+  { width = 1600 } = {}
 ) => {
   if (!media) return "";
   return getMediaType(media) === "video"
     ? getOptimizedVideoUrl(media, {
         width,
-        quality,
-        stripAudio: false,
+        purpose: "detail",
       })
     : media?.url || media || "";
 };

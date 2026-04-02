@@ -27,6 +27,37 @@ const buildDefaultBaseUrl = () => {
 const MEDIA_BASE_URL = normalizeBaseUrl(
   process.env.MEDIA_BASE_URL || buildDefaultBaseUrl()
 );
+const IMAGE_VARIANT_WIDTHS = String(
+  process.env.MEDIA_IMAGE_VARIANT_WIDTHS || "480,960,1600"
+)
+  .split(",")
+  .map((value) => Number(value.trim()))
+  .filter(
+    (value, index, list) =>
+      Number.isFinite(value) && value > 0 && list.indexOf(value) === index
+  )
+  .sort((a, b) => a - b);
+const IMAGE_VARIANT_QUALITY = Number(
+  process.env.MEDIA_IMAGE_VARIANT_QUALITY || 82
+);
+const VIDEO_PREVIEW_MAX_EDGE = Number(
+  process.env.MEDIA_VIDEO_PREVIEW_MAX_EDGE || 960
+);
+const VIDEO_DETAIL_MAX_EDGE = Number(
+  process.env.MEDIA_VIDEO_DETAIL_MAX_EDGE || 1440
+);
+const VIDEO_PREVIEW_CRF = Number(
+  process.env.MEDIA_VIDEO_PREVIEW_CRF || 28
+);
+const VIDEO_DETAIL_CRF = Number(
+  process.env.MEDIA_VIDEO_DETAIL_CRF || 23
+);
+const VIDEO_PREVIEW_WITH_AUDIO = /^(1|true|yes)$/i.test(
+  String(process.env.MEDIA_VIDEO_PREVIEW_WITH_AUDIO || "0")
+);
+const VIDEO_AUDIO_BITRATE = String(
+  process.env.MEDIA_VIDEO_AUDIO_BITRATE || "128k"
+).trim();
 
 const normalizePathPart = (value = "") =>
   String(value || "")
@@ -63,11 +94,23 @@ const buildMediaUrl = (storageKey = "") => {
   return `${MEDIA_PUBLIC_PATH}/${encoded}`;
 };
 
+const getImageVariantStorageKey = (storageKey = "", width, format = "webp") => {
+  const normalized = normalizePathPart(storageKey);
+  if (!normalized || !width) return "";
+  const parsed = path.posix.parse(normalized);
+  return path.posix.join(parsed.dir, `${parsed.name}.w${width}.${format}`);
+};
+
 const resolveAbsolutePath = (storageKey = "") =>
   path.join(MEDIA_ROOT, ...normalizePathPart(storageKey).split("/"));
 
 const ensureDir = async (absoluteFilePath) => {
   await fs.mkdir(path.dirname(absoluteFilePath), { recursive: true });
+};
+
+const safeUnlink = async (absoluteFilePath) => {
+  if (!absoluteFilePath) return;
+  await fs.unlink(absoluteFilePath).catch(() => {});
 };
 
 const moveOrWriteFile = async (file, absoluteFilePath) => {
@@ -109,6 +152,13 @@ const getPosterStorageKey = (storageKey = "") => {
   return path.posix.join(parsed.dir, `${parsed.name}.poster.jpg`);
 };
 
+const getVideoVariantStorageKey = (storageKey = "", label, format = "mp4") => {
+  const normalized = normalizePathPart(storageKey);
+  if (!normalized || !label) return "";
+  const parsed = path.posix.parse(normalized);
+  return path.posix.join(parsed.dir, `${parsed.name}.${label}.${format}`);
+};
+
 const generateVideoPoster = (absoluteVideoPath, absolutePosterPath) =>
   new Promise((resolve, reject) => {
     ffmpeg(absoluteVideoPath)
@@ -118,6 +168,72 @@ const generateVideoPoster = (absoluteVideoPath, absolutePosterPath) =>
       .on("error", reject)
       .run();
   });
+
+const remuxVideoForStreaming = (absoluteVideoPath, absoluteOutputPath) =>
+  new Promise((resolve, reject) => {
+    ffmpeg(absoluteVideoPath)
+      .outputOptions(["-map", "0", "-c", "copy", "-movflags", "+faststart"])
+      .output(absoluteOutputPath)
+      .on("end", resolve)
+      .on("error", reject)
+      .run();
+  });
+
+const transcodeVideoVariant = (
+  absoluteVideoPath,
+  absoluteOutputPath,
+  { size, crf, includeAudio }
+) =>
+  new Promise((resolve, reject) => {
+    const command = ffmpeg(absoluteVideoPath)
+      .format("mp4")
+      .videoCodec("libx264")
+      .outputOptions([
+        "-preset",
+        "medium",
+        "-crf",
+        String(crf),
+        "-movflags",
+        "+faststart",
+        "-pix_fmt",
+        "yuv420p",
+        "-profile:v",
+        "high",
+        "-level",
+        "4.1",
+      ])
+      .size(size)
+      .output(absoluteOutputPath)
+      .on("end", resolve)
+      .on("error", reject);
+
+    if (includeAudio) {
+      command.audioCodec("aac").audioBitrate(VIDEO_AUDIO_BITRATE);
+    } else {
+      command.noAudio();
+    }
+
+    command.run();
+  });
+
+const prepareVideoForDelivery = async (absoluteFilePath) => {
+  const extension = path.extname(absoluteFilePath || "").toLowerCase();
+  if (![".mp4", ".mov"].includes(extension)) {
+    return false;
+  }
+
+  const tempOutputPath = `${absoluteFilePath}.faststart${extension}`;
+
+  try {
+    await remuxVideoForStreaming(absoluteFilePath, tempOutputPath);
+    await safeUnlink(absoluteFilePath);
+    await fs.rename(tempOutputPath, absoluteFilePath);
+    return true;
+  } catch {
+    await safeUnlink(tempOutputPath);
+    return false;
+  }
+};
 
 const extractVideoMeta = async (absoluteFilePath) => {
   const probe = await probeVideo(absoluteFilePath);
@@ -139,9 +255,21 @@ const extractVideoMeta = async (absoluteFilePath) => {
   };
 };
 
+const getVideoScaleSize = ({ width, height, maxEdge }) => {
+  const safeWidth = Number(width) || 0;
+  const safeHeight = Number(height) || 0;
+  const safeMaxEdge = Number(maxEdge) || 0;
+
+  if (!safeWidth || !safeHeight || !safeMaxEdge) return "";
+  if (Math.max(safeWidth, safeHeight) <= safeMaxEdge) return "";
+
+  return safeWidth >= safeHeight ? `${safeMaxEdge}x?` : `?x${safeMaxEdge}`;
+};
+
 const buildImageDoc = async (absoluteFilePath, storageKey) => {
   const metadata = await sharp(absoluteFilePath).metadata();
   const stat = await fs.stat(absoluteFilePath);
+  const variants = await buildImageVariants(absoluteFilePath, storageKey, metadata);
 
   return {
     url: buildMediaUrl(storageKey),
@@ -153,12 +281,79 @@ const buildImageDoc = async (absoluteFilePath, storageKey) => {
     height: metadata.height,
     bytes: stat.size,
     duration: undefined,
+    variants,
   };
 };
 
+const buildVideoVariants = async (absoluteFilePath, storageKey, metadata = {}) => {
+  const width = Number(metadata.width) || 0;
+  const height = Number(metadata.height) || 0;
+  if (!width || !height) return [];
+
+  const plans = [
+    {
+      label: "preview",
+      maxEdge: VIDEO_PREVIEW_MAX_EDGE,
+      crf: VIDEO_PREVIEW_CRF,
+      includeAudio: VIDEO_PREVIEW_WITH_AUDIO,
+    },
+    {
+      label: "detail",
+      maxEdge: VIDEO_DETAIL_MAX_EDGE,
+      crf: VIDEO_DETAIL_CRF,
+      includeAudio: true,
+    },
+  ].filter((plan) => Number(plan.maxEdge) > 0);
+
+  const variants = [];
+  const createdVariantPaths = [];
+
+  try {
+    for (const plan of plans) {
+      const size = getVideoScaleSize({
+        width,
+        height,
+        maxEdge: plan.maxEdge,
+      });
+      if (!size) continue;
+
+      const variantStorageKey = getVideoVariantStorageKey(storageKey, plan.label);
+      const absoluteVariantPath = resolveAbsolutePath(variantStorageKey);
+
+      await ensureDir(absoluteVariantPath);
+      await transcodeVideoVariant(absoluteFilePath, absoluteVariantPath, {
+        size,
+        crf: plan.crf,
+        includeAudio: plan.includeAudio,
+      });
+      createdVariantPaths.push(absoluteVariantPath);
+
+      const variantMeta = await extractVideoMeta(absoluteVariantPath);
+      const stat = await fs.stat(absoluteVariantPath);
+
+      variants.push({
+        label: plan.label,
+        url: buildMediaUrl(variantStorageKey),
+        storageKey: variantStorageKey,
+        format: "mp4",
+        width: variantMeta.width,
+        height: variantMeta.height,
+        bytes: stat.size,
+      });
+    }
+  } catch (error) {
+    await Promise.all(createdVariantPaths.map((targetPath) => safeUnlink(targetPath)));
+    throw error;
+  }
+
+  return variants.sort((a, b) => (a.width || 0) - (b.width || 0));
+};
+
 const buildVideoDoc = async (absoluteFilePath, storageKey) => {
+  await prepareVideoForDelivery(absoluteFilePath);
   const stat = await fs.stat(absoluteFilePath);
   const metadata = await extractVideoMeta(absoluteFilePath);
+  const variants = await buildVideoVariants(absoluteFilePath, storageKey, metadata);
   const posterStorageKey = getPosterStorageKey(storageKey);
   const absolutePosterPath = resolveAbsolutePath(posterStorageKey);
   let posterCreated = false;
@@ -181,7 +376,70 @@ const buildVideoDoc = async (absoluteFilePath, storageKey) => {
     height: metadata.height,
     bytes: stat.size,
     duration: metadata.duration,
+    variants,
   };
+};
+
+const buildImageVariants = async (absoluteFilePath, storageKey, metadata = {}) => {
+  const originalWidth = Number(metadata.width) || 0;
+  const originalHeight = Number(metadata.height) || 0;
+  const isAnimated = Number(metadata.pages || 0) > 1;
+
+  if (!originalWidth || !originalHeight || isAnimated) {
+    return [];
+  }
+
+  const widths = IMAGE_VARIANT_WIDTHS.filter((width) => width < originalWidth);
+  if (!widths.length) {
+    return [];
+  }
+
+  const variants = [];
+  const createdVariantPaths = [];
+
+  try {
+    for (const width of widths) {
+      const variantStorageKey = getImageVariantStorageKey(storageKey, width, "webp");
+      const absoluteVariantPath = resolveAbsolutePath(variantStorageKey);
+
+      await ensureDir(absoluteVariantPath);
+      await sharp(absoluteFilePath, {
+        animated: false,
+        limitInputPixels: false,
+      })
+        .rotate()
+        .resize({
+          width,
+          withoutEnlargement: true,
+          fit: "inside",
+        })
+        .webp({
+          quality: IMAGE_VARIANT_QUALITY,
+          effort: 4,
+        })
+        .toFile(absoluteVariantPath);
+
+      createdVariantPaths.push(absoluteVariantPath);
+
+      const variantMeta = await sharp(absoluteVariantPath).metadata();
+      const stat = await fs.stat(absoluteVariantPath);
+
+      variants.push({
+        label: `w${width}`,
+        url: buildMediaUrl(variantStorageKey),
+        storageKey: variantStorageKey,
+        format: variantMeta.format || "webp",
+        width: variantMeta.width,
+        height: variantMeta.height,
+        bytes: stat.size,
+      });
+    }
+  } catch (error) {
+    await Promise.all(createdVariantPaths.map((targetPath) => safeUnlink(targetPath)));
+    throw error;
+  }
+
+  return variants;
 };
 
 const upload = async (file, { folder = "uploads", resourceType = "auto" } = {}) => {
@@ -221,6 +479,12 @@ const destroy = async (media) => {
   if ((media?.resourceType || "image") === "video") {
     targets.push(getPosterStorageKey(storageKey));
   }
+  if (Array.isArray(media?.variants)) {
+    media.variants.forEach((variant) => {
+      const key = normalizePathPart(variant?.storageKey || "");
+      if (key) targets.push(key);
+    });
+  }
 
   await Promise.all(
     targets
@@ -229,13 +493,30 @@ const destroy = async (media) => {
   );
 };
 
+const refreshMediaDoc = async (media) => {
+  const normalizedMedia = media?.toObject?.() || media;
+  const storageKey = getMediaKey(normalizedMedia);
+  if (!storageKey) return normalizedMedia || null;
+
+  const absoluteFilePath = resolveAbsolutePath(storageKey);
+  const resourceType = normalizedMedia?.resourceType || "image";
+
+  if (resourceType === "video") {
+    return buildVideoDoc(absoluteFilePath, storageKey);
+  }
+
+  return buildImageDoc(absoluteFilePath, storageKey);
+};
+
 module.exports = {
   MEDIA_ROOT,
   MEDIA_PUBLIC_PATH,
   MEDIA_BASE_URL,
   buildMediaUrl,
   getMediaKey,
+  getImageVariantStorageKey,
   getPosterStorageKey,
+  refreshMediaDoc,
   upload,
   destroy,
 };

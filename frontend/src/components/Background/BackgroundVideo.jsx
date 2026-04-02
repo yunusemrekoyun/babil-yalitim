@@ -66,6 +66,7 @@ export default function BackgroundVideo({
 
     const video = videoRef.current;
     if (!video) return undefined;
+    let frameCallbackId = null;
 
     const clearResumeTimers = () => {
       if (!resumeTimersRef.current.length) return;
@@ -75,6 +76,13 @@ export default function BackgroundVideo({
 
     const markReady = () => {
       window.requestAnimationFrame(() => setReady(true));
+    };
+
+    const bindFrameReady = () => {
+      if (typeof video.requestVideoFrameCallback !== "function") return;
+      frameCallbackId = video.requestVideoFrameCallback(() => {
+        markReady();
+      });
     };
 
     const attemptPlayback = () => {
@@ -114,18 +122,18 @@ export default function BackgroundVideo({
     video.muted = true;
     video.defaultMuted = true;
     video.playsInline = true;
-    video.preload = "auto";
+    video.preload = isMobile ? "metadata" : "auto";
     video.poster = placeholderUrl || "";
     video.setAttribute("muted", "");
     video.setAttribute("playsinline", "");
     video.setAttribute("webkit-playsinline", "");
 
+    bindFrameReady();
     video.addEventListener("loadeddata", markReady);
     video.addEventListener("canplay", markReady);
     video.addEventListener("playing", markReady);
     video.addEventListener("timeupdate", markReady, { once: true });
 
-    video.load();
     document.addEventListener("visibilitychange", syncPlayback);
     window.addEventListener("focus", handleResumeSignal);
     window.addEventListener("pageshow", handleResumeSignal);
@@ -134,6 +142,12 @@ export default function BackgroundVideo({
     return () => {
       clearResumeTimers();
       didBecomeHiddenRef.current = false;
+      if (
+        frameCallbackId !== null &&
+        typeof video.cancelVideoFrameCallback === "function"
+      ) {
+        video.cancelVideoFrameCallback(frameCallbackId);
+      }
       video.removeEventListener("loadeddata", markReady);
       video.removeEventListener("canplay", markReady);
       video.removeEventListener("playing", markReady);
@@ -142,7 +156,7 @@ export default function BackgroundVideo({
       window.removeEventListener("focus", handleResumeSignal);
       window.removeEventListener("pageshow", handleResumeSignal);
     };
-  }, [placeholderUrl, shouldUseVideo, videoUrl]);
+  }, [isMobile, placeholderUrl, shouldUseVideo, videoUrl]);
 
   return (
     <div
@@ -182,7 +196,7 @@ export default function BackgroundVideo({
             loop
             muted
             playsInline
-            preload="auto"
+            preload={isMobile ? "metadata" : "auto"}
             poster={placeholderUrl || undefined}
           />
         </>

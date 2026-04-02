@@ -81,8 +81,7 @@ const ProjectItem = ({ project, index }) => {
   const [imgOk, setImgOk] = useState(true);
   const videoRef = useRef(null);
   const selfId = useRef(project?._id || String(index));
-  const { cardImageWidth, detailImageWidth, imageQuality, videoQuality } =
-    usePerformanceProfile();
+  const { cardImageWidth, imageQuality } = usePerformanceProfile();
 
   // touch cihaz (mobil/tablet)
   const isTouch = useMemo(() => {
@@ -97,10 +96,10 @@ const ProjectItem = ({ project, index }) => {
   const videoUrl = useMemo(
     () =>
       getOptimizedVideoUrl(video, {
-        width: detailImageWidth,
-        quality: videoQuality,
+        width: cardImageWidth,
+        purpose: "preview",
       }),
-    [detailImageWidth, video, videoQuality]
+    [cardImageWidth, video]
   );
   const hasImage = Boolean(poster);
 

@@ -2,6 +2,8 @@
 # === Node Modules (Hem frontend hem backend) ===
 **/node_modules
 
+**/deploy
+
 # === Build ve Output ===
 **/dist
 **/build

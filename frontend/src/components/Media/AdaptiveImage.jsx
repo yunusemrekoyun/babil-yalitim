@@ -53,6 +53,17 @@ AdaptiveImage.propTypes = {
       storageKey: PropTypes.string,
       posterUrl: PropTypes.string,
       resourceType: PropTypes.string,
+      variants: PropTypes.arrayOf(
+        PropTypes.shape({
+          label: PropTypes.string,
+          url: PropTypes.string,
+          storageKey: PropTypes.string,
+          format: PropTypes.string,
+          width: PropTypes.number,
+          height: PropTypes.number,
+          bytes: PropTypes.number,
+        })
+      ),
     }),
   ]),
   alt: PropTypes.string,

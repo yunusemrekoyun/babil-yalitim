@@ -19,8 +19,8 @@ const pickFirstImageAndVideo = (images = []) => {
       m?.resourceType === "image" || (!m?.resourceType && !looksVideo(url));
     const isVid =
       m?.resourceType === "video" || (!m?.resourceType && looksVideo(url));
-    if (isImg && !img) img = url;
-    if (isVid && !vid) vid = url;
+    if (isImg && !img) img = m;
+    if (isVid && !vid) vid = m;
     if (img && vid) break;
   }
   return { img, vid };
@@ -32,7 +32,6 @@ const ServiceGridItem = ({ item, isCenter, shouldAutoplay, registerVideoRef }) =
   const {
     cardImageWidth,
     imageQuality,
-    videoQuality,
     saveData,
     prefersReducedMotion,
   } = usePerformanceProfile();
@@ -49,9 +48,9 @@ const ServiceGridItem = ({ item, isCenter, shouldAutoplay, registerVideoRef }) =
     () =>
       getOptimizedVideoUrl(videoMedia, {
         width: cardImageWidth,
-        quality: videoQuality,
+        purpose: "preview",
       }),
-    [cardImageWidth, videoMedia, videoQuality]
+    [cardImageWidth, videoMedia]
   );
 
   const previewMedia = (!coverIsVideo && (cover || cover?.url)) || firstImage || null;

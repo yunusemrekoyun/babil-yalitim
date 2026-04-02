@@ -13,7 +13,12 @@ import {
 } from "lucide-react";
 import api from "../../api";
 import OtherServices from "./OtherServices";
-import { getVideoPosterUrl, looksVideo } from "../../utils/media";
+import {
+  getOptimizedImageUrl,
+  getOptimizedVideoUrl,
+  getVideoPosterUrl,
+  looksVideo,
+} from "../../utils/media";
 
 const fmt = (v) => {
   if (!v) return null;
@@ -39,6 +44,10 @@ const firstImageFrom = (images = []) => {
 
 const isVideoMedia = (media) =>
   media?.resourceType === "video" || looksVideo(media?.url);
+
+const DETAIL_MEDIA_WIDTH = 1440;
+const DETAIL_PREVIEW_WIDTH = 960;
+const THUMB_WIDTH = 320;
 
 const ServiceDetails = () => {
   const { id } = useParams();
@@ -99,29 +108,33 @@ const ServiceDetails = () => {
 
     if (svc.cover?.url) {
       list.push({
+        ...svc.cover,
         url: svc.cover.url,
         posterUrl: svc.cover.posterUrl || "",
-        type: svc.cover.resourceType || "image",
+        resourceType: svc.cover.resourceType || "image",
       });
     } else if (svc.imageUrl) {
-      list.push({ url: svc.imageUrl, type: "image" });
+      list.push({ url: svc.imageUrl, resourceType: "image" });
     } else if (svc.imageDataUrl) {
-      list.push({ url: svc.imageDataUrl, type: "image" });
+      list.push({ url: svc.imageDataUrl, resourceType: "image" });
     }
 
     if (Array.isArray(svc.images)) {
       svc.images.forEach((m) => {
         if (m?.url) {
           list.push({
+            ...m,
             url: m.url,
             posterUrl: m.posterUrl || "",
-            type: m.resourceType || "image",
+            resourceType: m.resourceType || "image",
           });
         }
       });
     }
     if (Array.isArray(svc.galleryDataUrls)) {
-      svc.galleryDataUrls.forEach((u) => list.push({ url: u, type: "image" }));
+      svc.galleryDataUrls.forEach((u) =>
+        list.push({ url: u, resourceType: "image" })
+      );
     }
 
     // aynı url'leri temizle
@@ -171,6 +184,22 @@ const ServiceDetails = () => {
   }, [svc]);
 
   const active = media[activeIdx];
+  const activeIsVideo = isVideoMedia(active);
+  const activePreviewUrl = active
+    ? activeIsVideo
+      ? getVideoPosterUrl(active, { width: DETAIL_PREVIEW_WIDTH })
+      : getOptimizedImageUrl(active, {
+          width: DETAIL_MEDIA_WIDTH,
+          fallbackSrc: active?.url || "",
+        })
+    : "";
+  const activePlaybackUrl =
+    active && activeIsVideo
+      ? getOptimizedVideoUrl(active, {
+          width: DETAIL_MEDIA_WIDTH,
+          purpose: "detail",
+        })
+      : active?.url || "";
 
   if (loading) {
     return (
@@ -227,10 +256,11 @@ const ServiceDetails = () => {
           <div className="rounded-3xl overflow-hidden border bg-white shadow-sm">
             <div className="relative aspect-[9/16]">
               {active ? (
-                active.type === "video" ? (
+                activeIsVideo ? (
                   <video
-                    key={active.url}
-                    src={active.url}
+                    key={activePlaybackUrl}
+                    src={activePlaybackUrl}
+                    poster={activePreviewUrl || undefined}
                     className="absolute inset-0 w-full h-full object-cover"
                     autoPlay
                     muted
@@ -270,16 +300,30 @@ const ServiceDetails = () => {
                       }`}
                       title={`Görsel ${i + 1}`}
                     >
-                      {m.type === "video" ? (
-                        <video
-                          src={m.url}
-                          muted
-                          playsInline
-                          className="h-full w-full object-cover"
-                        />
+                      {isVideoMedia(m) ? (
+                        <>
+                          <img
+                            src={
+                              getVideoPosterUrl(m, {
+                                width: THUMB_WIDTH,
+                              }) || m.url
+                            }
+                            alt={`thumb-${i}`}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                          <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/10">
+                            <div className="rounded-full border border-white/30 bg-black/45 p-1 text-white backdrop-blur-sm">
+                              <PlayCircle size={14} />
+                            </div>
+                          </div>
+                        </>
                       ) : (
                         <img
-                          src={m.url}
+                          src={getOptimizedImageUrl(m, {
+                            width: THUMB_WIDTH,
+                            fallbackSrc: m.url,
+                          })}
                           alt={`thumb-${i}`}
                           className="h-full w-full object-cover"
                           loading="lazy"
@@ -431,7 +475,10 @@ const ServiceDetails = () => {
                                       type="button"
                                       onClick={() =>
                                         setVideoModal({
-                                          url: media.url,
+                                          url: getOptimizedVideoUrl(media, {
+                                            width: DETAIL_MEDIA_WIDTH,
+                                            purpose: "detail",
+                                          }),
                                           poster: previewUrl || "",
                                           title: `${sub.title} videosu`,
                                         })
