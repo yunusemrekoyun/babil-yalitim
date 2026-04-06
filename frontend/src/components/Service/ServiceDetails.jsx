@@ -22,11 +22,15 @@ import {
   findCachedServiceById,
   getCachedServices,
 } from "../../utils/servicesCache";
+import { useLocale } from "../../i18n/LocaleContext";
+import { localizePath } from "../../i18n/routing.js";
 
-const fmt = (v) => {
+const fmt = (v, locale) => {
   if (!v) return null;
   const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("tr-TR");
+  return Number.isNaN(d.getTime())
+    ? null
+    : d.toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR");
 };
 
 const fadeUp = {
@@ -74,11 +78,12 @@ const buildRelatedServices = (services, currentService) => {
 };
 
 const ServiceDetails = () => {
+  const { locale } = useLocale();
   const { id } = useParams();
   const location = useLocation();
   const initialService =
-    location.state?.service || findCachedServiceById(id) || null;
-  const initialServicePool = getCachedServices() || [];
+    location.state?.service || findCachedServiceById(id, locale) || null;
+  const initialServicePool = getCachedServices(locale) || [];
   const [svc, setSvc] = useState(initialService);
   const [loading, setLoading] = useState(!initialService);
   const [notFound, setNotFound] = useState(false);
@@ -98,7 +103,9 @@ const ServiceDetails = () => {
     (async () => {
       try {
         if (!initialService) setLoading(true);
-        const { data } = await api.get(`/services/${id}`);
+        const { data } = await api.get(`/services/${id}`, {
+          params: { locale },
+        });
         if (!cancelled) {
           setSvc(data);
           setActiveIdx(0);
@@ -114,7 +121,7 @@ const ServiceDetails = () => {
     return () => {
       cancelled = true;
     };
-  }, [id, initialService]);
+  }, [id, initialService, locale]);
 
   // --- MEDYA: {url, type} olarak kur (video için gerekli) ---
   const media = useMemo(() => {
@@ -171,7 +178,7 @@ const ServiceDetails = () => {
     (async () => {
       try {
         setLoadingRelated(true);
-        const list = await fetchServicesCached();
+        const list = await fetchServicesCached({ locale });
         const rel = buildRelatedServices(list, svc);
         if (!cancelled) {
           setServicePool(list);
@@ -186,7 +193,7 @@ const ServiceDetails = () => {
     return () => {
       cancelled = true;
     };
-  }, [svc]);
+  }, [svc, locale]);
 
   const active = media[activeIdx];
   const activeIsVideo = isVideoMedia(active);
@@ -209,7 +216,9 @@ const ServiceDetails = () => {
   if (loading) {
     return (
       <div className="min-h-[60vh] grid place-items-center">
-        <div className="animate-pulse text-gray-500">Yükleniyor…</div>
+        <div className="animate-pulse text-gray-500">
+          {locale === "en" ? "Loading..." : "Yükleniyor…"}
+        </div>
       </div>
     );
   }
@@ -219,14 +228,14 @@ const ServiceDetails = () => {
       <div className="min-h-[60vh] grid place-items-center p-6">
         <div className="text-center">
           <p className="text-xl font-semibold text-red-600 mb-4">
-            Servis bulunamadı.
+            {locale === "en" ? "Service not found." : "Servis bulunamadı."}
           </p>
           <Link
-            to="/services"
+            to={localizePath("/services", locale)}
             className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-gray-800 text-white hover:bg-gray-900"
           >
             <ChevronLeft size={16} />
-            Hizmetler sayfasına dön
+            {locale === "en" ? "Back to services" : "Hizmetler sayfasına dön"}
           </Link>
         </div>
       </div>
@@ -238,14 +247,14 @@ const ServiceDetails = () => {
       {/* Header */}
       <div className="flex items-center justify-between gap-4 mb-8">
         <Link
-          to="/services"
+          to={localizePath("/services", locale)}
           className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-white border hover:bg-gray-50"
-          aria-label="Hizmetlere dön"
+          aria-label={locale === "en" ? "Back to services" : "Hizmetlere dön"}
         >
           <ChevronLeft size={16} />
-          Geri
+          {locale === "en" ? "Back" : "Geri"}
         </Link>
-        <div className="text-xs text-gray-500">{fmt(svc?.createdAt) || ""}</div>
+        <div className="text-xs text-gray-500">{fmt(svc?.createdAt, locale) || ""}</div>
       </div>
 
       {/* Layout */}
@@ -301,7 +310,7 @@ const ServiceDetails = () => {
                           ? "ring-2 ring-brandBlue border-transparent"
                           : "border-gray-200"
                       }`}
-                      title={`Görsel ${i + 1}`}
+                      title={`${locale === "en" ? "Image" : "Görsel"} ${i + 1}`}
                     >
                       {isVideoMedia(m) ? (
                         <>
@@ -349,7 +358,7 @@ const ServiceDetails = () => {
             <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-quaternaryColor/10 text-quaternaryColor border border-quaternaryColor/30">
                 <Tag size={16} />
-                {svc.category || "Kategori yok"}
+                {svc.category || (locale === "en" ? "No category" : "Kategori yok")}
               </span>
               {svc.type && (
                 <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border">
@@ -359,11 +368,11 @@ const ServiceDetails = () => {
               )}
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border">
                 <CalendarDays size={16} />
-                {fmt(svc.createdAt) || "—"}
+                {fmt(svc.createdAt, locale) || "—"}
               </span>
               {Array.isArray(svc.images) && svc.images.length > 0 && (
                 <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border">
-                  <Images size={16} />+{svc.images.length} medya
+                  <Images size={16} />+{svc.images.length} {locale === "en" ? "media" : "medya"}
                 </span>
               )}
             </div>
@@ -377,7 +386,7 @@ const ServiceDetails = () => {
             {Array.isArray(svc.usageAreas) && svc.usageAreas.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-sm font-semibold text-brandBlue mb-3">
-                  Kullanım Alanları
+                  {locale === "en" ? "Usage Areas" : "Kullanım Alanları"}
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {svc.usageAreas.map((u) => (
@@ -399,7 +408,7 @@ const ServiceDetails = () => {
       {Array.isArray(svc.subServices) && svc.subServices.length > 0 && (
         <div className="mt-10">
           <h3 className="text-xl font-semibold text-brandBlue mb-4">
-            Alt Hizmetler
+            {locale === "en" ? "Sub-services" : "Alt Hizmetler"}
           </h3>
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {svc.subServices.map((sub, index) => {
@@ -415,7 +424,7 @@ const ServiceDetails = () => {
               return (
                 <Link
                   key={sub?._id || `${sub?.title}-${index}`}
-                  to={`/services/${svc._id}/sub-services/${sub?._id || sub?.id}`}
+                  to={localizePath(`/services/${svc._id}/sub-services/${sub?._id || sub?.id}`, locale)}
                   state={{
                     parentTitle: svc?.title || "",
                     parentService: svc,
@@ -445,7 +454,7 @@ const ServiceDetails = () => {
                       <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
                         <span className="inline-flex translate-y-2 items-center gap-2 rounded-full border border-white/30 bg-black/45 px-4 py-2 text-sm font-semibold text-white opacity-0 backdrop-blur-sm transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                           <PlayCircle size={18} />
-                          Videoyu izle
+                          {locale === "en" ? "Watch video" : "Videoyu izle"}
                         </span>
                       </div>
                     ) : null}
@@ -511,13 +520,17 @@ const ServiceDetails = () => {
           animate="show"
           className="text-xl md:text-2xl font-bold text-secondaryColor mb-4"
         >
-          Diğer Hizmetler
+          {locale === "en" ? "Other Services" : "Diğer Hizmetler"}
         </motion.h2>
 
         {loadingRelated ? (
-          <div className="text-sm text-gray-500">Yükleniyor…</div>
+          <div className="text-sm text-gray-500">
+            {locale === "en" ? "Loading..." : "Yükleniyor…"}
+          </div>
         ) : related.length === 0 ? (
-          <div className="text-sm text-gray-500">Henüz başka hizmet yok.</div>
+          <div className="text-sm text-gray-500">
+            {locale === "en" ? "No other services yet." : "Henüz başka hizmet yok."}
+          </div>
         ) : (
           <div className="hidden lg:grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {related.map((it) => {
@@ -548,7 +561,7 @@ const ServiceDetails = () => {
               return (
                 <Link
                   key={it._id}
-                  to={`/services/${it._id}`}
+                  to={localizePath(`/services/${it._id}`, locale)}
                   state={{ title: it?.title || "", service: it }}
                   className="group rounded-2xl overflow-hidden border bg-white hover:shadow-md transition"
                 >

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../../config/site";
 import { buildPageMeta } from "../../utils/seo";
+import { useLocale } from "../../i18n/LocaleContext";
 
 function ensureMeta(selector, attrs) {
   let element = document.head.querySelector(selector);
@@ -25,15 +26,29 @@ function ensureCanonical() {
   return link;
 }
 
+function ensureAlternate(hrefLang) {
+  let link = document.head.querySelector(
+    `link[rel='alternate'][hreflang='${hrefLang}']`
+  );
+  if (!link) {
+    link = document.createElement("link");
+    link.setAttribute("rel", "alternate");
+    link.setAttribute("hreflang", hrefLang);
+    document.head.appendChild(link);
+  }
+  return link;
+}
+
 export default function SeoManager() {
   const location = useLocation();
+  const { locale } = useLocale();
 
   useEffect(() => {
     if (typeof document === "undefined") return;
 
     const origin =
       typeof window !== "undefined" ? window.location.origin : "";
-    const meta = buildPageMeta(location.pathname, origin);
+    const meta = buildPageMeta(location.pathname, origin, locale);
 
     document.title = meta.title || SITE_TITLE;
 
@@ -74,7 +89,10 @@ export default function SeoManager() {
     );
 
     ensureCanonical().setAttribute("href", meta.canonical);
-  }, [location.pathname]);
+    Object.entries(meta.alternates || {}).forEach(([hrefLang, href]) => {
+      ensureAlternate(hrefLang).setAttribute("href", href);
+    });
+  }, [location.pathname, locale]);
 
   return null;
 }

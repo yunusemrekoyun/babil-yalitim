@@ -2,12 +2,14 @@ import img1 from "../../assets/about.png";
 import { Users, CheckCircle, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import {
-  ABOUT_HOME_TEXT,
-  ABOUT_SECTION_TITLE,
-} from "../../content/aboutContent";
+import { getAboutContent } from "../../content/aboutContent";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
+import { localizePath } from "../../i18n/routing.js";
 
 const About = () => {
+  const { locale } = useLocale();
+  const content = getAboutContent(locale);
+
   return (
     <section className="relative w-full text-white py-16 md:py-20 px-4 md:px-6">
       {/* soft blobs */}
@@ -46,13 +48,13 @@ const About = () => {
           >
             <header>
               <h2 className="text-2xl md:text-3xl font-extrabold">
-                {ABOUT_SECTION_TITLE}
+                {content.sectionTitle}
               </h2>
               <div className="mt-3 h-1 w-24 bg-quaternaryColor rounded-full" />
             </header>
 
             <p className="mt-5 whitespace-pre-line text-gray-100/90 leading-relaxed">
-              {ABOUT_HOME_TEXT}
+              {content.homeText}
             </p>
 
             {/* Sayısal Bilgiler */}
@@ -61,7 +63,9 @@ const About = () => {
                 <Users className="text-buzbeyaz w-5 h-5" />
                 <div>
                   <div className="text-lg font-bold text-buzbeyaz">250+</div>
-                  <div className="text-xs text-buzbeyaz/90">Korunan Yapı</div>
+                  <div className="text-xs text-buzbeyaz/90">
+                    {content.homeStats[0].label}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-3 rounded-xl bg-white/10 border border-white/20 px-4 py-3">
@@ -69,7 +73,7 @@ const About = () => {
                 <div>
                   <div className="text-lg font-bold text-buzbeyaz">17+</div>
                   <div className="text-xs text-buzbeyaz/90">
-                    Yıllık Deneyim
+                    {content.homeStats[1].label}
                   </div>
                 </div>
               </div>
@@ -85,12 +89,12 @@ const About = () => {
                 whileHover={{ scale: 1.05 }}
               >
                 <Link
-                  to="/about"
+                  to={localizePath("/about", locale)}
                   className="inline-flex items-center gap-2 text-sm text-white bg-quaternaryColor 
                px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg 
                hover:bg-white/20 transition-all duration-300"
                 >
-                  Daha Fazlasını Keşfedin
+                  {content.cta}
                   <ChevronRight size={16} />
                 </Link>
               </motion.div>

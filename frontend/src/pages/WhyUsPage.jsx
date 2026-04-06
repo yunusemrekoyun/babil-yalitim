@@ -11,46 +11,20 @@ import {
   Timer,
   PhoneCall,
 } from "lucide-react";
-
-const steps = [
-  {
-    icon: PhoneCall,
-    title: "İlk İletişim",
-    desc: "İhtiyacı dinleriz, hızlı ön analiz yaparız.",
-  },
-  {
-    icon: ClipboardCheck,
-    title: "Keşif & Teklif",
-    desc: "Yerinde keşif, net kapsam ve takvim.",
-  },
-  {
-    icon: Wrench,
-    title: "Uygulama",
-    desc: "Doğru detay çözümü, doğru malzeme.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Teslim & Garanti",
-    desc: "Testler, rapor ve garanti prosedürü.",
-  },
-];
-
-const faqs = [
-  {
-    q: "Keşif ücretsiz mi?",
-    a: "Evet. Bölgeye göre planlayıp ücretsiz keşif yapıyoruz.",
-  },
-  {
-    q: "Garanti veriyor musunuz?",
-    a: "Uygulama tipine göre yazılı garanti sağlıyoruz.",
-  },
-  {
-    q: "Hangi ürünlerle çalışıyorsunuz?",
-    a: "Sektörün önde gelen markalarının onaylı sistemleri.",
-  },
-];
+import { useLocale } from "../i18n/LocaleContext.jsx";
+import { getWhyUsContent } from "../content/whyUsContent";
+import { localizePath } from "../i18n/routing.js";
 
 const WhyUsPage = () => {
+  const { locale } = useLocale();
+  const content = getWhyUsContent(locale).page;
+  const steps = [
+    { icon: PhoneCall, ...content.steps[0] },
+    { icon: ClipboardCheck, ...content.steps[1] },
+    { icon: Wrench, ...content.steps[2] },
+    { icon: ShieldCheck, ...content.steps[3] },
+  ];
+
   return (
     <>
       <motion.div
@@ -66,8 +40,8 @@ const WhyUsPage = () => {
         <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6">
           <Breadcrumb
             items={[
-              { label: "Ana Sayfa", path: "/" },
-              { label: "Neden Babil?" },
+              { label: locale === "en" ? "Home" : "Ana Sayfa", path: "/" },
+              { label: content.breadcrumbCurrent },
             ]}
           />
         </div>
@@ -80,7 +54,9 @@ const WhyUsPage = () => {
               animate={{ opacity: 1, y: 0 }}
               className="text-3xl md:text-5xl font-extrabold text-secondaryColor text-center"
             >
-              Neden <span className="text-quaternaryColor">Babil</span>?
+              {content.titlePrefix}{" "}
+              <span className="text-quaternaryColor">{content.titleHighlight}</span>
+              {content.titleSuffix}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 10 }}
@@ -88,8 +64,7 @@ const WhyUsPage = () => {
               transition={{ delay: 0.1 }}
               className="mt-4 text-center text-gray-600 max-w-2xl mx-auto"
             >
-              Doğru çözüm = doğru keşif + doğru detay + doğru uygulama. Bunu
-              disiplinle sağlıyoruz.
+              {content.lead}
             </motion.p>
             <motion.div
               initial={{ scaleX: 0 }}
@@ -106,18 +81,18 @@ const WhyUsPage = () => {
             {[
               {
                 icon: CheckCircle2,
-                t: "Sistem Yaklaşımı",
-                d: "Ürün değil, sistem teklif ederiz; uzun ömürlü performans.",
+                t: content.valueCards[0].title,
+                d: content.valueCards[0].desc,
               },
               {
                 icon: Timer,
-                t: "Zamanında Teslim",
-                d: "Şantiye takvimlerine uyumlu, sürprizsiz yürütme.",
+                t: content.valueCards[1].title,
+                d: content.valueCards[1].desc,
               },
               {
                 icon: ShieldCheck,
-                t: "Belgelendirme & Garanti",
-                d: "Teslim öncesi testler, rapor ve yazılı garanti.",
+                t: content.valueCards[2].title,
+                d: content.valueCards[2].desc,
               },
             ].map(({ icon: Icon, t, d }) => (
               <div
@@ -139,7 +114,7 @@ const WhyUsPage = () => {
         {/* Süreç adımları */}
         <section className="max-w-7xl mx-auto px-4 md:px-8 py-10">
           <h2 className="text-2xl md:text-3xl font-bold text-secondaryColor text-center">
-            Çalışma Sürecimiz
+            {content.processTitle}
           </h2>
           <div className="h-1 w-20 bg-quaternaryColor/90 rounded-full mx-auto mt-3 mb-8" />
           <div className="grid gap-6 md:grid-cols-4">
@@ -162,8 +137,7 @@ const WhyUsPage = () => {
         <section className="max-w-7xl mx-auto px-4 md:px-8 pb-10">
           <div className="rounded-3xl border border-white/30 bg-white/30 backdrop-blur-xl p-6 md:p-8 text-center shadow">
             <p className="text-sm md:text-base text-gray-700">
-              Onaylı sistemlerle çalışıyoruz; detay çözümünde üretici teknik
-              föyleri esas alınır.
+              {content.ribbon}
             </p>
           </div>
         </section>
@@ -171,11 +145,11 @@ const WhyUsPage = () => {
         {/* SSS */}
         <section className="max-w-4xl mx-auto px-4 md:px-8 pb-14">
           <h3 className="text-xl md:text-2xl font-bold text-secondaryColor text-center">
-            Sık Sorulanlar
+            {content.faqTitle}
           </h3>
           <div className="h-1 w-16 bg-quaternaryColor/90 rounded-full mx-auto mt-3 mb-6" />
           <div className="space-y-3">
-            {faqs.map(({ q, a }) => (
+            {content.faqs.map(({ q, a }) => (
               <details
                 key={q}
                 className="rounded-xl border border-white/40 bg-white/50 backdrop-blur-xl p-4 shadow"
@@ -195,17 +169,17 @@ const WhyUsPage = () => {
             <div className="rounded-2xl border border-white/40 bg-quaternaryColor/90 text-white p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 shadow">
               <div>
                 <h4 className="text-lg md:text-xl font-semibold">
-                  Projeniz için keşif talep edin
+                  {content.ctaTitle}
                 </h4>
                 <p className="text-white/90 text-sm">
-                  Kısa bir ön görüşme ile aynı gün randevu planlayalım.
+                  {content.ctaDescription}
                 </p>
               </div>
               <Link
-                to="/iletisim"
+                to={localizePath("/iletisim", locale)}
                 className="inline-flex items-center rounded-full bg-white text-quaternaryColor px-5 py-2 font-semibold hover:bg-white/90"
               >
-                İletişime Geç
+                {content.ctaButton}
               </Link>
             </div>
           </div>

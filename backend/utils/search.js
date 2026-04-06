@@ -1,5 +1,9 @@
 const { normalizeWhitespace, stripHtmlToText } = require("./text");
 
+function resolveSearchLocale(locale = "tr") {
+  return locale === "en" ? "en-US" : "tr-TR";
+}
+
 function escapeRegex(input = "") {
   return String(input || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -8,22 +12,24 @@ function normalizeSearchQuery(input = "") {
   return normalizeWhitespace(String(input || ""));
 }
 
-function tokenizeSearchQuery(input = "") {
-  const query = normalizeSearchQuery(input).toLocaleLowerCase("tr-TR");
+function tokenizeSearchQuery(input = "", locale = "tr") {
+  const query = normalizeSearchQuery(input).toLocaleLowerCase(
+    resolveSearchLocale(locale)
+  );
   if (!query) return [];
 
   return [...new Set(query.match(/[\p{L}\p{N}]{2,}/gu) || [])];
 }
 
-function buildSearchRegex(input = "") {
-  const tokens = tokenizeSearchQuery(input);
+function buildSearchRegex(input = "", locale = "tr") {
+  const tokens = tokenizeSearchQuery(input, locale);
   if (!tokens.length) return null;
   const pattern = tokens.map(escapeRegex).join(".*");
   return new RegExp(pattern, "i");
 }
 
-function buildMongoTokenQuery(fields = [], input = "") {
-  const tokens = tokenizeSearchQuery(input);
+function buildMongoTokenQuery(fields = [], input = "", locale = "tr") {
+  const tokens = tokenizeSearchQuery(input, locale);
   if (!tokens.length || !fields.length) return null;
 
   return {
@@ -36,21 +42,24 @@ function buildMongoTokenQuery(fields = [], input = "") {
   };
 }
 
-function normalizeSearchText(value = "") {
+function normalizeSearchText(value = "", locale = "tr") {
   if (Array.isArray(value)) {
     return normalizeWhitespace(
-      value.map((item) => normalizeSearchText(item)).filter(Boolean).join(" ")
-    ).toLocaleLowerCase("tr-TR");
+      value
+        .map((item) => normalizeSearchText(item, locale))
+        .filter(Boolean)
+        .join(" ")
+    ).toLocaleLowerCase(resolveSearchLocale(locale));
   }
 
   if (value == null) return "";
 
   const raw = typeof value === "string" ? stripHtmlToText(value) : String(value);
-  return normalizeWhitespace(raw).toLocaleLowerCase("tr-TR");
+  return normalizeWhitespace(raw).toLocaleLowerCase(resolveSearchLocale(locale));
 }
 
-function scoreFieldValue(value, query, tokens, weight = 1) {
-  const text = normalizeSearchText(value);
+function scoreFieldValue(value, query, tokens, weight = 1, locale = "tr") {
+  const text = normalizeSearchText(value, locale);
   if (!text) return 0;
 
   const words = text.match(/[\p{L}\p{N}]{2,}/gu) || [];
@@ -86,9 +95,11 @@ function scoreFieldValue(value, query, tokens, weight = 1) {
   return Math.round(score);
 }
 
-function scoreSearchDocument(fieldConfigs = [], input = "") {
-  const query = normalizeSearchQuery(input).toLocaleLowerCase("tr-TR");
-  const tokens = tokenizeSearchQuery(query);
+function scoreSearchDocument(fieldConfigs = [], input = "", locale = "tr") {
+  const query = normalizeSearchQuery(input).toLocaleLowerCase(
+    resolveSearchLocale(locale)
+  );
+  const tokens = tokenizeSearchQuery(query, locale);
 
   if (!tokens.length) {
     return { score: 0, matchedFields: [] };
@@ -98,7 +109,7 @@ function scoreSearchDocument(fieldConfigs = [], input = "") {
   let score = 0;
 
   fieldConfigs.forEach(({ value, weight = 1, label }) => {
-    const fieldScore = scoreFieldValue(value, query, tokens, weight);
+    const fieldScore = scoreFieldValue(value, query, tokens, weight, locale);
     if (fieldScore > 0) {
       score += fieldScore;
       if (label) matchedFields.push(label);
@@ -111,13 +122,15 @@ function scoreSearchDocument(fieldConfigs = [], input = "") {
   };
 }
 
-function buildExcerpt(value = "", input = "", maxLength = 180) {
+function buildExcerpt(value = "", input = "", maxLength = 180, locale = "tr") {
   const plain = normalizeWhitespace(stripHtmlToText(value));
   if (!plain) return "";
 
-  const query = normalizeSearchQuery(input).toLocaleLowerCase("tr-TR");
-  const tokens = tokenizeSearchQuery(query);
-  const lower = plain.toLocaleLowerCase("tr-TR");
+  const query = normalizeSearchQuery(input).toLocaleLowerCase(
+    resolveSearchLocale(locale)
+  );
+  const tokens = tokenizeSearchQuery(query, locale);
+  const lower = plain.toLocaleLowerCase(resolveSearchLocale(locale));
 
   let matchIndex = query ? lower.indexOf(query) : -1;
   if (matchIndex === -1) {
@@ -141,6 +154,7 @@ function buildExcerpt(value = "", input = "", maxLength = 180) {
 }
 
 module.exports = {
+  resolveSearchLocale,
   escapeRegex,
   normalizeSearchQuery,
   tokenizeSearchQuery,

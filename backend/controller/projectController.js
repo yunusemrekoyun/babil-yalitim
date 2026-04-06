@@ -22,6 +22,52 @@ const destroyIfExists = async (media) => mediaStorage.destroy(media);
 const parseBoolean = (value) =>
   /^(1|true|yes|on)$/i.test(String(value || "").trim());
 
+const normalizeLocale = (value = "tr") =>
+  String(value || "tr").toLowerCase().startsWith("en") ? "en" : "tr";
+
+const hasEnglishTranslation = (project) => {
+  const en = project?.translations?.en;
+  if (!en) return false;
+
+  return Boolean(
+    String(en.title || "").trim() ||
+      String(en.description || "").trim() ||
+      String(en.category || "").trim()
+  );
+};
+
+const getLocalizedField = (baseValue, translatedValue) =>
+  String(translatedValue || "").trim() ? translatedValue : baseValue;
+
+const serializePublicProject = (project, locale) => {
+  const normalizedLocale = normalizeLocale(locale);
+  const en = normalizedLocale === "en" ? project?.translations?.en || {} : {};
+
+  return {
+    _id: project._id,
+    title: getLocalizedField(project.title, en.title),
+    displayOrder: project.displayOrder,
+    description: getLocalizedField(project.description, en.description),
+    category: getLocalizedField(project.category, en.category),
+    cover: project.cover,
+    video: project.video,
+    images: project.images,
+    startDate: project.startDate,
+    endDate: project.endDate,
+    completedAt: project.completedAt,
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt,
+    durationDays: project.durationDays,
+    hasEnglishTranslation: hasEnglishTranslation(project),
+  };
+};
+
+const buildEnglishTranslationPayload = (payload = {}) => ({
+  title: String(payload.title || "").trim(),
+  description: String(payload.description || "").trim(),
+  category: String(payload.category || "").trim(),
+});
+
 // Tarih parse helper
 const parseDate = (v) => {
   if (v === undefined || v === null) return undefined;
@@ -33,9 +79,10 @@ const parseDate = (v) => {
 /* ---------- GET ---------- */
 exports.getProjects = async (req, res) => {
   try {
+    const locale = normalizeLocale(req.query.locale);
     await syncCollectionDisplayOrder(Project);
     const items = await Project.find().sort({ displayOrder: 1, createdAt: 1, _id: 1 });
-    res.json(items);
+    res.json(items.map((item) => serializePublicProject(item, locale)));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -43,11 +90,67 @@ exports.getProjects = async (req, res) => {
 
 exports.getProjectById = async (req, res) => {
   try {
+    const locale = normalizeLocale(req.query.locale);
     const item = await Project.findById(req.params.id);
     if (!item) return res.status(404).json({ message: "Proje bulunamadı" });
-    res.json(item);
+    res.json(serializePublicProject(item, locale));
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getProjectTranslations = async (req, res) => {
+  try {
+    const item = await Project.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: "Proje bulunamadı" });
+
+    res.json({
+      _id: item._id,
+      source: {
+        title: item.title,
+        description: item.description || "",
+        category: item.category || "",
+      },
+      translations: {
+        en: {
+          title: item.translations?.en?.title || "",
+          description: item.translations?.en?.description || "",
+          category: item.translations?.en?.category || "",
+        },
+      },
+      hasEnglishTranslation: hasEnglishTranslation(item),
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: "Proje çevirileri alınamadı",
+      error: err.message,
+    });
+  }
+};
+
+exports.updateProjectTranslations = async (req, res) => {
+  try {
+    const item = await Project.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: "Proje bulunamadı" });
+
+    item.translations = item.translations || {};
+    item.translations.en = buildEnglishTranslationPayload(req.body);
+    item.markModified("translations");
+
+    await item.save();
+
+    res.json({
+      message: "İngilizce proje çevirisi kaydedildi.",
+      hasEnglishTranslation: hasEnglishTranslation(item),
+      translations: {
+        en: item.translations.en,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: "Proje çevirisi kaydedilemedi",
+      error: err.message,
+    });
   }
 };
 
@@ -228,6 +331,7 @@ exports.updateProject = async (req, res) => {
 
 exports.getProjectCovers = async (req, res) => {
   try {
+    const locale = normalizeLocale(req.query.locale);
     await syncCollectionDisplayOrder(Project);
     // Sadece gerekli alanları çek (performans)
     const items = await Project.find(
@@ -236,6 +340,7 @@ exports.getProjectCovers = async (req, res) => {
         _id: 1,
         title: 1,
         displayOrder: 1,
+        "translations.en.title": 1,
         // cover detayları
         "cover.url": 1,
         "cover.resourceType": 1,
@@ -278,9 +383,13 @@ exports.getProjectCovers = async (req, res) => {
 
       return {
         _id: p._id,
-        title: p.title,
+        title:
+          locale === "en"
+            ? getLocalizedField(p.title, p?.translations?.en?.title)
+            : p.title,
         displayOrder: p.displayOrder,
         mobileCoverUrl, // <-- sadece mobilde bunu kullanacağız
+        hasEnglishTranslation: hasEnglishTranslation(p),
       };
     });
 

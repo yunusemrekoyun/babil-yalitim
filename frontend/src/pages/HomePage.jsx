@@ -18,8 +18,10 @@ import {
   normalizeSiteSettings,
 } from "../utils/siteSettings";
 import { fetchServicesCached } from "../utils/servicesCache";
+import { useLocale } from "../i18n/LocaleContext";
 
 export default function HomePage() {
+  const { locale } = useLocale();
   const { isMobile, sectionRootMargin } = usePerformanceProfile();
   const [siteSettings, setSiteSettings] = useState(DEFAULT_SITE_SETTINGS);
 
@@ -46,7 +48,7 @@ export default function HomePage() {
     let timerId = 0;
 
     const preload = () => {
-      fetchServicesCached().catch((error) => {
+      fetchServicesCached({ locale }).catch((error) => {
         if (!cancelled) {
           console.error("[HomePage] preload /services error:", error);
         }
@@ -77,7 +79,7 @@ export default function HomePage() {
       cancelled = true;
       window.clearTimeout(timerId);
     };
-  }, [isMobile]);
+  }, [isMobile, locale]);
 
   const sections = useMemo(
     () => [

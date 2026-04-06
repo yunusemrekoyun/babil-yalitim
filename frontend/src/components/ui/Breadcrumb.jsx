@@ -2,6 +2,8 @@ import PropTypes from "prop-types";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronRight, Home } from "lucide-react";
 import { useMemo } from "react";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
+import { localizePath, stripLocalePrefix } from "../../i18n/routing.js";
 
 /** slug -> Başlık */
 const pretty = (s = "") =>
@@ -12,14 +14,14 @@ const pretty = (s = "") =>
     .replace(/^./, (c) => c.toUpperCase());
 
 /** JSON-LD üret */
-const toJsonLd = (items) => ({
+const toJsonLd = (items, locale) => ({
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: items.map((it, i) => ({
     "@type": "ListItem",
     position: i + 1,
     name: it.label,
-    item: it.href || undefined,
+    item: it.href ? localizePath(it.href, locale) : undefined,
   })),
 });
 
@@ -33,15 +35,21 @@ const Breadcrumb = ({
   nonLinkLabels = [], // 👈 Bu listedeki etiketler link OLMAYACAK
 }) => {
   const location = useLocation();
+  const { locale } = useLocale();
 
   // items verilmişse onu, verilmemişse URL segmentlerinden hesapla
   const computed = useMemo(() => {
     if (Array.isArray(items) && items.length) {
       // normalize: {label, href} bekleniyor
-      return items.map((it) => ({ label: it.label, href: it.href }));
+      return items.map((it) => ({
+        label: it.label,
+        href: it.href || it.path,
+      }));
     }
 
-    const segs = location.pathname.replace(/^\/+|\/+$/g, "").split("/");
+    const segs = stripLocalePrefix(location.pathname)
+      .replace(/^\/+|\/+$/g, "")
+      .split("/");
     if (segs.length === 1 && segs[0] === "") return [];
 
     let acc = "";
@@ -60,17 +68,19 @@ const Breadcrumb = ({
 
   // Başta home varsa tekrar ekleme; yoksa ekle
   const withHome = useMemo(() => {
-    const home = { label: homeLabel || "Anasayfa", href: "/" };
+    const defaultHomeLabel = locale === "en" ? "Home" : "Anasayfa";
+    const resolvedHomeLabel = homeLabel || defaultHomeLabel;
+    const home = { label: resolvedHomeLabel, href: localizePath("/", locale) };
     if (
       computed.length > 0 &&
-      (computed[0].href === "/" ||
+      (computed[0].href === localizePath("/", locale) ||
         computed[0].label.toLowerCase() ===
-          (homeLabel || "Anasayfa").toLowerCase())
+          resolvedHomeLabel.toLowerCase())
     ) {
       return computed;
     }
     return [home, ...computed];
-  }, [computed, homeLabel]);
+  }, [computed, homeLabel, locale]);
 
   const Sep = separator || (
     <ChevronRight className="mx-2 h-4 w-4 text-gray-400 shrink-0" />
@@ -80,7 +90,7 @@ const Breadcrumb = ({
     <nav aria-label="breadcrumbs" className={className || "w-full"}>
       {/* JSON-LD */}
       <script type="application/ld+json">
-        {JSON.stringify(toJsonLd(withHome))}
+        {JSON.stringify(toJsonLd(withHome, locale))}
       </script>
 
       <ol className="flex items-center gap-0 text-sm text-gray-600 overflow-x-auto no-scrollbar">
@@ -88,11 +98,12 @@ const Breadcrumb = ({
           const isLast = i === withHome.length - 1;
           const disableThis = isLast || nonLinkLabels.includes(it.label);
           const Cmp = it.href && !disableThis ? Link : "span";
+          const resolvedHref = it.href ? localizePath(it.href, locale) : undefined;
 
           return (
             <li key={`${it.label}-${i}`} className="flex items-center shrink-0">
               <Cmp
-                {...(Cmp === Link ? { to: it.href } : {})}
+                {...(Cmp === Link ? { to: resolvedHref } : {})}
                 className={
                   "inline-flex items-center gap-1 max-w-[44vw] sm:max-w-none " +
                   (disableThis

@@ -7,29 +7,10 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-
-const FEATURES = [
-  {
-    icon: CheckCircle,
-    title: "Kaliteli Hizmet",
-    desc: "Uzun ömürlü, garantili ve ölçülebilir performans.",
-  },
-  {
-    icon: Users,
-    title: "Uzman Kadro",
-    desc: "Saha deneyimi yüksek, sertifikalı uygulama ekipleri.",
-  },
-  {
-    icon: Search,
-    title: "Ücretsiz Keşif",
-    desc: "Yerinde inceleme + net fiyat ve takvim planı.",
-  },
-  {
-    icon: Headphones,
-    title: "7/24 Destek",
-    desc: "Uygulama sonrası bakım ve danışmanlık.",
-  },
-];
+import { Link } from "react-router-dom";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
+import { getWhyUsContent } from "../../content/whyUsContent";
+import { localizePath } from "../../i18n/routing.js";
 
 const container = {
   hidden: { opacity: 0, y: 12 },
@@ -46,9 +27,17 @@ const item = {
 };
 
 const WhyUs = () => {
+  const { locale } = useLocale();
+  const content = getWhyUsContent(locale).home;
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 640 : true
   );
+  const FEATURES = [
+    { icon: CheckCircle, ...content.features[0] },
+    { icon: Users, ...content.features[1] },
+    { icon: Search, ...content.features[2] },
+    { icon: Headphones, ...content.features[3] },
+  ];
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 640);
@@ -62,12 +51,13 @@ const WhyUs = () => {
         {/* Başlık */}
         <div className="text-center mb-10 md:mb-12">
           <h2 className="text-3xl md:text-4xl font-extrabold text-secondaryColor">
-            Neden <span className="text-quaternaryColor">Babil</span> Yalıtım?
+            {content.titlePrefix}{" "}
+            <span className="text-quaternaryColor">{content.titleHighlight}</span>{" "}
+            {content.titleSuffix}
           </h2>
           <div className="h-1 w-24 bg-quaternaryColor/90 rounded-full mx-auto mt-4" />
           <p className="mt-4 text-sm md:text-base text-white/90 max-w-3xl mx-auto">
-            10+ yıllık deneyim, doğru malzeme ve doğru uygulamayla değer
-            üretiyoruz.
+            {content.description}
           </p>
         </div>
 
@@ -125,14 +115,14 @@ const WhyUs = () => {
         {/* CTA */}
         {isMobile ? (
           <div className="mt-8 md:mt-10 flex justify-center">
-            <a
-              href="/whyus"
+            <Link
+              to={localizePath("/whyus", locale)}
               className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
                          px-4 py-2 rounded-full"
             >
-              Daha fazlası
+              {content.cta}
               <ChevronRight size={16} />
-            </a>
+            </Link>
           </div>
         ) : (
           <motion.div
@@ -143,15 +133,15 @@ const WhyUs = () => {
             whileHover={{ scale: 1.05 }}
             className="mt-8 md:mt-10 flex justify-center"
           >
-            <a
-              href="/whyus"
+            <Link
+              to={localizePath("/whyus", locale)}
               className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
                          px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg 
                          hover:bg-white/20 transition-all duration-300"
             >
-              Daha fazlası
+              {content.cta}
               <ChevronRight size={16} />
-            </a>
+            </Link>
           </motion.div>
         )}
       </div>

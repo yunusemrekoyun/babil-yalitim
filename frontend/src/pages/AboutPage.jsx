@@ -4,12 +4,13 @@ import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
 import AboutPageComponent from "../components/About/AboutPageComponent";
 import Breadcrumb from "../components/ui/Breadcrumb"; // yeni ekleme
-import {
-  ABOUT_PAGE_LEAD,
-  ABOUT_SECTION_TITLE,
-} from "../content/aboutContent";
+import { getAboutContent } from "../content/aboutContent";
+import { useLocale } from "../i18n/LocaleContext.jsx";
 
 const AboutPage = () => {
+  const { locale } = useLocale();
+  const content = getAboutContent(locale);
+
   return (
     <>
       <motion.div
@@ -23,18 +24,18 @@ const AboutPage = () => {
 
         {/* Breadcrumb */}
         <div className="max-w-7xl mx-auto px-6 md:px-10 pt-6">
-          <Breadcrumb titleMap={{ about: "Hakkımızda" }} />
+          <Breadcrumb titleMap={{ about: locale === "en" ? "About" : "Hakkımızda" }} />
         </div>
 
         {/* Hero / ortak başlık şeridi */}
         <header className="relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-6 md:px-10 pt-8 md:pt-12 pb-4">
             <h1 className="text-3xl md:text-5xl font-extrabold text-secondaryColor tracking-tight text-center">
-              {ABOUT_SECTION_TITLE}
+              {content.sectionTitle}
             </h1>
             <div className="h-1 w-24 bg-quaternaryColor/90 rounded-full mt-4 mx-auto" />
             <p className="mt-6 text-gray-700 max-w-2xl mx-auto text-center">
-              {ABOUT_PAGE_LEAD}
+              {content.pageLead}
             </p>
           </div>
         </header>

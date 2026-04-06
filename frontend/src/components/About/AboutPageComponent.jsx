@@ -13,25 +13,9 @@ import {
 import img1 from "../../assets/1.jpg";
 import img2 from "../../assets/2.jpg";
 import img3 from "../../assets/3.jpg";
-import { ABOUT_PAGE_SECTIONS } from "../../content/aboutContent";
-
-const sections = [
-  {
-    title: ABOUT_PAGE_SECTIONS[0].title,
-    text: ABOUT_PAGE_SECTIONS[0].text,
-    img: img1,
-  },
-  {
-    title: ABOUT_PAGE_SECTIONS[1].title,
-    text: ABOUT_PAGE_SECTIONS[1].text,
-    img: img2,
-  },
-  {
-    title: ABOUT_PAGE_SECTIONS[2].title,
-    text: ABOUT_PAGE_SECTIONS[2].text,
-    img: img3,
-  },
-];
+import { getAboutContent } from "../../content/aboutContent";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
+import { localizePath } from "../../i18n/routing.js";
 
 const cardFx = {
   hidden: { opacity: 0, y: 18 },
@@ -39,6 +23,47 @@ const cardFx = {
 };
 
 const AboutPageComponent = () => {
+  const { locale } = useLocale();
+  const content = getAboutContent(locale);
+  const stats = [
+    {
+      label: content.stats[0].label,
+      value: content.stats[0].value,
+      icon: <Briefcase className="w-6 h-6" />,
+    },
+    {
+      label: content.stats[1].label,
+      value: content.stats[1].value,
+      icon: <CheckCircle className="w-6 h-6" />,
+    },
+    {
+      label: content.stats[2].label,
+      value: content.stats[2].value,
+      icon: <Smile className="w-6 h-6" />,
+    },
+    {
+      label: content.stats[3].label,
+      value: content.stats[3].value,
+      icon: <PhoneCall className="w-6 h-6" />,
+    },
+  ];
+  const sections = [
+    {
+      title: content.pageSections[0].title,
+      text: content.pageSections[0].text,
+      img: img1,
+    },
+    {
+      title: content.pageSections[1].title,
+      text: content.pageSections[1].text,
+      img: img2,
+    },
+    {
+      title: content.pageSections[2].title,
+      text: content.pageSections[2].text,
+      img: img3,
+    },
+  ];
   const [index, setIndex] = useState(0);
   const navigate = useNavigate();
 
@@ -96,10 +121,10 @@ const AboutPageComponent = () => {
               {/* CTA */}
               <div className="pt-2">
                 <button
-                  onClick={() => navigate("/projects")}
+                  onClick={() => navigate(localizePath("/projects", locale))}
                   className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm text-white bg-quaternaryColor hover:bg-opacity-90 transition-shadow hover:shadow-lg"
                 >
-                  Projeleri Gör
+                  {content.projectsCta}
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -123,14 +148,14 @@ const AboutPageComponent = () => {
             <button
               onClick={prev}
               className="inline-flex items-center justify-center rounded-full bg-white border px-3 py-2 hover:bg-gray-50"
-              aria-label="Önceki"
+              aria-label={content.previous}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={next}
               className="inline-flex items-center justify-center rounded-full bg-white border px-3 py-2 hover:bg-gray-50"
-              aria-label="Sonraki"
+              aria-label={content.next}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -146,28 +171,7 @@ const AboutPageComponent = () => {
         transition={{ delay: 0.05 }}
         className="grid grid-cols-2 md:grid-cols-4 gap-6"
       >
-        {[
-          {
-            label: "Yıllık Deneyim",
-            value: "17+",
-            icon: <Briefcase className="w-6 h-6" />,
-          },
-          {
-            label: "Tamamlanan Proje",
-            value: "250+",
-            icon: <CheckCircle className="w-6 h-6" />,
-          },
-          {
-            label: "Resmi Distribütörlük",
-            value: "10+ Marka",
-            icon: <Smile className="w-6 h-6" />,
-          },
-          {
-            label: "7/24 Destek",
-            value: "Evet",
-            icon: <PhoneCall className="w-6 h-6" />,
-          },
-        ].map((stat) => (
+        {stats.map((stat) => (
           <div
             key={stat.label}
             className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/40 p-6 text-center shadow-sm hover:shadow-md transition"

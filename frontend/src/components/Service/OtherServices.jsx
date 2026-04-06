@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import OtherServiceItem from "./OtherServiceItem";
 import { motion } from "framer-motion";
 import { fetchServicesCached } from "../../utils/servicesCache";
+import { useLocale } from "../../i18n/LocaleContext";
 
 const OtherServices = ({ currentId, services: servicesProp = null, loading = false }) => {
+  const { locale } = useLocale();
   const [services, setServices] = useState([]);
 
   useEffect(() => {
@@ -15,14 +17,14 @@ const OtherServices = ({ currentId, services: servicesProp = null, loading = fal
 
     (async () => {
       try {
-        const list = await fetchServicesCached();
+        const list = await fetchServicesCached({ locale });
         setServices(list.filter((s) => s._id !== currentId));
       } catch (e) {
         console.error("GET /services (other) error:", e?.response?.data || e);
         setServices([]);
       }
     })();
-  }, [currentId, servicesProp]);
+  }, [currentId, locale, servicesProp]);
 
   return (
     <motion.div
@@ -31,14 +33,20 @@ const OtherServices = ({ currentId, services: servicesProp = null, loading = fal
       transition={{ duration: 0.5 }}
       className="rounded-3xl bg-white/80 backdrop-blur border shadow-sm p-5 sticky top-6"
     >
-      <h3 className="text-lg font-bold text-brandBlue mb-4">Diğer Hizmetler</h3>
+      <h3 className="text-lg font-bold text-brandBlue mb-4">
+        {locale === "en" ? "Other Services" : "Diğer Hizmetler"}
+      </h3>
       <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
         {services.length > 0 ? (
           services.map((s) => <OtherServiceItem key={s._id} service={s} />)
         ) : loading ? (
-          <p className="text-sm text-gray-500">Yükleniyor…</p>
+          <p className="text-sm text-gray-500">
+            {locale === "en" ? "Loading..." : "Yükleniyor…"}
+          </p>
         ) : (
-          <p className="text-sm text-gray-500">Henüz başka hizmet yok.</p>
+          <p className="text-sm text-gray-500">
+            {locale === "en" ? "No other services yet." : "Henüz başka hizmet yok."}
+          </p>
         )}
       </div>
     </motion.div>

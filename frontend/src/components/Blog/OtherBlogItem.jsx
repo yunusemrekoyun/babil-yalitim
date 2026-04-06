@@ -3,6 +3,8 @@ import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { PlayCircle } from "lucide-react";
 import { getVideoPosterUrl, looksVideo } from "../../utils/media";
+import { useLocale } from "../../i18n/LocaleContext";
+import { localizePath } from "../../i18n/routing.js";
 
 const thumbFrom = (blog) => {
   const cover = blog?.cover?.url || "";
@@ -29,9 +31,10 @@ const thumbFrom = (blog) => {
 };
 
 const OtherBlogItem = ({ blog }) => {
+  const { locale } = useLocale();
   const { media, url, isVideo } = thumbFrom(blog);
   const date = blog?.createdAt
-    ? new Date(blog.createdAt).toLocaleDateString("tr-TR")
+    ? new Date(blog.createdAt).toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR")
     : "";
   const thumbUrl = isVideo
     ? getVideoPosterUrl(media, { width: 320, quality: "auto:good" })
@@ -39,16 +42,16 @@ const OtherBlogItem = ({ blog }) => {
 
   return (
     <Link
-      to={`/blog/${blog._id}`}
+      to={localizePath(`/blog/${blog._id}`, locale)}
       className="group flex gap-3 rounded-xl overflow-hidden border bg-white hover:shadow-md transition
                  focus:outline-none focus-visible:ring-2 focus-visible:ring-quaternaryColor/60"
-      aria-label={`${blog?.title || "Blog"} detayına git`}
+      aria-label={`${blog?.title || "Blog"} ${locale === "en" ? "view details" : "detayına git"}`}
     >
       <div className="relative w-20 h-16 overflow-hidden shrink-0 bg-gray-100">
         {url ? (
           <img
             src={thumbUrl}
-            alt={blog?.title || "kapak"}
+            alt={blog?.title || (locale === "en" ? "cover" : "kapak")}
             loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
@@ -66,7 +69,7 @@ const OtherBlogItem = ({ blog }) => {
 
       <div className="flex-1 py-1.5 pr-2">
         <h4 className="text-sm font-semibold text-gray-800 line-clamp-2">
-          {blog?.title || "Başlık"}
+          {blog?.title || (locale === "en" ? "Title" : "Başlık")}
         </h4>
         <p className="text-[11px] text-gray-500 mt-0.5">{date}</p>
       </div>

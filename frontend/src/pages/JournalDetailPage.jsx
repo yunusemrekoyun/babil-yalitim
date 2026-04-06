@@ -7,18 +7,22 @@ import Breadcrumb from "../components/ui/Breadcrumb";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../api";
+import { useLocale } from "../i18n/LocaleContext";
 
 const JournalDetailPage = () => {
   const { id } = useParams();
+  const { locale } = useLocale();
   const [title, setTitle] = useState("");
 
   useEffect(() => {
     if (!id) return;
     api
-      .get(`/journals/${id}`)
-      .then(({ data }) => setTitle(data?.title || "Detay"))
-      .catch(() => setTitle("Detay"));
-  }, [id]);
+      .get(`/journals/${id}`, {
+        params: { locale },
+      })
+      .then(({ data }) => setTitle(data?.title || (locale === "en" ? "Detail" : "Detay")))
+      .catch(() => setTitle(locale === "en" ? "Detail" : "Detay"));
+  }, [id, locale]);
 
   return (
     <>
@@ -34,10 +38,10 @@ const JournalDetailPage = () => {
         <section className="max-w-7xl mx-auto px-4 md:px-8 pt-8">
           <Breadcrumb
             titleMap={{
-              journals: "Haberler",
+              journals: locale === "en" ? "News" : "Haberler",
               [id]: title,
             }}
-            nonLinkLabels={["Haberler"]} // 👈 "Haberler" tıklanmaz
+            nonLinkLabels={[locale === "en" ? "News" : "Haberler"]}
           />
         </section>
 

@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import api from "../../api";
 import OtherBlogItem from "./OtherBlogItem";
+import { useLocale } from "../../i18n/LocaleContext";
 
 const OtherBlogs = ({ currentId, limit = 6 }) => {
+  const { locale } = useLocale();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,7 +15,9 @@ const OtherBlogs = ({ currentId, limit = 6 }) => {
     (async () => {
       try {
         setLoading(true);
-        const { data } = await api.get("/blogs");
+        const { data } = await api.get("/blogs", {
+          params: { locale },
+        });
         const arr = Array.isArray(data) ? data : [];
         const filtered = arr
           .filter((b) => b?._id !== currentId)
@@ -29,12 +33,12 @@ const OtherBlogs = ({ currentId, limit = 6 }) => {
     return () => {
       cancelled = true;
     };
-  }, [currentId, limit]);
+  }, [currentId, limit, locale]);
 
   return (
     <div className="rounded-3xl bg-white/80 backdrop-blur-xl border border-white/40 shadow-md p-5">
       <h3 className="text-base font-semibold text-secondaryColor mb-4">
-        Diğer Yazılar
+        {locale === "en" ? "Other Posts" : "Diğer Yazılar"}
       </h3>
 
       {loading ? (
@@ -50,7 +54,9 @@ const OtherBlogs = ({ currentId, limit = 6 }) => {
           ))}
         </div>
       ) : list.length === 0 ? (
-        <p className="text-sm text-gray-500">Henüz başka yazı yok.</p>
+        <p className="text-sm text-gray-500">
+          {locale === "en" ? "No other posts yet." : "Henüz başka yazı yok."}
+        </p>
       ) : (
         <div className="space-y-3">
           {list.map((b) => (

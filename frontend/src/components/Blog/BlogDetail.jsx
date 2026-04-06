@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../../api";
+import { localizePath } from "../../i18n/routing.js";
 import {
   Share2,
   Check,
@@ -20,6 +21,7 @@ import {
   looksVideo,
 } from "../../utils/media";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
+import { useLocale } from "../../i18n/LocaleContext";
 
 /* ---------- helpers ---------- */
 const stripHtml = (html) =>
@@ -207,6 +209,7 @@ const Skeleton = () => (
 
 /* ---------- main ---------- */
 const BlogDetail = () => {
+  const { locale } = useLocale();
   const { id } = useParams();
   const navigate = useNavigate();
   const {
@@ -233,14 +236,18 @@ const BlogDetail = () => {
     (async () => {
       try {
         setLoading(true);
-        const res = await api.get(`/blogs/${id}`);
+        const res = await api.get(`/blogs/${id}`, {
+          params: { locale },
+        });
         if (!cancelled) {
           setBlog(res.data || null);
           setErr("");
         }
       } catch (e) {
         console.error("Blog getirilemedi:", e?.response?.data || e);
-        if (!cancelled) setErr("Blog bulunamadı.");
+        if (!cancelled) {
+          setErr(locale === "en" ? "Blog post not found." : "Blog bulunamadı.");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -248,7 +255,7 @@ const BlogDetail = () => {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, locale]);
 
   // progress hesapla
   useEffect(() => {
@@ -275,8 +282,10 @@ const BlogDetail = () => {
 
   const dateText = useMemo(() => {
     const d = blog?.createdAt;
-    return d ? new Date(d).toLocaleDateString("tr-TR") : "";
-  }, [blog]);
+    return d
+      ? new Date(d).toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR")
+      : "";
+  }, [blog, locale]);
 
   const rtime = useMemo(() => readingTime(blog?.content), [blog]);
   const toc = useMemo(() => extractHeadings(blog?.content), [blog]);
@@ -404,7 +413,7 @@ const BlogDetail = () => {
   if (err || !blog) {
     return (
       <div className="text-center py-20 text-red-500 text-lg font-semibold bg-white/50 backdrop-blur-xl rounded-2xl border border-white/40">
-        {err || "Blog bulunamadı."}
+        {err || (locale === "en" ? "Blog post not found." : "Blog bulunamadı.")}
       </div>
     );
   }
@@ -432,7 +441,7 @@ const BlogDetail = () => {
           <div className="relative">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center rounded-full bg-secondaryColor px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
-                Blog Yazisi
+                {locale === "en" ? "Blog Post" : "Blog Yazisi"}
               </span>
               {dateText ? (
                 <span className="rounded-full border border-slate-200/80 bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
@@ -440,7 +449,7 @@ const BlogDetail = () => {
                 </span>
               ) : null}
               <span className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-600">
-                <Clock size={12} /> ~{rtime} dk okuma
+                <Clock size={12} /> ~{rtime} {locale === "en" ? "min read" : "dk okuma"}
               </span>
             </div>
 
@@ -469,13 +478,22 @@ const BlogDetail = () => {
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <InfoPill
-                label="Toplam Medya"
+                label={locale === "en" ? "Total Media" : "Toplam Medya"}
                 value={String(mediaItems.length || 0)}
               />
-              <InfoPill label="Yorum" value={String(commentsCount)} />
               <InfoPill
-                label="İçerik"
-                value={toc.length ? `${toc.length} başlık` : "Serbest akış"}
+                label={locale === "en" ? "Comments" : "Yorum"}
+                value={String(commentsCount)}
+              />
+              <InfoPill
+                label={locale === "en" ? "Content" : "İçerik"}
+                value={
+                  toc.length
+                    ? `${toc.length} ${locale === "en" ? "headings" : "başlık"}`
+                    : locale === "en"
+                    ? "Free flow"
+                    : "Serbest akış"
+                }
               />
             </div>
           </div>
@@ -511,17 +529,19 @@ const BlogDetail = () => {
             <div>
               <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                 <Images size={14} />
-                Blog Galerisi
+                {locale === "en" ? "Blog Gallery" : "Blog Galerisi"}
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-900">
-                Ek medya içerikleri
+                {locale === "en" ? "Additional media" : "Ek medya içerikleri"}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                Yazıya eklenen görsel ve videoları daha rahat inceleyebilirsiniz.
+                {locale === "en"
+                  ? "Browse the images and videos attached to this post more comfortably."
+                  : "Yazıya eklenen görsel ve videoları daha rahat inceleyebilirsiniz."}
               </p>
             </div>
             <p className="text-sm font-medium text-slate-500">
-              {galleryMedia.length} medya
+              {galleryMedia.length} {locale === "en" ? "media" : "medya"}
             </p>
           </div>
 
@@ -581,7 +601,9 @@ const BlogDetail = () => {
                   </p>
                 ))
               ) : (
-                <p className="text-gray-500">İçerik yakında.</p>
+                <p className="text-gray-500">
+                  {locale === "en" ? "Content coming soon." : "İçerik yakında."}
+                </p>
               )}
             </div>
           )}
@@ -589,7 +611,7 @@ const BlogDetail = () => {
 
         {/* Yan panel (sticky) */}
         <div className="space-y-6 xl:sticky xl:top-6">
-          <AsideTools toc={toc} onBack={() => navigate("/blog")} />
+          <AsideTools toc={toc} onBack={() => navigate(localizePath("/blog", locale))} />
           <OtherBlogs currentId={blog._id} limit={6} />
         </div>
       </div>
@@ -619,12 +641,14 @@ const BlogDetail = () => {
         className="mt-8 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/40 shadow-md p-5 md:p-8"
       >
         <h3 className="text-xl font-semibold text-secondaryColor mb-4">
-          Yorumlar
+          {locale === "en" ? "Comments" : "Yorumlar"}
         </h3>
 
         <div className="space-y-4">
           {(blog.comments || []).length === 0 && (
-            <p className="text-gray-500">Henüz yorum yok.</p>
+            <p className="text-gray-500">
+              {locale === "en" ? "No comments yet." : "Henüz yorum yok."}
+            </p>
           )}
           {(blog.comments || []).map((c) => (
             <div
@@ -635,7 +659,9 @@ const BlogDetail = () => {
               <p className="text-sm text-gray-700">{c.body}</p>
               <p className="text-[11px] text-gray-400 mt-1">
                 {c.createdAt
-                  ? new Date(c.createdAt).toLocaleString("tr-TR")
+                  ? new Date(c.createdAt).toLocaleString(
+                      locale === "en" ? "en-GB" : "tr-TR"
+                    )
                   : ""}
               </p>
             </div>
@@ -652,7 +678,10 @@ const BlogDetail = () => {
               await api.post(`/blogs/${id}/comments`, form);
               setCommentStatus({
                 type: "success",
-                text: "Yorum alindi, onay bekliyor.",
+                text:
+                  locale === "en"
+                    ? "Comment received and pending approval."
+                    : "Yorum alindi, onay bekliyor.",
               });
               setForm({ name: "", email: "", body: "" });
             } catch (e2) {
@@ -662,7 +691,7 @@ const BlogDetail = () => {
                 text:
                   e2?.response?.data?.error ||
                   e2?.response?.data?.message ||
-                  "Yorum gonderilemedi.",
+                  (locale === "en" ? "Comment could not be sent." : "Yorum gonderilemedi."),
               });
             } finally {
               setSending(false);
@@ -672,7 +701,7 @@ const BlogDetail = () => {
         >
           <input
             type="text"
-            placeholder="Adınız"
+            placeholder={locale === "en" ? "Your name" : "Adınız"}
             className="rounded-xl border border-gray-200 bg-white/80 px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor"
             value={form.name}
             onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
@@ -680,14 +709,14 @@ const BlogDetail = () => {
           />
           <input
             type="email"
-            placeholder="E-posta"
+            placeholder={locale === "en" ? "Email" : "E-posta"}
             className="rounded-xl border border-gray-200 bg-white/80 px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor"
             value={form.email}
             onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
             required
           />
           <textarea
-            placeholder="Yorumunuz"
+            placeholder={locale === "en" ? "Your comment" : "Yorumunuz"}
             className="md:col-span-2 rounded-xl border border-gray-200 bg-white/80 px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor min-h-[110px]"
             value={form.body}
             onChange={(e) => setForm((s) => ({ ...s, body: e.target.value }))}
@@ -699,7 +728,13 @@ const BlogDetail = () => {
               disabled={sending}
               className="px-5 py-2 rounded-full bg-quaternaryColor text-white hover:bg-quaternaryColor/90 disabled:opacity-60 transition"
             >
-              {sending ? "Gönderiliyor…" : "Yorumu Gönder"}
+              {sending
+                ? locale === "en"
+                  ? "Sending..."
+                  : "Gönderiliyor…"
+                : locale === "en"
+                ? "Send Comment"
+                : "Yorumu Gönder"}
             </button>
           </div>
           {commentStatus && (
@@ -734,6 +769,7 @@ const Lightbox = ({
   onPrev,
   onNext,
 }) => {
+  const { locale } = useLocale();
   const videoRef = useRef(null);
   const [videoReady, setVideoReady] = useState(false);
 
@@ -797,7 +833,7 @@ const Lightbox = ({
                   width: previewWidth,
                   quality: imageQuality,
                 })}
-                alt={cur.caption || "media"}
+                alt={cur.caption || (locale === "en" ? "media" : "medya")}
                 className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-300 ${
                   videoReady ? "opacity-0" : "opacity-100"
                 }`}
@@ -833,6 +869,7 @@ const Lightbox = ({
                 quality: imageQuality,
               })}
               alt={cur.caption || "media"}
+              
               className="absolute inset-0 w-full h-full object-contain"
             />
           )}
@@ -849,9 +886,9 @@ const Lightbox = ({
         <button
           onClick={onClose}
           className="absolute -top-2 -right-2 md:-top-3 md:-right-3 bg-white text-gray-900 rounded-full px-3 py-1.5 shadow hover:shadow-md"
-          aria-label="Kapat"
+          aria-label={locale === "en" ? "Close" : "Kapat"}
         >
-          Kapat
+          {locale === "en" ? "Close" : "Kapat"}
         </button>
 
         {items.length > 1 && (
@@ -859,14 +896,14 @@ const Lightbox = ({
             <button
               onClick={onPrev}
               className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 text-gray-900 rounded-full p-2 shadow hover:bg-white"
-              aria-label="Önceki"
+              aria-label={locale === "en" ? "Previous" : "Önceki"}
             >
               ‹
             </button>
             <button
               onClick={onNext}
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 text-gray-900 rounded-full p-2 shadow hover:bg-white"
-              aria-label="Sonraki"
+              aria-label={locale === "en" ? "Next" : "Sonraki"}
             >
               ›
             </button>
@@ -903,6 +940,7 @@ const MediaThumb = ({
   previewWidth = 900,
   imageQuality = "auto:good",
 }) => {
+  const { locale } = useLocale();
   const isVideo = getMediaType(m) === "video";
   const previewSrc = getMediaPreviewSrc(m, {
     width: className ? Math.max(previewWidth, 1200) : previewWidth,
@@ -913,12 +951,12 @@ const MediaThumb = ({
       type="button"
       onClick={onClick}
       className={`group relative overflow-hidden rounded-[26px] border border-white/50 bg-white/95 shadow-[0_18px_42px_-30px_rgba(15,23,42,0.32)] transition-transform duration-300 hover:-translate-y-0.5 ${className}`}
-      title={m?.caption || (isVideo ? "Video" : "Görsel")}
+      title={m?.caption || (isVideo ? "Video" : locale === "en" ? "Image" : "Görsel")}
     >
       <div className="relative h-full min-h-[180px] w-full overflow-hidden">
         <img
           src={previewSrc}
-          alt={m?.caption || "Medya"}
+          alt={m?.caption || (locale === "en" ? "Media" : "Medya")}
           loading="lazy"
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
@@ -926,12 +964,18 @@ const MediaThumb = ({
         <div className="absolute left-4 top-4">
           <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/45 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur">
             {isVideo ? <PlayCircle size={13} /> : <Images size={13} />}
-            {isVideo ? "Video" : "Görsel"}
+            {isVideo ? "Video" : locale === "en" ? "Image" : "Görsel"}
           </span>
         </div>
         <div className="absolute inset-x-0 bottom-0 p-4 text-left text-white">
           <span className="inline-flex translate-y-2 items-center gap-2 rounded-full border border-white/25 bg-white/12 px-4 py-2 text-xs font-semibold text-white opacity-0 backdrop-blur-sm transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-            {isVideo ? "Videoyu aç" : "Görseli büyüt"}
+            {isVideo
+              ? locale === "en"
+                ? "Open video"
+                : "Videoyu aç"
+              : locale === "en"
+              ? "Enlarge image"
+              : "Görseli büyüt"}
           </span>
           {showCaption && m?.caption ? (
             <p className="mt-3 line-clamp-2 text-sm font-medium text-white/92">
@@ -964,6 +1008,7 @@ const HeroMediaCard = ({
   imageQuality = "auto:good",
   onOpen,
 }) => {
+  const { locale } = useLocale();
   const isVideo = getMediaType(media) === "video";
   const previewSrc = getMediaPreviewSrc(media, {
     width: previewWidth,
@@ -975,7 +1020,15 @@ const HeroMediaCard = ({
       type="button"
       onClick={onOpen}
       className="group relative block w-full overflow-hidden rounded-[32px] border border-white/50 bg-slate-950 text-left shadow-[0_28px_90px_-44px_rgba(15,23,42,0.6)]"
-      title={isVideo ? "Videoyu incele" : "Medyayı büyüt"}
+      title={
+        isVideo
+          ? locale === "en"
+            ? "Inspect video"
+            : "Videoyu incele"
+          : locale === "en"
+          ? "Enlarge media"
+          : "Medyayı büyüt"
+      }
     >
       <div className="relative aspect-[5/4] w-full overflow-hidden md:aspect-[6/5] xl:min-h-[540px] xl:aspect-auto">
         <ProgressiveImg
@@ -990,18 +1043,30 @@ const HeroMediaCard = ({
         <div className="absolute left-5 top-5 flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
             {isVideo ? <PlayCircle size={14} /> : <Images size={14} />}
-            {isVideo ? "Kapak video" : "Kapak görseli"}
+            {isVideo
+              ? locale === "en"
+                ? "Cover video"
+                : "Kapak video"
+              : locale === "en"
+              ? "Cover image"
+              : "Kapak görseli"}
           </span>
           {mediaCount > 1 ? (
             <span className="rounded-full border border-white/20 bg-white/14 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md">
-              +{mediaCount - 1} ek medya
+              +{mediaCount - 1} {locale === "en" ? "more media" : "ek medya"}
             </span>
           ) : null}
         </div>
 
         <div className="absolute inset-x-0 bottom-0 p-5 md:p-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/12 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition duration-300 group-hover:-translate-y-1">
-            {isVideo ? "Videoyu izle" : "Medyayı büyüt"}
+            {isVideo
+              ? locale === "en"
+                ? "Watch video"
+                : "Videoyu izle"
+              : locale === "en"
+              ? "Enlarge media"
+              : "Medyayı büyüt"}
           </div>
           {media?.caption ? (
             <p className="mt-4 max-w-xl text-sm leading-6 text-white/88 md:text-base">
@@ -1041,6 +1106,7 @@ InfoPill.propTypes = {
 
 /* ---------------- Aside Tools ---------------- */
 const AsideTools = ({ toc, onBack }) => {
+  const { locale } = useLocale();
   const [copied, setCopied] = useState(false);
 
   const share = async () => {
@@ -1067,15 +1133,21 @@ const AsideTools = ({ toc, onBack }) => {
             onClick={onBack}
             className="px-3 py-2 text-sm rounded-full border border-secondaryColor text-secondaryColor hover:bg-secondaryColor hover:text-white transition"
           >
-            Tüm Yazılar
+            {locale === "en" ? "All Posts" : "Tüm Yazılar"}
           </button>
           <button
             onClick={share}
             className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-full border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-            title="Bağlantıyı paylaş"
+            title={locale === "en" ? "Share link" : "Bağlantıyı paylaş"}
           >
             {copied ? <Check size={16} /> : <Share2 size={16} />}
-            {copied ? "Kopyalandı" : "Paylaş"}
+            {copied
+              ? locale === "en"
+                ? "Copied"
+                : "Kopyalandı"
+              : locale === "en"
+              ? "Share"
+              : "Paylaş"}
           </button>
         </div>
 
@@ -1083,7 +1155,7 @@ const AsideTools = ({ toc, onBack }) => {
         {toc.length > 0 && (
           <div className="mt-5">
             <p className="text-xs font-semibold text-secondaryColor mb-2">
-              İçindekiler
+              {locale === "en" ? "Contents" : "İçindekiler"}
             </p>
             <nav className="text-sm text-gray-700 space-y-1">
               {toc.map((h) => (
@@ -1102,7 +1174,10 @@ const AsideTools = ({ toc, onBack }) => {
               ))}
             </nav>
             <p className="mt-2 text-[11px] text-gray-400 inline-flex items-center gap-1">
-              <LinkIcon size={12} /> Başlığa tıklayınca link kopyalanır
+              <LinkIcon size={12} />{" "}
+              {locale === "en"
+                ? "Click a heading to copy its link"
+                : "Başlığa tıklayınca link kopyalanır"}
             </p>
           </div>
         )}

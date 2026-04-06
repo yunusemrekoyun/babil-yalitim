@@ -6,11 +6,14 @@ import {
   fetchServicesCached,
   getCachedServices,
 } from "../../utils/servicesCache";
+import { useLocale } from "../../i18n/LocaleContext";
 
 const Services = ({ q }) => {
-  const cachedServices = getCachedServices();
+  const { locale } = useLocale();
+  const cachedServices = getCachedServices(locale);
   const [services, setServices] = useState(() => cachedServices || []);
-  const [cat, setCat] = useState("Tümü");
+  const allLabel = locale === "en" ? "All" : "Tümü";
+  const [cat, setCat] = useState(allLabel);
   const [loading, setLoading] = useState(() => !cachedServices);
   const [err, setErr] = useState("");
 
@@ -19,11 +22,13 @@ const Services = ({ q }) => {
     (async () => {
       try {
         setLoading(true);
-        const list = await fetchServicesCached();
+        const list = await fetchServicesCached({ locale });
         if (!cancelled) setServices(list);
       } catch (e) {
         console.error("GET /services error:", e?.response?.data || e);
-        if (!cancelled) setErr("Hizmetler getirilemedi.");
+        if (!cancelled) {
+          setErr(locale === "en" ? "Services could not be loaded." : "Hizmetler getirilemedi.");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -31,7 +36,7 @@ const Services = ({ q }) => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     import("../../pages/ServiceDetailsPage.jsx").catch(() => {});
@@ -41,23 +46,31 @@ const Services = ({ q }) => {
     const uniq = new Set(
       services.map((s) => (s.category || "").trim()).filter(Boolean)
     );
-    return ["Tümü", ...Array.from(uniq)];
-  }, [services]);
+    return [allLabel, ...Array.from(uniq)];
+  }, [allLabel, services]);
+
+  useEffect(() => {
+    setCat((current) => (categories.includes(current) ? current : allLabel));
+  }, [allLabel, categories]);
 
   const filtered = useMemo(() => {
     const text = q.trim().toLowerCase();
     return services.filter((s) => {
-      const okCat = cat === "Tümü" || (s.category || "").trim() === cat;
+      const okCat = cat === allLabel || (s.category || "").trim() === cat;
       if (!text) return okCat;
       const haystack = `${s.title || ""} ${s.type || ""} ${s.category || ""} ${
         s.description || ""
       }`.toLowerCase();
       return okCat && haystack.includes(text);
     });
-  }, [services, q, cat]);
+  }, [allLabel, cat, q, services]);
 
   if (loading)
-    return <div className="py-16 text-center text-gray-500">Yükleniyor…</div>;
+    return (
+      <div className="py-16 text-center text-gray-500">
+        {locale === "en" ? "Loading..." : "Yükleniyor…"}
+      </div>
+    );
   if (err) return <div className="py-16 text-center text-red-600">{err}</div>;
 
   return (
@@ -82,14 +95,16 @@ const Services = ({ q }) => {
           </div>
 
           <p className="text-xs text-gray-500 md:text-sm">
-            Toplam: {services.length} • Filtrelenmiş: {filtered.length}
+            {locale === "en"
+              ? `Total: ${services.length} • Filtered: ${filtered.length}`
+              : `Toplam: ${services.length} • Filtrelenmiş: ${filtered.length}`}
           </p>
         </div>
       </div>
 
       {filtered.length === 0 ? (
         <div className="text-center text-gray-600 bg-white/50 backdrop-blur-xl border border-white/30 rounded-2xl py-16">
-          Sonuç bulunamadı.
+          {locale === "en" ? "No matching results found." : "Sonuç bulunamadı."}
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

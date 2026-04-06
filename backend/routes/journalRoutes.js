@@ -17,6 +17,8 @@ const {
   deleteAsset,
   likeJournal,
   getLikesCount,
+  getJournalTranslations,
+  updateJournalTranslations,
 } = require("../controller/journalController");
 
 const likeLimiter = rateLimit({
@@ -56,6 +58,8 @@ router.put(
 );
 
 router.patch("/:id/order", verifyToken, setJournalOrder);
+router.get("/:id/translations", verifyToken, getJournalTranslations);
+router.put("/:id/translations", verifyToken, updateJournalTranslations);
 
 router.delete("/:id", verifyToken, deleteJournal);
 

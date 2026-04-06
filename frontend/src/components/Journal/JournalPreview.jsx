@@ -2,6 +2,7 @@ import PropTypes from "prop-types";
 import { useMemo, useState } from "react";
 import JournalCard from "./JournalCard";
 import { toPlainRichContent, toRichContentExcerpt } from "../../utils/richContent";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
 
 const Skeleton = () => (
   <div className="rounded-2xl overflow-hidden border border-white/40 bg-white/30 backdrop-blur-md shadow-md">
@@ -15,14 +16,22 @@ const Skeleton = () => (
   </div>
 );
 
-const EmptyState = () => (
+const EmptyState = ({ locale }) => (
   <div className="text-center py-16 bg-white/40 backdrop-blur-xl rounded-2xl border border-white/30">
     <p className="text-secondaryColor font-semibold text-lg">
-      Henüz haber eklenmemiş.
+      {locale === "en" ? "No news has been published yet." : "Henüz haber eklenmemiş."}
     </p>
-    <p className="text-gray-600 mt-1">Yakında yeni içeriklerle buradayız.</p>
+    <p className="text-gray-600 mt-1">
+      {locale === "en"
+        ? "We will be here soon with new updates."
+        : "Yakında yeni içeriklerle buradayız."}
+    </p>
   </div>
 );
+
+EmptyState.propTypes = {
+  locale: PropTypes.oneOf(["tr", "en"]).isRequired,
+};
 
 // Backend -> UI normalize
 const normalize = (j) => ({
@@ -37,6 +46,7 @@ const normalize = (j) => ({
 });
 
 const JournalPreview = ({ data = [], loading = false, error = "" }) => {
+  const { locale } = useLocale();
   const items = useMemo(() => data.map(normalize), [data]);
 
   // 🔎 Arama (başlık + içerik + etiket)
@@ -71,31 +81,35 @@ const JournalPreview = ({ data = [], loading = false, error = "" }) => {
     );
   }
 
-  if (!items.length) return <EmptyState />;
+  if (!items.length) return <EmptyState locale={locale} />;
 
   return (
     <>
       <div className="mb-6 rounded-[26px] border border-white/40 bg-white/55 p-4 backdrop-blur-xl shadow-sm md:p-5">
         <label htmlFor="jrnl-search" className="sr-only">
-          Haberlerde ara
+          {locale === "en" ? "Search news" : "Haberlerde ara"}
         </label>
         <input
           id="jrnl-search"
           type="text"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Haberlerde ara…"
+          placeholder={locale === "en" ? "Search news..." : "Haberlerde ara…"}
           className="w-full rounded-xl border border-white/40 bg-white/80 px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition shadow-sm"
         />
       </div>
 
       <p className="text-xs text-gray-500 mb-4">
-        Toplam: {items.length} • Filtrelenmiş: {filtered.length}
+        {locale === "en"
+          ? `Total: ${items.length} • Filtered: ${filtered.length}`
+          : `Toplam: ${items.length} • Filtrelenmiş: ${filtered.length}`}
       </p>
 
       {filtered.length === 0 ? (
         <div className="text-center text-gray-600 bg-white/50 backdrop-blur-xl border border-white/30 rounded-2xl py-16">
-          Aramanızla eşleşen haber bulunamadı.
+          {locale === "en"
+            ? "No news item matched your search."
+            : "Aramanızla eşleşen haber bulunamadı."}
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

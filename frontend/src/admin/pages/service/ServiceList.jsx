@@ -7,6 +7,7 @@ import LoadErrorState from "../../components/LoadErrorState";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import OrderSelect from "../../components/OrderSelect";
+import ServiceTranslationModal from "../../components/ServiceTranslationModal";
 import { getAdminFeedbackMessage } from "../../utils/mediaFeedback";
 import { getMediaUrl, getVideoPosterUrl } from "../../../utils/media";
 
@@ -25,6 +26,8 @@ const ServiceList = () => {
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
+  const [translationOpen, setTranslationOpen] = useState(false);
+  const [translationTarget, setTranslationTarget] = useState(null);
 
   const [confirm, setConfirm] = useState({
     open: false,
@@ -123,6 +126,16 @@ const ServiceList = () => {
     }
   };
 
+  const openTranslationModal = (service) => {
+    setTranslationTarget(service);
+    setTranslationOpen(true);
+  };
+
+  const closeTranslationModal = () => {
+    setTranslationOpen(false);
+    setTranslationTarget(null);
+  };
+
   const hasActiveFilters = Boolean(q.trim()) || cat !== "all";
   const emptyMessage = hasActiveFilters
     ? "Seçili filtrelerle eşleşen hizmet bulunamadı."
@@ -214,7 +227,7 @@ const ServiceList = () => {
                   <th className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                     Alt Hizmetler
                   </th>
-                  <th className="border border-slate-200/70 p-3 w-40 dark:border-slate-800/70">
+                  <th className="border border-slate-200/70 p-3 w-56 dark:border-slate-800/70">
                     İşlemler
                   </th>
                 </tr>
@@ -334,6 +347,17 @@ const ServiceList = () => {
                           Düzenle
                         </Link>
                         <button
+                          type="button"
+                          onClick={() => openTranslationModal(service)}
+                          className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm ${
+                            service.hasEnglishTranslation
+                              ? "bg-emerald-600 hover:bg-emerald-700"
+                              : "bg-indigo-600 hover:bg-indigo-700"
+                          }`}
+                        >
+                          {service.hasEnglishTranslation ? "EN Düzenle" : "EN Çeviri"}
+                        </button>
+                        <button
                           onClick={() => askDelete(service._id, service.title)}
                           className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
                         >
@@ -357,6 +381,17 @@ const ServiceList = () => {
           onClose={() => setToast(null)}
         />
       ) : null}
+
+      <ServiceTranslationModal
+        open={translationOpen}
+        serviceId={translationTarget?._id}
+        serviceTitle={translationTarget?.title}
+        onClose={closeTranslationModal}
+        onSaved={async () => {
+          await fetchServices();
+          showToast("İngilizce hizmet çevirisi kaydedildi.", "success");
+        }}
+      />
 
       {confirm.open ? (
         <ConfirmDialog

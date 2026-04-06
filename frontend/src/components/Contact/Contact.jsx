@@ -9,8 +9,10 @@ import {
   CONTACT_MAP_URL,
   CONTACT_PHONES,
 } from "../../config/site";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
 
 const Contact = () => {
+  const { locale } = useLocale();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -36,7 +38,10 @@ const Contact = () => {
       setStatus({
         type: "success",
         text:
-          data?.message || "Mesajiniz alindi. En kisa surede donus yapacagiz.",
+          data?.message ||
+          (locale === "en"
+            ? "Your message has been received. We will get back to you shortly."
+            : "Mesajiniz alindi. En kisa surede donus yapacagiz."),
       });
     } catch (error) {
       setSubmitting(false);
@@ -45,25 +50,74 @@ const Contact = () => {
         text:
           error?.response?.data?.message ||
           error?.friendlyMessage ||
-          "Mesaj gonderilemedi. Lutfen daha sonra tekrar deneyin.",
+          (locale === "en"
+            ? "Message could not be sent. Please try again later."
+            : "Mesaj gonderilemedi. Lutfen daha sonra tekrar deneyin."),
       });
     }
   };
 
   const card =
     "rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 shadow-md";
+  const copy =
+    locale === "en"
+      ? {
+          title: "Contact",
+          lead:
+            "Let’s talk about the right solutions for your project. Reach us by phone, email, or the contact form.",
+          reachUs: "Get in Touch",
+          phone: "Phone",
+          email: "Email",
+          address: "Address",
+          hours: "Working Hours",
+          map: "Map",
+          mapTitle: "Babil Insulation Location",
+          sendMessage: "Send a Message",
+          fullName: "Full Name",
+          emailAddress: "Email Address",
+          message: "Message",
+          submitting: "Sending...",
+          submit: "Send",
+          formNote:
+            "This form is intended for quick contact only. For detailed quotations, please call us.",
+          namePlaceholder: "E.g. John Doe",
+          emailPlaceholder: "example@mail.com",
+          messagePlaceholder: "Briefly tell us about your needs...",
+        }
+      : {
+          title: "İletişim",
+          lead:
+            "Projeniz için doğru çözümleri konuşalım. Telefon, e‑posta veya form üzerinden bize ulaşabilirsiniz.",
+          reachUs: "Bize Ulaşın",
+          phone: "Telefon",
+          email: "E‑posta",
+          address: "Adres",
+          hours: "Çalışma Saatleri",
+          map: "Harita",
+          mapTitle: "Babil Yalıtım Konumu",
+          sendMessage: "Mesaj Gönderin",
+          fullName: "Adınız Soyadınız",
+          emailAddress: "E‑posta Adresiniz",
+          message: "Mesajınız",
+          submitting: "Gönderiliyor...",
+          submit: "Gönder",
+          formNote:
+            "Bu form yalnızca hızlı iletişim amaçlıdır. Detaylı teklif için lütfen telefonla arayınız.",
+          namePlaceholder: "Örn. Ali Veli",
+          emailPlaceholder: "ornek@mail.com",
+          messagePlaceholder: "Kısaca bize ihtiyaçlarınızı anlatın…",
+        };
 
   return (
     <div className="max-w-7xl mx-auto py-10 md:py-14 px-4 md:px-8">
       {/* başlık */}
       <div className="text-center mb-8 md:mb-12">
         <h2 className="text-3xl md:text-5xl font-bold text-secondaryColor">
-          İletişim
+          {copy.title}
         </h2>
         <div className="h-1 w-24 bg-quaternaryColor mx-auto mt-3 rounded-full" />
         <p className="text-gray-600 max-w-2xl mx-auto mt-4">
-          Projeniz için doğru çözümleri konuşalım. Telefon, e‑posta veya form
-          üzerinden bize ulaşabilirsiniz.
+          {copy.lead}
         </p>
       </div>
 
@@ -78,7 +132,7 @@ const Contact = () => {
         >
           <div className={`${card} p-6`}>
             <h3 className="text-lg font-semibold text-secondaryColor mb-4">
-              Bize Ulaşın
+              {copy.reachUs}
             </h3>
             <ul className="space-y-4 text-gray-800">
               <li className="flex items-start gap-3">
@@ -86,7 +140,7 @@ const Contact = () => {
                   <Phone size={18} />
                 </span>
                 <div>
-                  <p className="text-sm text-gray-600 ">Telefon</p>
+                  <p className="text-sm text-gray-600 ">{copy.phone}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     {CONTACT_PHONES.map((phone) => (
                       <a
@@ -105,7 +159,7 @@ const Contact = () => {
                   <Mail size={18} />
                 </span>
                 <div>
-                  <p className="text-sm text-gray-600">E‑posta</p>
+                  <p className="text-sm text-gray-600">{copy.email}</p>
                   <a
                     href={`mailto:${CONTACT_EMAIL}`}
                     className="font-medium hover:underline"
@@ -119,7 +173,7 @@ const Contact = () => {
                   <MapPin size={18} />
                 </span>
                 <div>
-                  <p className="text-sm text-gray-600">Adres</p>
+                  <p className="text-sm text-gray-600">{copy.address}</p>
                   <p className="font-medium">{CONTACT_ADDRESS}</p>
                 </div>
               </li>
@@ -128,7 +182,7 @@ const Contact = () => {
                   <Clock size={18} />
                 </span>
                 <div>
-                  <p className="text-sm text-gray-600">Çalışma Saatleri</p>
+                  <p className="text-sm text-gray-600">{copy.hours}</p>
                   <p className="font-medium">{CONTACT_HOURS}</p>
                 </div>
               </li>
@@ -137,11 +191,11 @@ const Contact = () => {
 
           <div className={`${card} p-6`}>
             <h3 className="text-lg font-semibold text-secondaryColor mb-4">
-              Harita
+              {copy.map}
             </h3>
             <div className="rounded-xl overflow-hidden shadow">
               <iframe
-                title="Babil Yalıtım Konumu"
+                title={copy.mapTitle}
                 src={CONTACT_MAP_URL}
                 width="100%"
                 height="280"
@@ -163,7 +217,7 @@ const Contact = () => {
           className={`${card} p-6`}
         >
           <h3 className="text-lg font-semibold text-secondaryColor mb-4">
-            Mesaj Gönderin
+            {copy.sendMessage}
           </h3>
           <div className="grid grid-cols-1 gap-4">
             <input
@@ -176,7 +230,7 @@ const Contact = () => {
               autoComplete="off"
             />
             <label className="block">
-              <span className="text-sm text-gray-700">Adınız Soyadınız</span>
+              <span className="text-sm text-gray-700">{copy.fullName}</span>
               <input
                 type="text"
                 name="name"
@@ -184,12 +238,12 @@ const Contact = () => {
                 value={form.name}
                 onChange={onChange}
                 className="mt-1 w-full p-3 rounded-lg border border-gray-300 bg-white/70 focus:outline-none focus:ring-2 focus:ring-quaternaryColor"
-                placeholder="Örn. Ali Veli"
+                placeholder={copy.namePlaceholder}
               />
             </label>
 
             <label className="block">
-              <span className="text-sm text-gray-700">E‑posta Adresiniz</span>
+              <span className="text-sm text-gray-700">{copy.emailAddress}</span>
               <input
                 type="email"
                 name="email"
@@ -197,12 +251,12 @@ const Contact = () => {
                 value={form.email}
                 onChange={onChange}
                 className="mt-1 w-full p-3 rounded-lg border border-gray-300 bg-white/70 focus:outline-none focus:ring-2 focus:ring-quaternaryColor"
-                placeholder="ornek@mail.com"
+                placeholder={copy.emailPlaceholder}
               />
             </label>
 
             <label className="block">
-              <span className="text-sm text-gray-700">Mesajınız</span>
+              <span className="text-sm text-gray-700">{copy.message}</span>
               <textarea
                 name="message"
                 required
@@ -210,7 +264,7 @@ const Contact = () => {
                 value={form.message}
                 onChange={onChange}
                 className="mt-1 w-full p-3 rounded-lg border border-gray-300 bg-white/70 focus:outline-none focus:ring-2 focus:ring-quaternaryColor resize-y"
-                placeholder="Kısaca bize ihtiyaçlarınızı anlatın…"
+                placeholder={copy.messagePlaceholder}
               />
             </label>
           </div>
@@ -221,7 +275,7 @@ const Contact = () => {
             className="mt-5 inline-flex items-center gap-2 bg-quaternaryColor text-white font-semibold py-3 px-5 rounded-lg hover:bg-secondaryColor transition disabled:opacity-60"
           >
             <Send size={18} />
-            {submitting ? "Gönderiliyor..." : "Gönder"}
+            {submitting ? copy.submitting : copy.submit}
           </button>
 
           {status && (
@@ -237,8 +291,7 @@ const Contact = () => {
           )}
 
           <p className="text-xs text-gray-500 mt-3">
-            Bu form yalnızca hızlı iletişim amaçlıdır. Detaylı teklif için
-            lütfen telefonla arayınız.
+            {copy.formNote}
           </p>
         </motion.form>
       </div>

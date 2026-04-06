@@ -22,24 +22,78 @@ const uploadOne = async (file, folder) => {
 
 const destroyIfExists = async (media) => mediaStorage.destroy(media);
 
+const normalizeLocale = (value = "tr") =>
+  String(value || "tr").toLowerCase().startsWith("en") ? "en" : "tr";
+
+const hasEnglishTranslation = (blog) => {
+  const en = blog?.translations?.en;
+  if (!en) return false;
+
+  return Boolean(
+    String(en.title || "").trim() ||
+      String(en.content || "").trim() ||
+      (Array.isArray(en.tags) && en.tags.some((tag) => String(tag || "").trim()))
+  );
+};
+
+const getLocalizedBlogField = (baseValue, translatedValue) => {
+  if (Array.isArray(baseValue)) {
+    return Array.isArray(translatedValue) && translatedValue.some((item) => String(item || "").trim())
+      ? translatedValue
+      : baseValue;
+  }
+
+  return String(translatedValue || "").trim() ? translatedValue : baseValue;
+};
+
+const serializePublicBlog = (blog, locale, { includeComments = false } = {}) => {
+  const normalizedLocale = normalizeLocale(locale);
+  const en = normalizedLocale === "en" ? blog?.translations?.en || {} : {};
+  const payload = {
+    _id: blog._id,
+    title: getLocalizedBlogField(blog.title, en.title),
+    displayOrder: blog.displayOrder,
+    content: getLocalizedBlogField(blog.content, en.content),
+    tags: getLocalizedBlogField(blog.tags || [], en.tags),
+    cover: blog.cover,
+    assets: blog.assets,
+    createdAt: blog.createdAt,
+    updatedAt: blog.updatedAt,
+    hasEnglishTranslation: hasEnglishTranslation(blog),
+  };
+
+  if (includeComments) {
+    payload.comments = (blog.comments || [])
+      .filter((comment) => comment.approved)
+      .map(toPublicComment);
+  } else {
+    payload.commentsCount = (blog.comments || []).filter((comment) => comment.approved).length;
+  }
+
+  return payload;
+};
+
+const buildEnglishTranslationPayload = (payload = {}) => {
+  const title = String(payload.title || "").trim();
+  const rawContent = String(payload.content || "");
+  const content = rawContent.trim()
+    ? sanitizeHtml(buildRichContentHtml(rawContent))
+    : "";
+  const tagsInput = payload.tags;
+  const tags = title || content || String(tagsInput || "").trim()
+    ? resolveTags(tagsInput, { title, content })
+    : [];
+
+  return { title, content, tags };
+};
+
 /* ------------ BLOG: public GET ------------ */
 exports.getBlogs = async (_req, res) => {
   try {
+    const locale = normalizeLocale(_req.query.locale);
     await syncCollectionDisplayOrder(Blog);
     const items = await Blog.find().sort({ displayOrder: 1, createdAt: 1, _id: 1 });
-    // public listede yorumların tamamını göndermiyoruz (performans)
-    const lean = items.map((b) => ({
-      _id: b._id,
-      title: b.title,
-      displayOrder: b.displayOrder,
-      content: b.content,
-      tags: b.tags,
-      cover: b.cover,
-      assets: b.assets,
-      createdAt: b.createdAt,
-      updatedAt: b.updatedAt,
-      commentsCount: (b.comments || []).filter((c) => c.approved).length,
-    }));
+    const lean = items.map((blog) => serializePublicBlog(blog, locale));
     res.json(lean);
   } catch (err) {
     res.status(500).json({ message: "Bloglar alınamadı", error: err.message });
@@ -48,26 +102,66 @@ exports.getBlogs = async (_req, res) => {
 
 exports.getBlogById = async (req, res) => {
   try {
+    const locale = normalizeLocale(req.query.locale);
     const b = await Blog.findById(req.params.id);
     if (!b) return res.status(404).json({ message: "Blog bulunamadı" });
-    // public: SADECE onaylı yorumlar
-    const approvedComments = (b.comments || [])
-      .filter((c) => c.approved)
-      .map(toPublicComment);
-    res.json({
-      _id: b._id,
-      title: b.title,
-      displayOrder: b.displayOrder,
-      content: b.content,
-      tags: b.tags,
-      cover: b.cover,
-      assets: b.assets,
-      createdAt: b.createdAt,
-      updatedAt: b.updatedAt,
-      comments: approvedComments,
-    });
+    res.json(serializePublicBlog(b, locale, { includeComments: true }));
   } catch (err) {
     res.status(500).json({ message: "Blog alınamadı", error: err.message });
+  }
+};
+
+exports.getBlogTranslations = async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) return res.status(404).json({ message: "Blog bulunamadı" });
+
+    res.json({
+      _id: blog._id,
+      source: {
+        title: blog.title,
+        content: blog.content,
+        tags: blog.tags || [],
+      },
+      translations: {
+        en: {
+          title: blog.translations?.en?.title || "",
+          content: blog.translations?.en?.content || "",
+          tags: blog.translations?.en?.tags || [],
+        },
+      },
+      hasEnglishTranslation: hasEnglishTranslation(blog),
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Blog çevirileri alınamadı", error: err.message });
+  }
+};
+
+exports.updateBlogTranslations = async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) return res.status(404).json({ message: "Blog bulunamadı" });
+
+    blog.translations = blog.translations || {};
+    blog.translations.en = buildEnglishTranslationPayload(req.body);
+    blog.markModified("translations");
+
+    await blog.save();
+
+    res.json({
+      message: "İngilizce blog çevirisi kaydedildi.",
+      hasEnglishTranslation: hasEnglishTranslation(blog),
+      translations: {
+        en: blog.translations.en,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: "Blog çevirisi kaydedilemedi",
+      error: err.message,
+    });
   }
 };
 

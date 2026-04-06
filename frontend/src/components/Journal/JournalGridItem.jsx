@@ -3,11 +3,14 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import AdaptiveImage from "../Media/AdaptiveImage";
 import { toRichContentExcerpt } from "../../utils/richContent";
+import { useLocale } from "../../i18n/LocaleContext";
+import { localizePath } from "../../i18n/routing.js";
 
 const JournalGridItem = ({ item, index }) => {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const prettyDate = item?.date
-    ? new Date(item.date).toLocaleDateString("tr-TR")
+    ? new Date(item.date).toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR")
     : "";
   const cover =
     item?.coverUrl ||
@@ -22,17 +25,21 @@ const JournalGridItem = ({ item, index }) => {
       className="group rounded-2xl overflow-hidden border border-white/30 bg-white/50 
                  backdrop-blur-xl shadow-lg hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)] transform-gpu-soft
                  transition-all cursor-pointer"
-      onClick={() => navigate(`/journals/${item._id}`)}
+      onClick={() => navigate(localizePath(`/journals/${item._id}`, locale))}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && navigate(`/journals/${item._id}`)}
-      aria-label={`${item?.title || "Haber"} detayına git`}
+      onKeyDown={(e) =>
+        e.key === "Enter" && navigate(localizePath(`/journals/${item._id}`, locale))
+      }
+      aria-label={`${item?.title || (locale === "en" ? "News" : "Haber")} ${
+        locale === "en" ? "view details" : "detayına git"
+      }`}
     >
       {/* Kapak */}
       <div className="relative w-full h-56 md:h-60 overflow-hidden">
         <AdaptiveImage
           media={item?.cover || cover}
-          alt={item?.title || "haber görseli"}
+          alt={item?.title || (locale === "en" ? "news image" : "haber görseli")}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
           widths={[320, 480, 640, 800, 960]}
@@ -48,7 +55,7 @@ const JournalGridItem = ({ item, index }) => {
       {/* İçerik */}
       <div className="p-6">
         <h3 className="text-lg md:text-xl font-semibold text-secondaryColor line-clamp-2">
-          {item?.title || "Başlık"}
+          {item?.title || (locale === "en" ? "Title" : "Başlık")}
         </h3>
         {contentExcerpt && (
           <p

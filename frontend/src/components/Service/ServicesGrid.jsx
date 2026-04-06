@@ -9,9 +9,12 @@ import {
   fetchServicesCached,
   getCachedServices,
 } from "../../utils/servicesCache";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
+import { localizePath } from "../../i18n/routing.js";
 
 const ServiceGrid = () => {
-  const [items, setItems] = useState(() => getCachedServices() || []);
+  const { locale } = useLocale();
+  const [items, setItems] = useState(() => getCachedServices(locale) || []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
   const [sectionRef, inView] = useViewportActivation({
@@ -20,13 +23,29 @@ const ServiceGrid = () => {
   });
   const videoRefs = useRef({});
   const scrollRef = useRef(null);
+  const copy =
+    locale === "en"
+      ? {
+          fetchError: "Service data could not be loaded:",
+          title: "Services",
+          previous: "Previous",
+          next: "Next",
+          cta: "View All Services",
+        }
+      : {
+          fetchError: "Hizmet verileri alınamadı:",
+          title: "Hizmetlerimiz",
+          previous: "Önceki",
+          next: "Sonraki",
+          cta: "Tüm Hizmetleri Gör",
+        };
 
   // fetch
   useEffect(() => {
-    fetchServicesCached()
+    fetchServicesCached({ locale })
       .then((list) => setItems(Array.isArray(list) ? list : []))
-      .catch((err) => console.error("Hizmet verileri alınamadı:", err));
-  }, []);
+      .catch((err) => console.error(copy.fetchError, err));
+  }, [copy.fetchError, locale]);
 
   useEffect(() => {
     import("../../pages/ServiceDetailsPage.jsx").catch(() => {});
@@ -131,7 +150,7 @@ const ServiceGrid = () => {
     >
       <div className="max-w-6xl mx-auto mb-10 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
-          Hizmetlerimiz
+          {copy.title}
         </h2>
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded" />
       </div>
@@ -149,7 +168,7 @@ const ServiceGrid = () => {
             className="absolute left-2 top-1/2 -translate-y-1/2
                        text-white/90 bg-black/35 hover:bg-black/45 border border-white/20
                        rounded-full p-2 z-[50] active:scale-95 transition"
-            aria-label="Önceki"
+            aria-label={copy.previous}
           >
             <ChevronLeft size={24} />
           </button>
@@ -193,7 +212,7 @@ const ServiceGrid = () => {
             className="absolute right-2 top-1/2 -translate-y-1/2
                        text-white/90 bg-black/35 hover:bg-black/45 border border-white/20
                        rounded-full p-2 z-[50] active:scale-95 transition"
-            aria-label="Sonraki"
+            aria-label={copy.next}
           >
             <ChevronRight size={24} />
           </button>
@@ -230,10 +249,10 @@ const ServiceGrid = () => {
         {isMobile ? (
           <div className="mt-6 flex justify-center">
             <Link
-              to="/services"
+              to={localizePath("/services", locale)}
               className="flex w-full items-center justify-center gap-2 text-sm text-white bg-quaternaryColor px-4 py-2.5 rounded-full"
             >
-              Tüm Hizmetleri Gör
+              {copy.cta}
               <ChevronRight size={16} />
             </Link>
           </div>
@@ -247,12 +266,12 @@ const ServiceGrid = () => {
             className="absolute sm:bottom-[-8px] right-4 sm:right-6 z-[45]"
           >
             <Link
-              to="/services"
+              to={localizePath("/services", locale)}
               className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
                px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
                transition-all duration-300"
             >
-              Tüm Hizmetleri Gör
+              {copy.cta}
               <ChevronRight size={16} />
             </Link>
           </motion.div>

@@ -6,54 +6,81 @@ import {
   CONTACT_EMAIL,
   CONTACT_PHONE_LINK,
 } from "../../config/site";
-import { ABOUT_FOOTER_TEXT } from "../../content/aboutContent";
+import { getAboutContent } from "../../content/aboutContent";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
+import { localizePath } from "../../i18n/routing.js";
 
 const Footer = () => {
+  const { locale } = useLocale();
+  const aboutContent = getAboutContent(locale);
+  const copy =
+    locale === "en"
+      ? {
+          siteMap: "Site Map",
+          about: "About",
+          projects: "Projects",
+          blog: "Blog",
+          contact: "Contact",
+          contactTitle: "Contact",
+          followUs: "Follow Us",
+          rightsReserved: "All rights reserved.",
+        }
+      : {
+          siteMap: "Site Haritası",
+          about: "Hakkımızda",
+          projects: "Projeler",
+          blog: "Blog",
+          contact: "İletişim",
+          contactTitle: "İletişim",
+          followUs: "Bizi Takip Edin",
+          rightsReserved: "Tüm hakları saklıdır.",
+        };
+
   return (
     <footer className="bg-buzbeyazseffaf text-secondaryColor border-t border-secondaryColor px-4 pt-12 pb-6">
       <div className="max-w-7xl mx-auto grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-10">
         {/* Logo & Kısa Açıklama */}
         <div className="flex flex-col gap-4">
           <img src={Logo} alt="Logo" className="w-36 mb-2" />
-          <p className="text-secondaryColor text-sm">{ABOUT_FOOTER_TEXT}</p>
+          <p className="text-secondaryColor text-sm">{aboutContent.footerText}</p>
         </div>
 
         {/* Site Haritası */}
         <div>
           <h4 className="text-lg font-semibold mb-4 text-quaternaryColor">
-            Site Haritası
+            {copy.siteMap}
           </h4>
           <ul className="space-y-2">
             <li>
               <Link
-                to="/about"
+                to={localizePath("/about", locale)}
                 className="text-secondaryColor hover:text-quaternaryColor transition"
               >
-                Hakkımızda
+                {copy.about}
               </Link>
             </li>
             <li>
               <Link
-                to="/projects"
+                to={localizePath("/projects", locale)}
                 className="text-secondaryColor hover:text-quaternaryColor transition"
               >
-                Projeler
+                {copy.projects}
               </Link>
             </li>
             <li>
               <Link
-                to="/blog"
+                to={localizePath("/blog", locale)}
                 className="text-secondaryColor hover:text-quaternaryColor transition"
               >
-                Blog
+                {copy.blog}
               </Link>
             </li>
             <li>
               <Link
-                to="/iletisim"
+                to={localizePath("/iletisim", locale)}
                 className="text-secondaryColor hover:text-quaternaryColor transition"
               >
-                İletişim
+                {copy.contact}
               </Link>
             </li>
           </ul>
@@ -62,7 +89,7 @@ const Footer = () => {
         {/* İletişim Bilgileri */}
         <div>
           <h4 className="text-lg font-semibold mb-4 text-quaternaryColor">
-            İletişim
+            {copy.contactTitle}
           </h4>
           <ul className="space-y-3 text-sm">
             <li className="flex items-start gap-2">
@@ -96,7 +123,7 @@ const Footer = () => {
         {/* Sosyal Medya */}
         <div>
           <h4 className="text-lg font-semibold mb-4 text-quaternaryColor">
-            Bizi Takip Edin
+            {copy.followUs}
           </h4>
           <div className="flex gap-4">
             <a
@@ -117,7 +144,7 @@ const Footer = () => {
         </div>
       </div>
       <div className="mt-10 border-t border-secondaryColor pt-6 text-center text-xs text-secondaryColor">
-        © {new Date().getFullYear()} Babil Yalıtım. Tüm hakları saklıdır.
+        © {new Date().getFullYear()} Babil Yalıtım. {copy.rightsReserved}
       </div>
     </footer>
   );

@@ -12,11 +12,14 @@ const {
   deleteProject,
   setProjectOrder,
   getProjectCovers, // ✅ BUNU EKLE
+  getProjectTranslations,
+  updateProjectTranslations,
 } = require("../controller/projectController");
 
 // 🔹 PUBLIC
 router.get("/covers", getProjectCovers); // ✅ DİNAMİK /:id’DEN ÖNCE OLMALI
 router.get("/", getProjects);
+router.get("/:id/translations", verifyToken, getProjectTranslations);
 router.get("/:id", getProjectById);
 
 // 🔹 PROTECTED (multipart)
@@ -45,6 +48,7 @@ router.put(
 );
 
 router.patch("/:id/order", verifyToken, setProjectOrder);
+router.put("/:id/translations", verifyToken, updateProjectTranslations);
 
 router.delete("/:id", verifyToken, deleteProject);
 

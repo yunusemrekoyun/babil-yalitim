@@ -8,6 +8,8 @@ import {
   looksVideo,
 } from "../../utils/media";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
+import { useLocale } from "../../i18n/LocaleContext";
+import { localizePath } from "../../i18n/routing.js";
 
 const pickFirstImageAndVideo = (images = []) => {
   let img = null;
@@ -34,6 +36,7 @@ const ServiceGridItem = ({
   detailState,
   priority = false,
 }) => {
+  const { locale } = useLocale();
   const videoRef = useRef(null);
   const [videoReady, setVideoReady] = useState(false);
   const {
@@ -106,10 +109,12 @@ const ServiceGridItem = ({
 
   return (
     <Link
-      to={item?._id ? `/services/${item._id}` : "#"}
+      to={item?._id ? localizePath(`/services/${item._id}`, locale) : "#"}
       state={detailState || (item?._id ? { title: item?.title || "", service: item } : undefined)}
       className="relative block focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-2xl"
-      aria-label={`${item?.title || "Hizmet"} detayına git`}
+      aria-label={`${item?.title || (locale === "en" ? "Service" : "Hizmet")} ${
+        locale === "en" ? "view details" : "detayına git"
+      }`}
     >
       {/* Merkez kart: poster her zaman görünür, video hazır olunca üzerine akar */}
       {isCenter && videoUrl ? (
@@ -118,7 +123,7 @@ const ServiceGridItem = ({
             <img
               {...{ fetchpriority: "high" }}
               src={posterUrl}
-              alt={item?.title || "Hizmet önizleme"}
+              alt={item?.title || (locale === "en" ? "Service preview" : "Hizmet önizleme")}
               className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
                 videoReady ? "opacity-0" : "opacity-100"
               }`}
@@ -162,7 +167,7 @@ const ServiceGridItem = ({
       ) : posterUrl ? (
         <img
           src={posterUrl}
-          alt={item?.title || "Hizmet"}
+          alt={item?.title || (locale === "en" ? "Service" : "Hizmet")}
           className={size}
           loading={priority ? "eager" : "lazy"}
           {...(priority ? { fetchpriority: "high" } : {})}

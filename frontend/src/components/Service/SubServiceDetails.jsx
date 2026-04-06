@@ -21,11 +21,15 @@ import {
   getVideoPosterUrl,
   looksVideo,
 } from "../../utils/media";
+import { useLocale } from "../../i18n/LocaleContext";
+import { localizePath } from "../../i18n/routing.js";
 
-const fmt = (value) => {
+const fmt = (value, locale) => {
   if (!value) return null;
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString("tr-TR");
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR");
 };
 
 const fadeUp = {
@@ -109,10 +113,11 @@ const siblingPreview = (subService) => {
 };
 
 const SubServiceDetails = () => {
+  const { locale } = useLocale();
   const { serviceId, subServiceId } = useParams();
   const location = useLocation();
   const initialParentService =
-    location.state?.parentService || findCachedServiceById(serviceId) || null;
+    location.state?.parentService || findCachedServiceById(serviceId, locale) || null;
 
   const [parentService, setParentService] = useState(initialParentService);
   const [loading, setLoading] = useState(!initialParentService);
@@ -144,7 +149,9 @@ const SubServiceDetails = () => {
     (async () => {
       try {
         if (!initialParentService) setLoading(true);
-        const { data } = await api.get(`/services/${serviceId}`);
+        const { data } = await api.get(`/services/${serviceId}`, {
+          params: { locale },
+        });
         if (!cancelled) {
           setParentService(data);
           setNotFound(false);
@@ -160,7 +167,7 @@ const SubServiceDetails = () => {
     return () => {
       cancelled = true;
     };
-  }, [initialParentService, serviceId]);
+  }, [initialParentService, locale, serviceId]);
 
   const subService = useMemo(
     () => pickSubService(parentService, subServiceId),
@@ -200,7 +207,9 @@ const SubServiceDetails = () => {
   if (loading) {
     return (
       <div className="min-h-[60vh] grid place-items-center">
-        <div className="animate-pulse text-gray-500">Yükleniyor…</div>
+        <div className="animate-pulse text-gray-500">
+          {locale === "en" ? "Loading..." : "Yükleniyor…"}
+        </div>
       </div>
     );
   }
@@ -210,10 +219,14 @@ const SubServiceDetails = () => {
       <div className="min-h-[60vh] grid place-items-center p-6">
         <div className="text-center">
           <p className="text-xl font-semibold text-red-600 mb-4">
-            Alt hizmet bulunamadı.
+            {locale === "en" ? "Sub-service not found." : "Alt hizmet bulunamadı."}
           </p>
           <Link
-            to={serviceId ? `/services/${serviceId}` : "/services"}
+            to={
+              serviceId
+                ? localizePath(`/services/${serviceId}`, locale)
+                : localizePath("/services", locale)
+            }
             state={
               serviceId
                 ? {
@@ -225,7 +238,7 @@ const SubServiceDetails = () => {
             className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full bg-gray-800 text-white hover:bg-gray-900"
           >
             <ChevronLeft size={16} />
-            Ana hizmete dön
+            {locale === "en" ? "Back to main service" : "Ana hizmete dön"}
           </Link>
         </div>
       </div>
@@ -236,15 +249,15 @@ const SubServiceDetails = () => {
     <section className="relative max-w-7xl mx-auto px-4 md:px-8 pt-8 md:pt-12">
       <div className="flex items-center justify-between gap-4 mb-8">
         <Link
-          to={`/services/${serviceId}`}
+          to={localizePath(`/services/${serviceId}`, locale)}
           state={{ title: parentService?.title || "", service: parentService }}
           className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-white border hover:bg-gray-50"
-          aria-label="Ana hizmete dön"
+          aria-label={locale === "en" ? "Back to main service" : "Ana hizmete dön"}
         >
           <ChevronLeft size={16} />
-          {parentService?.title || "Ana hizmete dön"}
+          {parentService?.title || (locale === "en" ? "Back to main service" : "Ana hizmete dön")}
         </Link>
-        <div className="text-xs text-gray-500">{fmt(parentService?.createdAt) || ""}</div>
+        <div className="text-xs text-gray-500">{fmt(parentService?.createdAt, locale) || ""}</div>
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,430px)_minmax(0,1fr)] lg:items-start">
@@ -336,7 +349,7 @@ const SubServiceDetails = () => {
         <motion.div variants={fadeUp} initial="hidden" animate="show">
           <div className="rounded-3xl bg-white/80 backdrop-blur border shadow-sm p-6 md:p-7">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-quaternaryColor">
-              {parentService?.title || "Ana hizmet"}
+              {parentService?.title || (locale === "en" ? "Main service" : "Ana hizmet")}
             </p>
             <h1 className="mt-2 text-2xl md:text-4xl font-extrabold text-brandBlue tracking-tight">
               {subService.title}
@@ -357,11 +370,11 @@ const SubServiceDetails = () => {
               )}
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border">
                 <CalendarDays size={16} />
-                {fmt(parentService.createdAt) || "—"}
+                {fmt(parentService.createdAt, locale) || "—"}
               </span>
               {Array.isArray(subService.images) && subService.images.length > 0 && (
                 <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border">
-                  <Images size={16} />+{subService.images.length} medya
+                  <Images size={16} />+{subService.images.length} {locale === "en" ? "media" : "medya"}
                 </span>
               )}
             </div>
@@ -375,7 +388,7 @@ const SubServiceDetails = () => {
             {Array.isArray(subService.usageAreas) && subService.usageAreas.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-sm font-semibold text-brandBlue mb-3">
-                  Kullanım Alanları
+                  {locale === "en" ? "Usage Areas" : "Kullanım Alanları"}
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {subService.usageAreas.map((area) => (
@@ -395,13 +408,13 @@ const SubServiceDetails = () => {
 
       {siblings.length > 0 && (
         <div className="mt-10 md:mt-14 mb-16">
-          <motion.h2
+        <motion.h2
             variants={fadeUp}
             initial="hidden"
             animate="show"
             className="text-xl md:text-2xl font-bold text-secondaryColor mb-4"
-          >
-            Diğer Alt Hizmetler
+        >
+            {locale === "en" ? "Other Sub-services" : "Diğer Alt Hizmetler"}
           </motion.h2>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -414,7 +427,7 @@ const SubServiceDetails = () => {
               return (
                 <Link
                   key={item?._id || item?.id || `${item?.title}-${index}`}
-                  to={`/services/${serviceId}/sub-services/${item?._id || item?.id}`}
+                  to={localizePath(`/services/${serviceId}/sub-services/${item?._id || item?.id}`, locale)}
                   state={{
                     parentTitle: parentService?.title || "",
                     parentService,
@@ -438,7 +451,7 @@ const SubServiceDetails = () => {
                       <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
                         <span className="inline-flex translate-y-2 items-center gap-2 rounded-full border border-white/30 bg-black/45 px-4 py-2 text-sm font-semibold text-white opacity-0 backdrop-blur-sm transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                           <PlayCircle size={18} />
-                          Videoyu izle
+                          {locale === "en" ? "Watch video" : "Videoyu izle"}
                         </span>
                       </div>
                     ) : null}
@@ -477,6 +490,7 @@ const SubServiceDetails = () => {
 };
 
 const VideoModal = ({ item, onClose }) => {
+  const { locale } = useLocale();
   if (!item?.url) return null;
 
   return (
@@ -501,7 +515,7 @@ const VideoModal = ({ item, onClose }) => {
           type="button"
           onClick={onClose}
           className="absolute right-3 top-3 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/55 text-white shadow-lg transition hover:bg-black/70"
-          aria-label="Videoyu kapat"
+          aria-label={locale === "en" ? "Close video" : "Videoyu kapat"}
         >
           <X size={20} />
         </button>

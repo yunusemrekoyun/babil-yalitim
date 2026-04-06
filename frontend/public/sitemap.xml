@@ -1,12 +1,114 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.babilyalitim.cloud/</loc></url>
-  <url><loc>https://www.babilyalitim.cloud/services</loc></url>
-  <url><loc>https://www.babilyalitim.cloud/projects</loc></url>
-  <url><loc>https://www.babilyalitim.cloud/blog</loc></url>
-  <url><loc>https://www.babilyalitim.cloud/journal</loc></url>
-  <url><loc>https://www.babilyalitim.cloud/about</loc></url>
-  <url><loc>https://www.babilyalitim.cloud/whyus</loc></url>
-  <url><loc>https://www.babilyalitim.cloud/iletisim</loc></url>
-  <url><loc>https://www.babilyalitim.cloud/kvkk</loc></url>
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+>
+  <url>
+    <loc>https://www.babilyalitim.cloud/</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/en</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/services</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/services" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/services" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/services" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/en/services</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/services" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/services" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/services" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/projects</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/projects" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/projects" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/projects" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/en/projects</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/projects" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/projects" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/projects" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/blog</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/blog" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/blog" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/blog" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/en/blog</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/blog" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/blog" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/blog" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/journal</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/journal" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/journal" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/journal" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/en/journal</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/journal" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/journal" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/journal" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/about</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/about" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/about" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/en/about</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/about" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/about" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/whyus</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/whyus" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/whyus" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/whyus" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/en/whyus</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/whyus" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/whyus" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/whyus" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/iletisim</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/iletisim" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/iletisim" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/iletisim" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/en/iletisim</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/iletisim" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/iletisim" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/iletisim" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/kvkk</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/kvkk" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/kvkk" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/kvkk" />
+  </url>
+  <url>
+    <loc>https://www.babilyalitim.cloud/en/kvkk</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.babilyalitim.cloud/kvkk" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.babilyalitim.cloud/en/kvkk" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.babilyalitim.cloud/kvkk" />
+  </url>
 </urlset>

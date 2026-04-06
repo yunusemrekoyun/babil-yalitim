@@ -4,19 +4,23 @@ import { useParams } from "react-router-dom";
 import api from "../../api";
 import { motion } from "framer-motion";
 import { CalendarDays, Tag, Film, Images, Clock } from "lucide-react";
+import { useLocale } from "../../i18n/LocaleContext";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
-const fmt = (v) => {
+const fmt = (v, locale) => {
   if (!v) return "—";
   const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("tr-TR");
+  return Number.isNaN(d.getTime())
+    ? "—"
+    : d.toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR");
 };
 
 const ProjectDetail = () => {
+  const { locale } = useLocale();
   const { id } = useParams();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,7 +35,7 @@ const ProjectDetail = () => {
     if (!id) return;
     setLoading(true);
     api
-      .get(`/projects/${id}`)
+      .get(`/projects/${id}`, { params: { locale } })
       .then(({ data }) => {
         setProject(data);
         setNotFound(false);
@@ -41,7 +45,7 @@ const ProjectDetail = () => {
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, locale]);
 
   // Orijinal görsel listesi (boş/kırık URL filtrelemesi daha sonra yapılacak)
   const images = useMemo(() => {
@@ -96,7 +100,9 @@ const ProjectDetail = () => {
   if (loading) {
     return (
       <div className="min-h-[60vh] grid place-items-center">
-        <div className="animate-pulse text-gray-500">Yükleniyor…</div>
+        <div className="animate-pulse text-gray-500">
+          {locale === "en" ? "Loading..." : "Yükleniyor…"}
+        </div>
       </div>
     );
   }
@@ -104,7 +110,7 @@ const ProjectDetail = () => {
   if (notFound || !project) {
     return (
       <div className="text-center py-20 text-red-500 text-xl font-semibold">
-        Proje bulunamadı.
+        {locale === "en" ? "Project not found." : "Proje bulunamadı."}
       </div>
     );
   }
@@ -167,8 +173,8 @@ const ProjectDetail = () => {
                           ? "ring-2 ring-brandBlue border-transparent"
                           : "border-white/30 hover:border-white/60"
                       }`}
-                    title={`Görsel ${i + 1}`}
-                    aria-label={`Görsel ${i + 1}`}
+                    title={`${locale === "en" ? "Image" : "Görsel"} ${i + 1}`}
+                    aria-label={`${locale === "en" ? "Image" : "Görsel"} ${i + 1}`}
                   >
                     <img
                       src={src}
@@ -202,10 +208,11 @@ const ProjectDetail = () => {
             className="lg:col-span-2 bg-white/80 backdrop-blur rounded-2xl shadow p-6"
           >
             <h2 className="text-xl font-semibold text-brandBlue mb-3">
-              Proje Hakkında
+              {locale === "en" ? "About the Project" : "Proje Hakkında"}
             </h2>
             <p className="text-gray-700 leading-relaxed break-words whitespace-pre-wrap">
-              {project.description || "Açıklama mevcut değil."}
+              {project.description ||
+                (locale === "en" ? "No description available." : "Açıklama mevcut değil.")}
             </p>
           </motion.div>
 
@@ -219,14 +226,14 @@ const ProjectDetail = () => {
           >
             <div className="bg-white/80 backdrop-blur rounded-2xl shadow p-6">
               <h3 className="text-base font-semibold text-brandBlue mb-4">
-                Proje Bilgileri
+                {locale === "en" ? "Project Information" : "Proje Bilgileri"}
               </h3>
               <ul className="space-y-3 text-sm text-gray-700">
                 <li className="flex items-start gap-3">
                   <Tag size={18} className="text-brandBlue flex-none mt-0.5" />
                   <span>
-                    <strong>Kategori:</strong>{" "}
-                    {project.category || "Belirtilmemiş"}
+                    <strong>{locale === "en" ? "Category:" : "Kategori:"}</strong>{" "}
+                    {project.category || (locale === "en" ? "Not specified" : "Belirtilmemiş")}
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -236,13 +243,13 @@ const ProjectDetail = () => {
                   />
                   <span className="space-x-2">
                     {project.startDate && (
-                      <span>Başlangıç: {fmt(project.startDate)}</span>
+                      <span>{locale === "en" ? "Start:" : "Başlangıç:"} {fmt(project.startDate, locale)}</span>
                     )}
                     {project.endDate && (
-                      <span>Bitiş: {fmt(project.endDate)}</span>
+                      <span>{locale === "en" ? "End:" : "Bitiş:"} {fmt(project.endDate, locale)}</span>
                     )}
                     {!project.startDate && !project.endDate && (
-                      <span>Oluşturulma: {fmt(project.createdAt)}</span>
+                      <span>{locale === "en" ? "Created:" : "Oluşturulma:"} {fmt(project.createdAt, locale)}</span>
                     )}
                   </span>
                 </li>
@@ -254,10 +261,10 @@ const ProjectDetail = () => {
                     />
                     <span className="space-x-2">
                       {project.completedAt && (
-                        <span>Tamamlandı: {fmt(project.completedAt)}</span>
+                        <span>{locale === "en" ? "Completed:" : "Tamamlandı:"} {fmt(project.completedAt, locale)}</span>
                       )}
                       {project.durationDays ? (
-                        <span>({project.durationDays} gün)</span>
+                        <span>({project.durationDays} {locale === "en" ? "days" : "gün"})</span>
                       ) : null}
                     </span>
                   </li>
@@ -268,7 +275,7 @@ const ProjectDetail = () => {
                       size={18}
                       className="text-brandBlue flex-none mt-0.5"
                     />
-                    <span>{thumbImages.length} görsel</span>
+                    <span>{thumbImages.length} {locale === "en" ? "images" : "görsel"}</span>
                   </li>
                 )}
               </ul>
@@ -278,7 +285,9 @@ const ProjectDetail = () => {
               <div className="bg-white/80 backdrop-blur rounded-2xl shadow p-4">
                 <div className="flex items-center gap-2 mb-3 text-brandBlue">
                   <Film size={18} />
-                  <h3 className="font-semibold text-sm">Proje Videosu</h3>
+                  <h3 className="font-semibold text-sm">
+                    {locale === "en" ? "Project Video" : "Proje Videosu"}
+                  </h3>
                 </div>
                 <div className="aspect-video w-full overflow-hidden rounded-lg">
                   <video

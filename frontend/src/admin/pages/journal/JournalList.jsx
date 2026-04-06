@@ -7,6 +7,7 @@ import LoadErrorState from "../../components/LoadErrorState.jsx";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmModal from "../../components/ConfirmDialog.jsx";
 import OrderSelect from "../../components/OrderSelect";
+import JournalTranslationModal from "../../components/JournalTranslationModal.jsx";
 import { getAdminFeedbackMessage } from "../../utils/mediaFeedback";
 import {
   toPlainRichContent,
@@ -87,6 +88,8 @@ const JournalList = () => {
     onConfirm: null,
     loading: false,
   });
+  const [translationOpen, setTranslationOpen] = useState(false);
+  const [translationTarget, setTranslationTarget] = useState(null);
 
   const inputCls =
     "w-full sm:w-72 rounded-xl border border-slate-200/70 bg-white/70 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-indigo-500/50 dark:focus:ring-indigo-500/30";
@@ -95,6 +98,14 @@ const JournalList = () => {
     setConfirm({ open: true, title, desc, onConfirm, loading: false });
   const closeConfirm = () =>
     setConfirm((current) => ({ ...current, open: false, onConfirm: null }));
+  const openTranslationModal = (journal) => {
+    setTranslationTarget(journal);
+    setTranslationOpen(true);
+  };
+  const closeTranslationModal = () => {
+    setTranslationOpen(false);
+    setTranslationTarget(null);
+  };
 
   const fetchAll = useCallback(async () => {
     try {
@@ -287,6 +298,17 @@ const JournalList = () => {
                       Düzenle
                     </Link>
                     <button
+                      type="button"
+                      onClick={() => openTranslationModal(journal)}
+                      className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition ${
+                        journal.hasEnglishTranslation
+                          ? "bg-emerald-600 hover:bg-emerald-700"
+                          : "bg-indigo-600 hover:bg-indigo-700"
+                      }`}
+                    >
+                      {journal.hasEnglishTranslation ? "EN Düzenle" : "EN Çeviri"}
+                    </button>
+                    <button
                       onClick={() =>
                         handleDeleteClick(journal._id, journal.title)
                       }
@@ -382,15 +404,26 @@ const JournalList = () => {
                         </td>
                         <td className="border border-slate-200/70 p-3 dark:border-slate-800/70">
                           <div className="flex gap-2">
-                            <Link
-                              to={`/admin/journals/edit/${journal._id}`}
-                              className="inline-flex items-center gap-1 rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
-                            >
-                              Düzenle
-                            </Link>
-                            <button
-                              onClick={() =>
-                                handleDeleteClick(journal._id, journal.title)
+                          <Link
+                            to={`/admin/journals/edit/${journal._id}`}
+                            className="inline-flex items-center gap-1 rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
+                          >
+                            Düzenle
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => openTranslationModal(journal)}
+                            className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition ${
+                              journal.hasEnglishTranslation
+                                ? "bg-emerald-600 hover:bg-emerald-700"
+                                : "bg-indigo-600 hover:bg-indigo-700"
+                            }`}
+                          >
+                            {journal.hasEnglishTranslation ? "EN Düzenle" : "EN Çeviri"}
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleDeleteClick(journal._id, journal.title)
                               }
                               className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
                             >
@@ -419,6 +452,17 @@ const JournalList = () => {
         onCancel={() => {
           if (confirm.loading) return;
           closeConfirm();
+        }}
+      />
+
+      <JournalTranslationModal
+        open={translationOpen}
+        journalId={translationTarget?._id}
+        journalTitle={translationTarget?.title}
+        onClose={closeTranslationModal}
+        onSaved={async () => {
+          await fetchAll();
+          showToast("İngilizce haber çevirisi kaydedildi.", "success", 3000);
         }}
       />
 

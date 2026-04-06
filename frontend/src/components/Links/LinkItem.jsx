@@ -1,5 +1,7 @@
 // src/components/Links/LinkItem.jsx
 import PropTypes from "prop-types";
+import { Link } from "react-router-dom";
+import { useLocale } from "../../i18n/LocaleContext";
 
 const LinkItem = ({
   label,
@@ -12,6 +14,7 @@ const LinkItem = ({
   onMouseEnter,
   onMouseLeave,
 }) => {
+  const { locale } = useLocale();
   return (
     <div
       className={`
@@ -61,13 +64,13 @@ const LinkItem = ({
             <p className="text-xs text-gray-600 line-clamp-2">{desc}</p>
           ) : null}
 
-          <a
-            href={href}
+          <Link
+            to={href}
             className="inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-semibold
                        bg-quaternaryColor text-white hover:bg-secondaryColor transition-colors"
           >
-            Detay
-          </a>
+            {locale === "en" ? "Details" : "Detay"}
+          </Link>
         </div>
       </div>
     </div>

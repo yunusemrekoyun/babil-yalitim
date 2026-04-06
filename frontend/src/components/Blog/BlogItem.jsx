@@ -11,8 +11,11 @@ import {
   getVideoPosterUrl,
   looksVideo,
 } from "../../utils/media";
+import { useLocale } from "../../i18n/LocaleContext";
+import { localizePath } from "../../i18n/routing.js";
 
 const BlogItem = ({ item, index }) => {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const videoRef = useRef(null);
@@ -44,7 +47,7 @@ const BlogItem = ({ item, index }) => {
     typeof window !== "undefined" &&
     window.matchMedia("(hover: none), (pointer: coarse)").matches;
   const createdText = item?.createdAt
-    ? new Date(item.createdAt).toLocaleDateString("tr-TR")
+    ? new Date(item.createdAt).toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR")
     : "";
   const commentsCount = Number(item?.commentsCount || 0);
   const excerpt = toRichContentExcerpt(item?.content, 160);
@@ -69,11 +72,13 @@ const BlogItem = ({ item, index }) => {
         videoRef.current.pause();
         videoRef.current.currentTime = 0;
       }}
-      onClick={() => navigate(`/blog/${item._id}`)}
+      onClick={() => navigate(localizePath(`/blog/${item._id}`, locale))}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && navigate(`/blog/${item._id}`)}
-      aria-label={`${item?.title || "Blog"} detayına git`}
+      onKeyDown={(e) =>
+        e.key === "Enter" && navigate(localizePath(`/blog/${item._id}`, locale))
+      }
+      aria-label={`${item?.title || "Blog"} ${locale === "en" ? "view details" : "detayına git"}`}
     >
       {/* Kapak */}
       <div className="relative w-full h-56 md:h-60 overflow-hidden">
@@ -99,7 +104,7 @@ const BlogItem = ({ item, index }) => {
             <div className="pointer-events-none absolute inset-0 grid place-items-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/45 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
                 <PlayCircle size={15} />
-                Videoyu izle
+                {locale === "en" ? "Watch video" : "Videoyu izle"}
               </div>
             </div>
           </>
@@ -123,7 +128,7 @@ const BlogItem = ({ item, index }) => {
       {/* İçerik */}
       <div className="p-6">
         <h3 className="text-lg md:text-xl font-semibold text-secondaryColor line-clamp-2">
-          {item?.title || "Başlık"}
+          {item?.title || (locale === "en" ? "Title" : "Başlık")}
         </h3>
 
         {/* Etiketler */}
@@ -150,7 +155,11 @@ const BlogItem = ({ item, index }) => {
         <div className="mt-5 flex items-center justify-between">
           <div className="h-[2px] w-0 group-hover:w-1/2 bg-quaternaryColor/90 transition-all duration-500" />
           <span className="text-xs text-gray-500">
-            {commentsCount > 0 ? `${commentsCount} yorum` : "Yorum yok"}
+            {commentsCount > 0
+              ? `${commentsCount} ${locale === "en" ? "comments" : "yorum"}`
+              : locale === "en"
+              ? "No comments"
+              : "Yorum yok"}
           </span>
         </div>
       </div>

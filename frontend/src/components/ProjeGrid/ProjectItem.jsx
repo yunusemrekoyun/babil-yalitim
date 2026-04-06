@@ -11,6 +11,8 @@ import {
   looksVideo,
 } from "../../utils/media";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
+import { useLocale } from "../../i18n/LocaleContext";
+import { localizePath } from "../../i18n/routing.js";
 
 const clamp2 = {
   display: "-webkit-box",
@@ -19,7 +21,8 @@ const clamp2 = {
   overflow: "hidden",
 };
 
-const fmt = (v) => (v ? new Date(v).toLocaleDateString("tr-TR") : null);
+const fmt = (v, locale) =>
+  v ? new Date(v).toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR") : null;
 
 // En iyi poster’i seç: gerçek görsel → kapak video poster → opsiyonel video poster → legacy
 const pickPosterAndVideo = (project, cardImageWidth, imageQuality) => {
@@ -77,6 +80,7 @@ const pickPosterAndVideo = (project, cardImageWidth, imageQuality) => {
 const GRID_PLAY_EVENT = "grid:video-play"; // detail: { id: string }
 
 const ProjectItem = ({ project, index }) => {
+  const { locale } = useLocale();
   const [hovered, setHovered] = useState(false);
   const [imgOk, setImgOk] = useState(true);
   const videoRef = useRef(null);
@@ -183,13 +187,13 @@ const ProjectItem = ({ project, index }) => {
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      <Link to={`/project-detail/${project._id}`} className="block">
+      <Link to={localizePath(`/project-detail/${project._id}`, locale)} className="block">
         <div className="relative h-56 md:h-64 overflow-hidden">
           {/* Poster: her zaman render; mobilde video mount olunca silinir */}
           {hasImage && imgOk && (
             <AdaptiveImage
               media={poster}
-              alt={project?.title || "Proje"}
+              alt={project?.title || (locale === "en" ? "Project" : "Proje")}
               className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 ${
                 hovered ? "scale-110" : "scale-100"
               } ${isTouch && mountedVideo ? "opacity-0" : "opacity-100"}`}
@@ -247,7 +251,15 @@ const ProjectItem = ({ project, index }) => {
               type="button"
               onClick={onTouchPlayToggle}
               className="absolute bottom-2 right-2 z-20 rounded-full bg-black/45 p-1.5 backdrop-blur-sm active:bg-black/55 text-white"
-              aria-label={isPlayingTouch ? "Videoyu durdur" : "Videoyu oynat"}
+              aria-label={
+                isPlayingTouch
+                  ? locale === "en"
+                    ? "Pause video"
+                    : "Videoyu durdur"
+                  : locale === "en"
+                  ? "Play video"
+                  : "Videoyu oynat"
+              }
             >
               {isPlayingTouch ? <PauseCircle size={26} /> : <PlayCircle size={26} />}
             </button>
@@ -281,14 +293,14 @@ const ProjectItem = ({ project, index }) => {
             project?.durationDays) && (
             <p className="mt-3 text-xs text-gray-500 space-x-2">
               {project.startDate && (
-                <span>Başlangıç: {fmt(project.startDate)}</span>
+                <span>{locale === "en" ? "Start:" : "Başlangıç:"} {fmt(project.startDate, locale)}</span>
               )}
-              {project.endDate && <span>Bitiş: {fmt(project.endDate)}</span>}
+              {project.endDate && <span>{locale === "en" ? "End:" : "Bitiş:"} {fmt(project.endDate, locale)}</span>}
               {project.completedAt && (
-                <span>Tamamlandı: {fmt(project.completedAt)}</span>
+                <span>{locale === "en" ? "Completed:" : "Tamamlandı:"} {fmt(project.completedAt, locale)}</span>
               )}
               {project.durationDays ? (
-                <span>({project.durationDays} gün)</span>
+                <span>({project.durationDays} {locale === "en" ? "days" : "gün"})</span>
               ) : null}
             </p>
           )}

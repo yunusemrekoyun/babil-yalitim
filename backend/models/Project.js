@@ -1,6 +1,15 @@
 const mongoose = require("mongoose");
 const mediaSchema = require("./schemas/mediaSchema");
 
+const projectTranslationSchema = new mongoose.Schema(
+  {
+    title: { type: String, trim: true, default: "" },
+    description: { type: String, default: "" },
+    category: { type: String, trim: true, default: "" },
+  },
+  { _id: false }
+);
+
 const projectSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
@@ -16,6 +25,9 @@ const projectSchema = new mongoose.Schema(
     startDate: { type: Date },
     endDate: { type: Date },
     completedAt: { type: Date },
+    translations: {
+      en: { type: projectTranslationSchema, default: () => ({}) },
+    },
   },
   {
     timestamps: true,

@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import BlogGridItem from "./BlogGridItem";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
+import { localizePath } from "../../i18n/routing.js";
 
 const Skeleton = () => (
   <div className="rounded-2xl overflow-hidden border border-white/40 bg-white/30 backdrop-blur-md shadow-md">
@@ -17,23 +19,42 @@ const Skeleton = () => (
 );
 
 const BlogGrid = () => {
+  const { locale } = useLocale();
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 640 : true
   );
   const navigate = useNavigate();
+  const copy =
+    locale === "en"
+      ? {
+          fetchError: "GET /blogs failed:",
+          title: "Blog",
+          emptyTitle: "No blog posts yet.",
+          emptyText: "We will be here soon with new content.",
+          cta: "View All Blog Posts",
+        }
+      : {
+          fetchError: "GET /blogs failed:",
+          title: "Blog",
+          emptyTitle: "Henüz blog eklenmemiş.",
+          emptyText: "Yakında yeni içeriklerle buradayız.",
+          cta: "Tüm blogları gör",
+        };
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         setLoading(true);
-        const res = await api.get("/blogs");
+        const res = await api.get("/blogs", {
+          params: { locale },
+        });
         const list = Array.isArray(res.data) ? res.data : [];
         if (!cancelled) setBlogs(list.slice(0, 3));
       } catch (e) {
-        console.error("GET /blogs failed:", e?.response?.data || e);
+        console.error(copy.fetchError, e?.response?.data || e);
         if (!cancelled) setBlogs([]);
       } finally {
         if (!cancelled) setLoading(false);
@@ -42,7 +63,7 @@ const BlogGrid = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [copy.fetchError, locale]);
 
   useEffect(() => {
     const onResize = () =>
@@ -64,7 +85,7 @@ const BlogGrid = () => {
         <div className="flex items-end justify-between gap-4 mb-6 md:mb-8">
           <div className="text-center w-full">
             <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor">
-              Blog
+              {copy.title}
             </h2>
             <div className="mt-3 h-1 w-20 bg-quaternaryColor/90 rounded-full mx-auto" />
           </div>
@@ -80,11 +101,9 @@ const BlogGrid = () => {
         ) : blogs.length === 0 ? (
           <div className="text-center py-14 bg-white/40 backdrop-blur-xl rounded-2xl border border-white/30">
             <p className="text-secondaryColor font-semibold text-lg">
-              Henüz blog eklenmemiş.
+              {copy.emptyTitle}
             </p>
-            <p className="text-gray-600 mt-1">
-              Yakında yeni içeriklerle buradayız.
-            </p>
+            <p className="text-gray-600 mt-1">{copy.emptyText}</p>
           </div>
         ) : (
           <div className="grid gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -104,10 +123,10 @@ const BlogGrid = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.4, ease: "easeOut" }}
               whileHover={{ scale: 1.05 }}
-              onClick={() => navigate("/blog")}
+              onClick={() => navigate(localizePath("/blog", locale))}
               className={ctaClassName}
             >
-              Tüm blogları gör
+              {copy.cta}
               <span aria-hidden>→</span>
             </motion.button>
           </div>

@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import ProjectItem from "./ProjectItem";
 import api from "../../api";
+import { useLocale } from "../../i18n/LocaleContext";
 
 const ProjectsPageComponent = () => {
+  const { locale } = useLocale();
   const [projects, setProjects] = useState([]);
   const [q, setQ] = useState("");
-  const [cat, setCat] = useState("Tümü");
+  const allLabel = locale === "en" ? "All" : "Tümü";
+  const [cat, setCat] = useState(allLabel);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -14,7 +17,9 @@ const ProjectsPageComponent = () => {
     (async () => {
       try {
         setLoading(true);
-        const res = await api.get("/projects");
+        const res = await api.get("/projects", {
+          params: { locale },
+        });
         const list = Array.isArray(res.data) ? res.data : [];
         if (!cancelled) setProjects(list);
       } catch (e) {
@@ -22,7 +27,9 @@ const ProjectsPageComponent = () => {
           "[ProjectsPage] GET /projects failed:",
           e?.response?.data || e
         );
-        if (!cancelled) setErr("Projeler getirilemedi.");
+        if (!cancelled) {
+          setErr(locale === "en" ? "Projects could not be loaded." : "Projeler getirilemedi.");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -30,33 +37,37 @@ const ProjectsPageComponent = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
   const categories = useMemo(() => {
     const uniq = new Set(
       projects.map((p) => (p.category || "").trim()).filter(Boolean)
     );
-    return ["Tümü", ...Array.from(uniq)];
-  }, [projects]);
+    return [allLabel, ...Array.from(uniq)];
+  }, [allLabel, projects]);
+
+  useEffect(() => {
+    setCat((current) => (categories.includes(current) ? current : allLabel));
+  }, [allLabel, categories]);
 
   const filtered = useMemo(() => {
     const txt = q.trim().toLowerCase();
     return projects.filter((p) => {
-      const okCat = cat === "Tümü" || (p.category || "").trim() === cat;
+      const okCat = cat === allLabel || (p.category || "").trim() === cat;
       if (!txt) return okCat;
       const haystack = `${p.title || ""} ${p.description || ""} ${
         p.category || ""
       }`.toLowerCase();
       return okCat && haystack.includes(txt);
     });
-  }, [projects, q, cat]);
+  }, [allLabel, cat, projects, q]);
 
   const hasProjects = projects.length > 0;
 
   if (loading)
     return (
       <section className="w-full py-16 text-center text-gray-500">
-        Yükleniyor…
+        {locale === "en" ? "Loading..." : "Yükleniyor…"}
       </section>
     );
 
@@ -71,12 +82,12 @@ const ProjectsPageComponent = () => {
       <div className="mb-8 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
         <div className="flex-1">
           <label className="sr-only" htmlFor="project-search">
-            Projelerde ara
+            {locale === "en" ? "Search projects" : "Projelerde ara"}
           </label>
           <input
             id="project-search"
             type="text"
-            placeholder="Projelerde ara…"
+            placeholder={locale === "en" ? "Search projects..." : "Projelerde ara…"}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="w-full rounded-xl border border-white/40 bg-white/60 backdrop-blur px-4 py-3 outline-none focus:ring-2 focus:ring-quaternaryColor transition shadow-sm"
@@ -101,21 +112,28 @@ const ProjectsPageComponent = () => {
       </div>
 
       <p className="text-xs text-gray-500 mb-2">
-        Toplam: {projects.length} • Filtrelenmiş: {filtered.length}
+        {locale === "en"
+          ? `Total: ${projects.length} • Filtered: ${filtered.length}`
+          : `Toplam: ${projects.length} • Filtrelenmiş: ${filtered.length}`}
       </p>
 
       {filtered.length === 0 ? (
         <div className="text-center text-gray-600 bg-white/50 backdrop-blur-xl border border-white/30 rounded-2xl py-16">
           {hasProjects ? (
-            "Aramanızla eşleşen proje bulunamadı."
+            locale === "en"
+              ? "No projects matched your search."
+              : "Aramanızla eşleşen proje bulunamadı."
           ) : (
             <div className="mx-auto max-w-2xl space-y-3 px-6">
               <p className="text-lg font-semibold text-secondaryColor">
-                Projelerimiz yakında burada yayınlanacak.
+                {locale === "en"
+                  ? "Our projects will be published here soon."
+                  : "Projelerimiz yakında burada yayınlanacak."}
               </p>
               <p className="text-sm leading-6 text-gray-600">
-                Şu an listelenecek proje bulunmuyor. Yeni projeler eklendikçe bu
-                sayfada paylaşılacak, daha sonra tekrar göz atabilirsiniz.
+                {locale === "en"
+                  ? "There are no projects to list right now. New projects will appear on this page as they are added."
+                  : "Şu an listelenecek proje bulunmuyor. Yeni projeler eklendikçe bu sayfada paylaşılacak, daha sonra tekrar göz atabilirsiniz."}
               </p>
             </div>
           )}

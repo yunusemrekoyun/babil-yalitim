@@ -9,6 +9,7 @@ import LoadErrorState from "../../components/LoadErrorState";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import OrderSelect from "../../components/OrderSelect";
+import ProjectTranslationModal from "../../components/ProjectTranslationModal";
 import { getAdminFeedbackMessage } from "../../utils/mediaFeedback";
 import {
   DEFAULT_SITE_SETTINGS,
@@ -16,7 +17,14 @@ import {
 } from "../../../utils/siteSettings";
 import { getMediaUrl, getVideoPosterUrl } from "../../../utils/media";
 
-const Card = ({ project, onDelete, onOrderChange, maxOrder, orderLoading }) => {
+const Card = ({
+  project,
+  onDelete,
+  onOrderChange,
+  onTranslate,
+  maxOrder,
+  orderLoading,
+}) => {
   const coverIsVideo = project?.cover?.resourceType === "video";
   const coverSrc = getMediaUrl(project?.cover);
   const coverPoster = getVideoPosterUrl(project?.cover, {
@@ -95,6 +103,17 @@ const Card = ({ project, onDelete, onOrderChange, maxOrder, orderLoading }) => {
           Düzenle
         </Link>
         <button
+          type="button"
+          onClick={() => onTranslate(project)}
+          className={`inline-flex items-center justify-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-md ${
+            project.hasEnglishTranslation
+              ? "bg-gradient-to-r from-emerald-500 to-teal-500 shadow-emerald-500/25"
+              : "bg-gradient-to-r from-indigo-500 to-violet-500 shadow-indigo-500/25"
+          }`}
+        >
+          {project.hasEnglishTranslation ? "EN Düzenle" : "EN Çeviri"}
+        </button>
+        <button
           onClick={() => onDelete(project._id, project.title)}
           className="inline-flex items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-rose-500/25"
         >
@@ -120,9 +139,11 @@ Card.propTypes = {
       resourceType: PropTypes.oneOf(["image", "video"]),
       url: PropTypes.string,
     }),
+    hasEnglishTranslation: PropTypes.bool,
   }).isRequired,
   onDelete: PropTypes.func.isRequired,
   onOrderChange: PropTypes.func.isRequired,
+  onTranslate: PropTypes.func.isRequired,
   maxOrder: PropTypes.number.isRequired,
   orderLoading: PropTypes.bool,
 };
@@ -145,6 +166,8 @@ const ProjectList = () => {
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "info", duration = 4000) =>
     setToast({ msg, type, duration });
+  const [translationOpen, setTranslationOpen] = useState(false);
+  const [translationTarget, setTranslationTarget] = useState(null);
 
   const [confirm, setConfirm] = useState(null);
   const askConfirm = (config) => setConfirm(config);
@@ -305,6 +328,16 @@ const ProjectList = () => {
     }
   };
 
+  const openTranslationModal = (project) => {
+    setTranslationTarget(project);
+    setTranslationOpen(true);
+  };
+
+  const closeTranslationModal = () => {
+    setTranslationOpen(false);
+    setTranslationTarget(null);
+  };
+
   const hasActiveFilters = Boolean(q.trim()) || cat !== "all";
   const emptyMessage = hasActiveFilters
     ? "Seçili filtrelerle eşleşen proje bulunamadı."
@@ -441,6 +474,7 @@ const ProjectList = () => {
               project={project}
               onDelete={handleDelete}
               onOrderChange={handleOrderChange}
+              onTranslate={openTranslationModal}
               maxOrder={all.length || 1}
               orderLoading={orderingId === project._id}
             />
@@ -476,6 +510,17 @@ const ProjectList = () => {
           }}
         />
       ) : null}
+
+      <ProjectTranslationModal
+        open={translationOpen}
+        projectId={translationTarget?._id}
+        projectTitle={translationTarget?.title}
+        onClose={closeTranslationModal}
+        onSaved={async () => {
+          await fetchProjects();
+          showToast("İngilizce proje çevirisi kaydedildi.", "success");
+        }}
+      />
 
       {toast ? (
         <ToastAlert

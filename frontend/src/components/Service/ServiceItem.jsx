@@ -11,6 +11,8 @@ import {
 } from "../../utils/media";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 import useViewportActivation from "../../hooks/useViewportActivation";
+import { useLocale } from "../../i18n/LocaleContext";
+import { localizePath } from "../../i18n/routing.js";
 
 const pickFirstImageAndVideo = (images = []) => {
   let img = null;
@@ -36,6 +38,7 @@ const pickFirstImageAndVideo = (images = []) => {
 };
 
 const ServiceItem = ({ service, priority = false }) => {
+  const { locale } = useLocale();
   const [hovered, setHovered] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef(null);
@@ -154,12 +157,18 @@ const ServiceItem = ({ service, priority = false }) => {
   return (
     <div ref={cardRef}>
       <Link
-        to={service?._id ? `/services/${service._id}` : "#"}
+        to={
+          service?._id
+            ? localizePath(`/services/${service._id}`, locale)
+            : "#"
+        }
         state={service?._id ? { title: service?.title || "", service } : undefined}
         className="transform-gpu-soft group block overflow-hidden rounded-3xl border border-white/50 bg-white/60 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] hover:shadow-[0_18px_50px_rgba(0,0,0,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-quaternaryColor/60 transition-shadow"
         onMouseEnter={handleEnter}
         onMouseLeave={handleLeave}
-        aria-label={`${service?.title || "Hizmet"} detayına git`}
+        aria-label={`${service?.title || (locale === "en" ? "Service" : "Hizmet")} ${
+          locale === "en" ? "view details" : "detayına git"
+        }`}
       >
         {/* Media: 9:16 */}
         <div className="relative aspect-[9/16] overflow-hidden">
@@ -168,7 +177,7 @@ const ServiceItem = ({ service, priority = false }) => {
               {fallbackPosterUrl ? (
                 <img
                   src={fallbackPosterUrl}
-                  alt={service?.title || "Hizmet önizleme"}
+                  alt={service?.title || (locale === "en" ? "Service preview" : "Hizmet önizleme")}
                   className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 ${
                     hovered || (isTouch && inView) ? "scale-105" : "scale-100"
                   } ${videoReady ? "opacity-0" : "opacity-100"}`}
@@ -198,7 +207,7 @@ const ServiceItem = ({ service, priority = false }) => {
           ) : imageMedia ? (
             <AdaptiveImage
               media={imageMedia}
-              alt={service?.title || "service"}
+              alt={service?.title || (locale === "en" ? "service" : "hizmet")}
               className={`h-full w-full object-cover transition-transform duration-700 ${
                 hovered || (isTouch && inView) ? "scale-105" : "scale-100"
               }`}
@@ -218,7 +227,7 @@ const ServiceItem = ({ service, priority = false }) => {
           {/* Başlık + tip/kategori */}
           <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
             <h3 className="text-lg font-semibold drop-shadow-sm">
-              {service?.title || "Hizmet"}
+              {service?.title || (locale === "en" ? "Service" : "Hizmet")}
             </h3>
             <div className="mt-2 flex flex-wrap gap-2">
               {service?.type && (

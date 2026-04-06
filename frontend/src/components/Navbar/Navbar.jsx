@@ -1,9 +1,12 @@
 // src/components/Navbar/Navbar.jsx
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Logo from "../../assets/logo.png";
+import LanguageSwitcher from "../Common/LanguageSwitcher.jsx";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
+import { localizePath, stripLocalePrefix } from "../../i18n/routing.js";
 
 /** ---- Ayarlar ---- */
 const LOGO_WIDTH = 200; // px: desktop merkez hesapları için
@@ -38,21 +41,48 @@ const chip = (dir) => ({
 });
 
 export default function Navbar() {
+  const { locale } = useLocale();
   const [isOpen, setIsOpen] = useState(false); // mobil
   const [flyout, setFlyout] = useState(false); // desktop hover
   const hideTimer = useRef(null);
   const location = useLocation();
 
-  const navLeft = [
-    { label: "Hakkımızda", href: "/about" },
-    { label: "Projeler", href: "/projects" },
-    { label: "Hizmetler", href: "/services" },
-  ];
-  const navRight = [
-    { label: "Blog", href: "/blog" },
-    { label: "Haberler", href: "/journal" },
-    { label: "İletişim", href: "/iletisim" },
-  ];
+  const copy =
+    locale === "en"
+      ? {
+          navLeft: [
+            { label: "About", href: "/about" },
+            { label: "Projects", href: "/projects" },
+            { label: "Services", href: "/services" },
+          ],
+          navRight: [
+            { label: "Blog", href: "/blog" },
+            { label: "News", href: "/journal" },
+            { label: "Contact", href: "/iletisim" },
+          ],
+          closeMenu: "Close menu",
+          openMenu: "Open menu",
+          logoAlt: "Babil logo",
+        }
+      : {
+          navLeft: [
+            { label: "Hakkımızda", href: "/about" },
+            { label: "Projeler", href: "/projects" },
+            { label: "Hizmetler", href: "/services" },
+          ],
+          navRight: [
+            { label: "Blog", href: "/blog" },
+            { label: "Haberler", href: "/journal" },
+            { label: "İletişim", href: "/iletisim" },
+          ],
+          closeMenu: "Menüyü kapat",
+          openMenu: "Menüyü aç",
+          logoAlt: "Babil logosu",
+        };
+
+  const navLeft = copy.navLeft;
+  const navRight = copy.navRight;
+  const currentPath = stripLocalePrefix(location.pathname);
 
   const keepOpen = () => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -96,10 +126,14 @@ export default function Navbar() {
           onMouseLeave={delayedClose}
           style={{ width: LOGO_WIDTH }}
         >
-          <a href="/" className="block relative">
-            <img src={Logo} alt="Logo" className="w-full pointer-events-none" />
+          <Link to={localizePath("/", locale)} className="block relative">
+            <img
+              src={Logo}
+              alt={copy.logoAlt}
+              className="w-full pointer-events-none"
+            />
             <span className="absolute inset-[-18px]" />
-          </a>
+          </Link>
 
           {/* Sol uçan linkler */}
           <div
@@ -116,21 +150,24 @@ export default function Navbar() {
               className="flex flex-row-reverse gap-3 will-change-transform"
             >
               {navLeft.map((it) => (
-                <motion.a
+                <motion.div
                   key={it.href}
-                  href={it.href}
-                  className={`pointer-events-auto whitespace-nowrap rounded-full border border-white/80 px-4 py-2 text-center transition ${
-                    location.pathname === it.href
-                      ? "bg-white text-black"
-                      : "hover:bg-white/10"
-                  }`}
                   variants={chip("L")}
                   initial="hidden"
                   animate="visible"
                   style={{ willChange: "transform, opacity" }}
                 >
-                  {it.label}
-                </motion.a>
+                  <Link
+                    to={localizePath(it.href, locale)}
+                    className={`pointer-events-auto block whitespace-nowrap rounded-full border border-white/80 px-4 py-2 text-center transition ${
+                      currentPath === stripLocalePrefix(it.href)
+                        ? "bg-white text-black"
+                        : "hover:bg-white/10"
+                    }`}
+                  >
+                    {it.label}
+                  </Link>
+                </motion.div>
               ))}
             </motion.div>
           </div>
@@ -150,24 +187,31 @@ export default function Navbar() {
               className="flex flex-row gap-3 will-change-transform"
             >
               {navRight.map((it) => (
-                <motion.a
+                <motion.div
                   key={it.href}
-                  href={it.href}
-                  className={`pointer-events-auto whitespace-nowrap rounded-full border border-white/80 px-4 py-2 text-center transition ${
-                    location.pathname === it.href
-                      ? "bg-white text-black"
-                      : "hover:bg-white/10"
-                  }`}
                   variants={chip("R")}
                   initial="hidden"
                   animate="visible"
                   style={{ willChange: "transform, opacity" }}
                 >
-                  {it.label}
-                </motion.a>
+                  <Link
+                    to={localizePath(it.href, locale)}
+                    className={`pointer-events-auto block whitespace-nowrap rounded-full border border-white/80 px-4 py-2 text-center transition ${
+                      currentPath === stripLocalePrefix(it.href)
+                        ? "bg-white text-black"
+                        : "hover:bg-white/10"
+                    }`}
+                  >
+                    {it.label}
+                  </Link>
+                </motion.div>
               ))}
             </motion.div>
           </div>
+        </div>
+
+        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <LanguageSwitcher className="border-white/25 bg-white/10" />
         </div>
       </nav>
 
@@ -176,14 +220,17 @@ export default function Navbar() {
         {/* bar'ı şeffaf tut, okunabilirlik için çok hafif cam efekti ve çizgi */}
         <div className="absolute inset-0 bg-white/10 backdrop-blur-xl border-b border-white/20 pointer-events-none" />
         <div className="relative flex min-h-[3rem] items-center justify-center">
-          <a href="/" className="relative z-10 shrink-0">
+          <div className="absolute left-0 z-10">
+            <LanguageSwitcher className="scale-[0.92]" />
+          </div>
+          <Link to={localizePath("/", locale)} className="relative z-10 shrink-0">
             {/* logo daha büyük */}
-            <img src={Logo} alt="Logo" className="h-14 w-auto" />
-          </a>
+            <img src={Logo} alt={copy.logoAlt} className="h-14 w-auto" />
+          </Link>
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="absolute right-0 z-10 grid size-10 place-items-center rounded-md text-white active:scale-95"
-            aria-label={isOpen ? "Menüyü kapat" : "Menüyü aç"}
+            aria-label={isOpen ? copy.closeMenu : copy.openMenu}
           >
             {isOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
@@ -210,9 +257,9 @@ export default function Navbar() {
             <div className="absolute inset-0 bg-white/85 backdrop-blur-md" />
             <div className="relative h-full w-full flex flex-col items-center gap-4 pt-[calc(env(safe-area-inset-top,0)+88px)] pb-[calc(env(safe-area-inset-bottom,0)+24px)]">
               {[...navLeft, ...navRight].map((it) => (
-                <a
+                <Link
                   key={it.href}
-                  href={it.href}
+                  to={localizePath(it.href, locale)}
                   onClick={() => setIsOpen(false)}
                   className={`w-[78%] max-w-xs text-center py-3 text-lg uppercase rounded-full transition ${
                     location.pathname === it.href
@@ -221,14 +268,14 @@ export default function Navbar() {
                   }`}
                 >
                   {it.label}
-                </a>
+                </Link>
               ))}
             </div>
 
             {/* kapatma butonu (üst sağ) – kontrastlı */}
             <button
               onClick={() => setIsOpen(false)}
-              aria-label="Kapat"
+              aria-label={copy.closeMenu}
               className="absolute top-[calc(env(safe-area-inset-top,0)+12px)] right-4 text-gray-900/80 hover:text-gray-900 active:scale-95"
             >
               <X size={28} />

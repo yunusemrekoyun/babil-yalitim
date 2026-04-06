@@ -6,17 +6,19 @@ import Footer from "../components/Footer/Footer";
 import ProjectDetail from "../components/ProjeGrid/ProjectDetail";
 import Breadcrumb from "../components/ui/Breadcrumb";
 import api from "../api";
+import { useLocale } from "../i18n/LocaleContext";
 
 const ProjectDetailPage = () => {
   const { id } = useParams();
+  const { locale } = useLocale();
   const [projectTitle, setProjectTitle] = useState("");
 
   useEffect(() => {
     if (!id) return;
-    api.get(`/projects/${id}`).then(({ data }) => {
+    api.get(`/projects/${id}`, { params: { locale } }).then(({ data }) => {
       setProjectTitle(data?.title || "");
     });
-  }, [id]);
+  }, [id, locale]);
 
   return (
     <>
@@ -25,11 +27,11 @@ const ProjectDetailPage = () => {
       <section className="max-w-7xl mx-auto px-4 md:px-8 pt-6">
         <Breadcrumb
           titleMap={{
-            "project-detail": "Projelerimiz",
-            projects: "Projelerimiz",
-            [id]: projectTitle || "Yükleniyor...",
+            "project-detail": locale === "en" ? "Projects" : "Projelerimiz",
+            projects: locale === "en" ? "Projects" : "Projelerimiz",
+            [id]: projectTitle || (locale === "en" ? "Loading..." : "Yükleniyor..."),
           }}
-          nonLinkLabels={["Projelerimiz"]} // 👈 bu etiket link değil
+          nonLinkLabels={[locale === "en" ? "Projects" : "Projelerimiz"]}
         />
       </section>
 

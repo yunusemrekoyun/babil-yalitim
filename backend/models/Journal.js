@@ -2,6 +2,14 @@
 const mongoose = require("mongoose");
 const mediaSchema = require("./schemas/mediaSchema");
 
+const journalTranslationSchema = new mongoose.Schema(
+  {
+    title: { type: String, trim: true, default: "" },
+    content: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
 const journalSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
@@ -11,6 +19,9 @@ const journalSchema = new mongoose.Schema(
     // medya
     cover: { type: mediaSchema, required: true }, // zorunlu
     assets: { type: [mediaSchema], default: [] }, // opsiyonel (image/video çoklu)
+    translations: {
+      en: { type: journalTranslationSchema, default: () => ({}) },
+    },
 
     // beğeniler
     likesCount: { type: Number, default: 0 },

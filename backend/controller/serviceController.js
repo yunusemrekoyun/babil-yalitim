@@ -90,6 +90,30 @@ const uploadOne = async (file, folder) => mediaStorage.upload(file, { folder });
 
 const destroyIfExists = async (media) => mediaStorage.destroy(media);
 
+const normalizeLocale = (value = "tr") =>
+  String(value || "tr").toLowerCase().startsWith("en") ? "en" : "tr";
+
+const getLocalizedField = (baseValue, translatedValue) =>
+  String(translatedValue || "").trim() ? translatedValue : baseValue;
+
+const getLocalizedArray = (baseValue, translatedValue) =>
+  Array.isArray(translatedValue) && translatedValue.length ? translatedValue : baseValue;
+
+const normalizeTranslationAreas = (value) => normalizeAreas(value);
+
+const hasEnglishTranslation = (item) => {
+  const en = item?.translations?.en;
+  if (!en) return false;
+
+  return Boolean(
+    String(en.title || "").trim() ||
+      String(en.type || "").trim() ||
+      String(en.category || "").trim() ||
+      String(en.description || "").trim() ||
+      (Array.isArray(en.usageAreas) && en.usageAreas.length)
+  );
+};
+
 const flattenFiles = (files) =>
   Array.isArray(files) ? files : Object.values(files || {}).flat();
 
@@ -184,6 +208,7 @@ const buildSubService = async ({
     usageAreas: payload.usageAreas,
     cover,
     images,
+    translations: existing?.translations || { en: {} },
   };
 };
 
@@ -203,6 +228,23 @@ const normalizeSubServiceOrder = (subServices = []) =>
     ...item,
     displayOrder: index + 1,
   }));
+
+const serializeSubService = (subService, locale) => {
+  if (!subService) return subService;
+  const normalizedLocale = normalizeLocale(locale);
+  const en = normalizedLocale === "en" ? subService?.translations?.en || {} : {};
+  const { translations, ...rest } = subService;
+
+  return {
+    ...rest,
+    title: getLocalizedField(subService.title, en.title),
+    type: getLocalizedField(subService.type, en.type),
+    category: getLocalizedField(subService.category, en.category),
+    usageAreas: getLocalizedArray(subService.usageAreas || [], en.usageAreas),
+    description: getLocalizedField(subService.description, en.description),
+    hasEnglishTranslation: hasEnglishTranslation(subService),
+  };
+};
 
 const looksVideoUrl = (url = "") =>
   /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(String(url));
@@ -248,6 +290,53 @@ const toServiceSummary = (service) => ({
   updatedAt: service.updatedAt,
 });
 
+const toLocalizedServiceSummary = (service, locale) => {
+  const normalizedLocale = normalizeLocale(locale);
+  const en = normalizedLocale === "en" ? service?.translations?.en || {} : {};
+
+  return {
+    _id: service._id,
+    title: getLocalizedField(service.title, en.title),
+    displayOrder: service.displayOrder,
+    type: getLocalizedField(service.type, en.type),
+    category: getLocalizedField(service.category, en.category),
+    usageAreas: getLocalizedArray(service.usageAreas || [], en.usageAreas),
+    description: getLocalizedField(service.description, en.description),
+    cover: service.cover || null,
+    images: pickSummaryMedia(service.images),
+    createdAt: service.createdAt,
+    updatedAt: service.updatedAt,
+    hasEnglishTranslation: hasEnglishTranslation(service),
+  };
+};
+
+const serializeService = (service, locale) => {
+  const normalizedLocale = normalizeLocale(locale);
+  const en = normalizedLocale === "en" ? service?.translations?.en || {} : {};
+  const { translations, ...rest } = service;
+
+  return {
+    ...rest,
+    title: getLocalizedField(service.title, en.title),
+    type: getLocalizedField(service.type, en.type),
+    category: getLocalizedField(service.category, en.category),
+    usageAreas: getLocalizedArray(service.usageAreas || [], en.usageAreas),
+    description: getLocalizedField(service.description, en.description),
+    subServices: normalizeSubServiceOrder(service.subServices || []).map((subService) =>
+      serializeSubService(subService, normalizedLocale)
+    ),
+    hasEnglishTranslation: hasEnglishTranslation(service),
+  };
+};
+
+const buildEnglishTranslationPayload = (payload = {}) => ({
+  title: String(payload.title || "").trim(),
+  type: String(payload.type || "").trim(),
+  category: String(payload.category || "").trim(),
+  usageAreas: normalizeTranslationAreas(payload.usageAreas),
+  description: String(payload.description || "").trim(),
+});
+
 const wantsSummaryPayload = (req) => {
   const view = String(req.query.view || "").trim().toLowerCase();
   const summary = String(req.query.summary || "").trim().toLowerCase();
@@ -258,12 +347,13 @@ const wantsSummaryPayload = (req) => {
 /* -------------------- GET -------------------- */
 const getServices = async (req, res) => {
   try {
+    const locale = normalizeLocale(req.query.locale);
     await syncCollectionDisplayOrder(Service);
 
     if (wantsSummaryPayload(req)) {
       const services = await Service.find(
         {},
-        "title displayOrder type category usageAreas description cover images createdAt updatedAt"
+        "title displayOrder type category usageAreas description cover images createdAt updatedAt translations.en"
       )
         .sort({
           displayOrder: 1,
@@ -272,7 +362,7 @@ const getServices = async (req, res) => {
         })
         .lean();
 
-      return res.json(services.map(toServiceSummary));
+      return res.json(services.map((service) => toLocalizedServiceSummary(service, locale)));
     }
 
     const services = await Service.find().sort({
@@ -280,13 +370,7 @@ const getServices = async (req, res) => {
       createdAt: 1,
       _id: 1,
     });
-    res.json(
-      services.map((service) => {
-        const payload = service.toObject();
-        payload.subServices = normalizeSubServiceOrder(payload.subServices || []);
-        return payload;
-      })
-    );
+    res.json(services.map((service) => serializeService(service.toObject(), locale)));
   } catch (err) {
     res
       .status(500)
@@ -296,13 +380,111 @@ const getServices = async (req, res) => {
 
 const getServiceById = async (req, res) => {
   try {
+    const locale = normalizeLocale(req.query.locale);
     const service = await Service.findById(req.params.id);
     if (!service) return res.status(404).json({ message: "Servis bulunamadı" });
-    const payload = service.toObject();
-    payload.subServices = normalizeSubServiceOrder(payload.subServices || []);
-    res.json(payload);
+    res.json(serializeService(service.toObject(), locale));
   } catch (err) {
     res.status(500).json({ message: "Servis alınamadı", error: err.message });
+  }
+};
+
+const getServiceTranslations = async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+    if (!service) return res.status(404).json({ message: "Servis bulunamadı" });
+
+    res.json({
+      _id: service._id,
+      source: {
+        title: service.title,
+        type: service.type || "",
+        category: service.category || "",
+        usageAreas: service.usageAreas || [],
+        description: service.description || "",
+      },
+      translations: {
+        en: {
+          title: service.translations?.en?.title || "",
+          type: service.translations?.en?.type || "",
+          category: service.translations?.en?.category || "",
+          usageAreas: service.translations?.en?.usageAreas || [],
+          description: service.translations?.en?.description || "",
+        },
+      },
+      subServices: normalizeSubServiceOrder(service.subServices || []).map((subService) => ({
+        id: String(subService._id || ""),
+        source: {
+          title: subService.title,
+          type: subService.type || "",
+          category: subService.category || "",
+          usageAreas: subService.usageAreas || [],
+          description: subService.description || "",
+        },
+        translations: {
+          en: {
+            title: subService.translations?.en?.title || "",
+            type: subService.translations?.en?.type || "",
+            category: subService.translations?.en?.category || "",
+            usageAreas: subService.translations?.en?.usageAreas || [],
+            description: subService.translations?.en?.description || "",
+          },
+        },
+        hasEnglishTranslation: hasEnglishTranslation(subService),
+      })),
+      hasEnglishTranslation: hasEnglishTranslation(service),
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: "Servis çevirileri alınamadı",
+      error: err.message,
+    });
+  }
+};
+
+const updateServiceTranslations = async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+    if (!service) return res.status(404).json({ message: "Servis bulunamadı" });
+
+    service.translations = service.translations || {};
+    service.translations.en = buildEnglishTranslationPayload(req.body);
+    service.markModified("translations");
+
+    const subTranslations = Array.isArray(req.body?.subServices)
+      ? req.body.subServices
+      : [];
+    const translationMap = new Map(
+      subTranslations
+        .map((item) => [String(item?.id || ""), buildEnglishTranslationPayload(item)])
+        .filter(([id]) => id)
+    );
+
+    service.subServices = (service.subServices || []).map((subService) => {
+      const key = String(subService?._id || "");
+      if (!translationMap.has(key)) return subService;
+
+      subService.translations = subService.translations || {};
+      subService.translations.en = translationMap.get(key);
+      return subService;
+    });
+    service.markModified("subServices");
+
+    await service.save();
+
+    res.json({
+      message: "İngilizce hizmet çevirisi kaydedildi.",
+      hasEnglishTranslation: hasEnglishTranslation(service),
+      subServices: normalizeSubServiceOrder(service.subServices || []).map((subService) => ({
+        id: String(subService._id || ""),
+        hasEnglishTranslation: hasEnglishTranslation(subService),
+      })),
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: "Hizmet çevirisi kaydedilemedi",
+      error: err.message,
+    });
   }
 };
 
@@ -573,8 +755,10 @@ const setServiceOrder = async (req, res) => {
 module.exports = {
   getServices,
   getServiceById,
+  getServiceTranslations,
   createService,
   updateService,
+  updateServiceTranslations,
   deleteService,
   setServiceOrder,
 };

@@ -1,6 +1,15 @@
 const mongoose = require("mongoose");
 const mediaSchema = require("./schemas/mediaSchema");
 
+const blogTranslationSchema = new mongoose.Schema(
+  {
+    title: { type: String, trim: true, default: "" },
+    content: { type: String, default: "" },
+    tags: { type: [String], default: [] },
+  },
+  { _id: false }
+);
+
 const commentSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -21,6 +30,9 @@ const blogSchema = new mongoose.Schema(
     tags: { type: [String], default: [] }, // opsiyonel
     cover: { type: mediaSchema, required: true }, // zorunlu kapak (image)
     assets: { type: [mediaSchema], default: [] }, // opsiyonel: image/video (çoklu)
+    translations: {
+      en: { type: blogTranslationSchema, default: () => ({}) },
+    },
     comments: { type: [commentSchema], default: [] }, // gömülü yorumlar
   },
   { timestamps: true }

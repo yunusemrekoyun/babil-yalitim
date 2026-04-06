@@ -4,8 +4,10 @@ import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
 import Contact from "../components/Contact/Contact";
 import Breadcrumb from "../components/ui/Breadcrumb"; // <-- eklendi
+import { useLocale } from "../i18n/LocaleContext.jsx";
 
 const ContactPage = () => {
+  const { locale } = useLocale();
   return (
     <>
       <motion.div
@@ -19,7 +21,9 @@ const ContactPage = () => {
 
         {/* Breadcrumb */}
         <section className="max-w-7xl mx-auto px-4 md:px-8 pt-8">
-          <Breadcrumb titleMap={{ iletisim: "İletişim" }} />
+          <Breadcrumb
+            titleMap={{ iletisim: locale === "en" ? "Contact" : "İletişim" }}
+          />
         </section>
 
         <Contact />

@@ -6,8 +6,10 @@ import Footer from "../components/Footer/Footer";
 import JournalPreview from "../components/Journal/JournalPreview";
 import Breadcrumb from "../components/ui/Breadcrumb"; // ← EKLENDİ
 import api from "../api";
+import { useLocale } from "../i18n/LocaleContext.jsx";
 
 const JournalPage = () => {
+  const { locale } = useLocale();
   const [journalData, setJournalData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -17,13 +19,16 @@ const JournalPage = () => {
     (async () => {
       try {
         setLoading(true);
-        const res = await api.get("/journals");
+        const res = await api.get("/journals", {
+          params: { locale },
+        });
         if (!cancelled) {
           setJournalData(Array.isArray(res.data) ? res.data : []);
         }
       } catch (e) {
         console.error("Journal verisi alınamadı:", e?.response?.data || e);
-        if (!cancelled) setErr("Haberler getirilemedi.");
+        if (!cancelled)
+          setErr(locale === "en" ? "News could not be loaded." : "Haberler getirilemedi.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -31,7 +36,7 @@ const JournalPage = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
   return (
     <>
@@ -48,8 +53,8 @@ const JournalPage = () => {
         <section className="max-w-7xl mx-auto px-4 md:px-8 pt-6">
           <Breadcrumb
             titleMap={{
-              journal: "Haberler", // rotanız /journal ise bunu kullanın
-              journals: "Haberler", // bazı projelerde /journals olur; güvence için ekledik
+              journal: locale === "en" ? "News" : "Haberler",
+              journals: locale === "en" ? "News" : "Haberler",
             }}
           />
         </section>
@@ -62,7 +67,7 @@ const JournalPage = () => {
               transition={{ delay: 0.05 }}
               className="text-3xl md:text-5xl font-bold text-secondaryColor"
             >
-              Haberler
+              {locale === "en" ? "News" : "Haberler"}
             </motion.h1>
             <motion.div
               initial={{ scaleX: 0 }}

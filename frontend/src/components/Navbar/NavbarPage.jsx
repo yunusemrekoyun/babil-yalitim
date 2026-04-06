@@ -3,6 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Logo from "../../assets/logo.png";
+import LanguageSwitcher from "../Common/LanguageSwitcher.jsx";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
+import { localizePath, stripLocalePrefix } from "../../i18n/routing.js";
 
 const SlideAllIn = {
   hidden: { opacity: 0, y: 30 },
@@ -30,37 +33,59 @@ const topBarVariants = {
   },
 };
 
-const navItems = [
-  { label: "Hizmetler", path: "/services" },
-  { label: "Projeler", path: "/projects" },
-  { label: "Hakkımızda", path: "/about" },
-  { label: "Blog", path: "/blog" },
-  { label: "Haberler", path: "/journal" },
-  { label: "İletişim", path: "/iletisim" },
-];
-
 const NavbarPage = () => {
+  const { locale } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const copy =
+    locale === "en"
+      ? {
+          navItems: [
+            { label: "Services", path: "/services" },
+            { label: "Projects", path: "/projects" },
+            { label: "About", path: "/about" },
+            { label: "Blog", path: "/blog" },
+            { label: "News", path: "/journal" },
+            { label: "Contact", path: "/iletisim" },
+          ],
+          openMenu: "Open menu",
+          closeMenu: "Close menu",
+          logoAlt: "Babil logo",
+        }
+      : {
+          navItems: [
+            { label: "Hizmetler", path: "/services" },
+            { label: "Projeler", path: "/projects" },
+            { label: "Hakkımızda", path: "/about" },
+            { label: "Blog", path: "/blog" },
+            { label: "Haberler", path: "/journal" },
+            { label: "İletişim", path: "/iletisim" },
+          ],
+          openMenu: "Menüyü aç",
+          closeMenu: "Menüyü kapat",
+          logoAlt: "Babil logosu",
+        };
+  const navItems = copy.navItems;
+  const currentPath = stripLocalePrefix(location.pathname);
 
   return (
     <header className="w-full z-30 relative">
       {/* ✅ Masaüstü */}
       <motion.nav
-        className="hidden md:flex container mx-auto justify-between items-center py-4 md:py-6 uppercase font-semibold text-xs md:text-lg text-neutral-800"
+        className="hidden md:grid container mx-auto grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 py-4 md:py-6 uppercase font-semibold text-[11px] lg:text-sm xl:text-base text-neutral-800"
         variants={SlideAllIn}
         initial="hidden"
         animate="visible"
       >
         {/* Sol butonlar */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center justify-start gap-2 min-w-0">
           {navItems.slice(0, 3).map((item) => (
             <Link
               key={item.path}
-              to={item.path}
-              className={`w-150px] text-center px-4 py-2 rounded-full transition
+              to={localizePath(item.path, locale)}
+              className={`min-w-[106px] lg:min-w-[118px] xl:min-w-[132px] text-center px-3 lg:px-4 py-2 rounded-full transition
                 ${
-                  location.pathname === item.path
+                  currentPath === stripLocalePrefix(item.path)
                     ? "bg-white text-black"
                     : "border border-gray-500 hover:bg-gray-100"
                 }
@@ -72,19 +97,19 @@ const NavbarPage = () => {
         </div>
 
         {/* Logo */}
-        <Link to="/">
-          <img src={Logo} alt="Logo" className="w-[200px]" />
+        <Link to={localizePath("/", locale)} className="justify-self-center">
+          <img src={Logo} alt={copy.logoAlt} className="w-[156px] lg:w-[178px] xl:w-[200px]" />
         </Link>
 
-        {/* Sağ butonlar */}
-        <div className="flex gap-2">
+        {/* Sağ butonlar + dil seçici */}
+        <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
           {navItems.slice(3).map((item) => (
             <Link
               key={item.path}
-              to={item.path}
-              className={`w-[140px] text-center px-4 py-2 rounded-full transition
+              to={localizePath(item.path, locale)}
+              className={`min-w-[106px] lg:min-w-[118px] xl:min-w-[132px] text-center px-3 lg:px-4 py-2 rounded-full transition
                 ${
-                  location.pathname === item.path
+                  currentPath === stripLocalePrefix(item.path)
                     ? "bg-white text-black"
                     : "border border-gray-500 hover:bg-gray-100"
                 }
@@ -93,19 +118,23 @@ const NavbarPage = () => {
               {item.label}
             </Link>
           ))}
+          <LanguageSwitcher theme="light" className="ml-1 shrink-0" />
         </div>
       </motion.nav>
 
       {/* ✅ Mobil Navbar */}
       <div className="md:hidden border-b border-gray-300 bg-white px-4 py-3 text-neutral-800">
         <div className="relative flex min-h-[3rem] items-center justify-center">
-          <Link to="/" className="shrink-0">
-            <img src={Logo} alt="Logo" className="h-14 w-auto" />
+          <div className="absolute left-0 z-10">
+            <LanguageSwitcher theme="light" className="scale-[0.92]" />
+          </div>
+          <Link to={localizePath("/", locale)} className="shrink-0">
+            <img src={Logo} alt={copy.logoAlt} className="h-14 w-auto" />
           </Link>
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="absolute right-0 z-50 grid size-10 place-items-center"
-            aria-label={isOpen ? "Menüyü kapat" : "Menüyü aç"}
+            aria-label={isOpen ? copy.closeMenu : copy.openMenu}
           >
             {isOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
@@ -123,20 +152,20 @@ const NavbarPage = () => {
             className="absolute top-0 left-0 right-0 bg-white text-neutral-800 flex flex-col items-center gap-4 py-6 z-40 border-b border-gray-300"
           >
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.path}
-                href={item.path}
+                to={localizePath(item.path, locale)}
                 onClick={() => setIsOpen(false)}
                 className={`text-lg uppercase w-[140px] text-center py-2 rounded-full transition
                   ${
-                    location.pathname === item.path
+                    currentPath === stripLocalePrefix(item.path)
                       ? "bg-black text-white"
                       : "border border-gray-400 hover:bg-gray-100"
                   }
                 `}
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </motion.div>
         )}

@@ -18,6 +18,47 @@ const uploadOne = async (file, folder) => mediaStorage.upload(file, { folder });
 
 const destroyIfExists = async (media) => mediaStorage.destroy(media);
 
+const normalizeLocale = (value = "tr") =>
+  String(value || "tr").toLowerCase().startsWith("en") ? "en" : "tr";
+
+const hasEnglishTranslation = (journal) => {
+  const en = journal?.translations?.en;
+  if (!en) return false;
+
+  return Boolean(String(en.title || "").trim() || String(en.content || "").trim());
+};
+
+const getLocalizedField = (baseValue, translatedValue) =>
+  String(translatedValue || "").trim() ? translatedValue : baseValue;
+
+const serializePublicJournal = (journal, locale) => {
+  const normalizedLocale = normalizeLocale(locale);
+  const en = normalizedLocale === "en" ? journal?.translations?.en || {} : {};
+
+  return {
+    _id: journal._id,
+    title: getLocalizedField(journal.title, en.title),
+    displayOrder: journal.displayOrder,
+    content: getLocalizedField(journal.content, en.content),
+    cover: journal.cover,
+    assets: journal.assets,
+    likesCount: journal.likesCount || 0,
+    createdAt: journal.createdAt,
+    updatedAt: journal.updatedAt,
+    hasEnglishTranslation: hasEnglishTranslation(journal),
+  };
+};
+
+const buildEnglishTranslationPayload = (payload = {}) => {
+  const title = String(payload.title || "").trim();
+  const rawContent = String(payload.content || "");
+  const content = rawContent.trim()
+    ? sanitizeHtml(buildRichContentHtml(rawContent))
+    : "";
+
+  return { title, content };
+};
+
 const emailToHash = (emailRaw) => {
   const email = String(emailRaw || "")
     .trim()
@@ -32,9 +73,10 @@ const emailToHash = (emailRaw) => {
 // ---- CRUD ----
 exports.getJournals = async (req, res) => {
   try {
+    const locale = normalizeLocale(req.query.locale);
     await syncCollectionDisplayOrder(Journal);
     const items = await Journal.find().sort({ displayOrder: 1, createdAt: 1, _id: 1 });
-    res.json(items);
+    res.json(items.map((item) => serializePublicJournal(item, locale)));
   } catch (err) {
     res.status(500).json({ message: "Haberler alınamadı", error: err.message });
   }
@@ -42,11 +84,64 @@ exports.getJournals = async (req, res) => {
 
 exports.getJournalById = async (req, res) => {
   try {
+    const locale = normalizeLocale(req.query.locale);
     const item = await Journal.findById(req.params.id);
     if (!item) return res.status(404).json({ message: "Haber bulunamadı" });
-    res.json(item);
+    res.json(serializePublicJournal(item, locale));
   } catch (err) {
     res.status(500).json({ message: "Haber alınamadı", error: err.message });
+  }
+};
+
+exports.getJournalTranslations = async (req, res) => {
+  try {
+    const item = await Journal.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: "Haber bulunamadı" });
+
+    res.json({
+      _id: item._id,
+      source: {
+        title: item.title,
+        content: item.content,
+      },
+      translations: {
+        en: {
+          title: item.translations?.en?.title || "",
+          content: item.translations?.en?.content || "",
+        },
+      },
+      hasEnglishTranslation: hasEnglishTranslation(item),
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Haber çevirileri alınamadı", error: err.message });
+  }
+};
+
+exports.updateJournalTranslations = async (req, res) => {
+  try {
+    const item = await Journal.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: "Haber bulunamadı" });
+
+    item.translations = item.translations || {};
+    item.translations.en = buildEnglishTranslationPayload(req.body);
+    item.markModified("translations");
+
+    await item.save();
+
+    res.json({
+      message: "İngilizce haber çevirisi kaydedildi.",
+      hasEnglishTranslation: hasEnglishTranslation(item),
+      translations: {
+        en: item.translations.en,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: "Haber çevirisi kaydedilemedi",
+      error: err.message,
+    });
   }
 };
 

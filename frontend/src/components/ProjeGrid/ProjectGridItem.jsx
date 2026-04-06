@@ -2,17 +2,20 @@ import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 import { useRef } from "react";
 import { Link } from "react-router-dom";
+import { useLocale } from "../../i18n/LocaleContext";
+import { localizePath } from "../../i18n/routing.js";
 
 // Aynı projeyi birden çok kez loglamamak için
 const missingLogSet = new Set();
 
 const ProjectGridItem = ({ project, index, isMobile }) => {
+  const { locale } = useLocale();
   const videoRef = useRef(null);
 
   /* -------------------- MOBİL: SADECE backend'in verdiği mobileCoverUrl -------------------- */
   if (isMobile) {
     const mobileSrc = project?.mobileCoverUrl || "";
-    const fallbackTitle = project?.title || "Proje";
+    const fallbackTitle = project?.title || (locale === "en" ? "Project" : "Proje");
 
     if (!mobileSrc) {
       // Aynı proje için sadece 1 kez logla
@@ -29,7 +32,7 @@ const ProjectGridItem = ({ project, index, isMobile }) => {
 
     return (
       <div className="group relative h-full overflow-hidden rounded-xl text-white cursor-pointer">
-        <Link to={`/project-detail/${project._id}`} className="block h-full">
+        <Link to={localizePath(`/project-detail/${project._id}`, locale)} className="block h-full">
           <div className="absolute inset-0">
             {mobileSrc ? (
               <img
@@ -103,7 +106,7 @@ const ProjectGridItem = ({ project, index, isMobile }) => {
         }
       }}
     >
-      <Link to={`/project-detail/${project._id}`} className="block h-full">
+      <Link to={localizePath(`/project-detail/${project._id}`, locale)} className="block h-full">
         <div className="absolute inset-0">
           {videoUrl ? (
             <video

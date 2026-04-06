@@ -9,14 +9,17 @@ const { upload, compressIfNeeded } = require("../middleware/uploadMedia");
 const {
   getServices,
   getServiceById,
+  getServiceTranslations,
   createService,
   updateService,
+  updateServiceTranslations,
   deleteService,
   setServiceOrder,
 } = require("../controller/serviceController");
 
 // public
 router.get("/", getServices);
+router.get("/:id/translations", verifyToken, getServiceTranslations);
 router.get("/:id", getServiceById);
 
 // protected + multipart (image | video)
@@ -37,6 +40,7 @@ router.put(
 );
 
 router.patch("/:id/order", verifyToken, setServiceOrder);
+router.put("/:id/translations", verifyToken, updateServiceTranslations);
 
 router.delete("/:id", verifyToken, deleteService);
 

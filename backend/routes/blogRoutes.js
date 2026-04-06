@@ -12,6 +12,8 @@ const {
   deleteBlog,
   setBlogOrder,
   deleteAsset,
+  getBlogTranslations,
+  updateBlogTranslations,
   // comments
   getApprovedComments,
   createComment,
@@ -59,6 +61,8 @@ router.put(
 );
 
 router.patch("/:id/order", verifyToken, setBlogOrder);
+router.get("/:id/translations", verifyToken, getBlogTranslations);
+router.put("/:id/translations", verifyToken, updateBlogTranslations);
 
 router.delete("/:id", verifyToken, deleteBlog);
 

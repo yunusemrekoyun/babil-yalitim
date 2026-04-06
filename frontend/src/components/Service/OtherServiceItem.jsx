@@ -1,8 +1,11 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { getOptimizedImageUrl, getVideoPosterUrl, looksVideo } from "../../utils/media";
+import { useLocale } from "../../i18n/LocaleContext";
+import { localizePath } from "../../i18n/routing.js";
 
 const OtherServiceItem = ({ service }) => {
+  const { locale } = useLocale();
   const coverUrl = service?.cover?.url || "";
   const isVideo =
     service?.cover?.resourceType === "video" || looksVideo(coverUrl);
@@ -30,10 +33,12 @@ const OtherServiceItem = ({ service }) => {
 
   return (
     <Link
-      to={`/services/${service._id}`}
+      to={localizePath(`/services/${service._id}`, locale)}
       state={{ title: service?.title || "", service }}
       className="group flex gap-3 rounded-lg overflow-hidden border bg-white hover:shadow-md transition focus:outline-none focus-visible:ring-2 focus-visible:ring-quaternaryColor/60"
-      aria-label={`${service?.title || "Hizmet"} detayına git`}
+      aria-label={`${service?.title || (locale === "en" ? "Service" : "Hizmet")} ${
+        locale === "en" ? "view details" : "detayına git"
+      }`}
     >
       <div className="w-16 h-20 overflow-hidden shrink-0">
         <img

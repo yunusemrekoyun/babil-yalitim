@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import JournalGridItem from "./JournalGridItem";
 import useViewportActivation from "../../hooks/useViewportActivation";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
+import { localizePath } from "../../i18n/routing.js";
 
 const AUTOPLAY_MS = 4000;
 
@@ -20,6 +22,7 @@ const Skeleton = () => (
 );
 
 const JournalGrid = () => {
+  const { locale } = useLocale();
   const [journals, setJournals] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +45,24 @@ const JournalGrid = () => {
 
   const navigate = useNavigate();
   const timerRef = useRef(null);
+  const copy =
+    locale === "en"
+      ? {
+          fetchError: "GET /journals failed:",
+          title: "News",
+          emptyTitle: "No news has been published yet.",
+          emptyText: "We will be here soon with new updates.",
+          cta: "View All News",
+          group: "Group",
+        }
+      : {
+          fetchError: "GET /journals failed:",
+          title: "Haberler",
+          emptyTitle: "Henüz haber eklenmemiş.",
+          emptyText: "Yakında yeni içeriklerle buradayız.",
+          cta: "Tüm haberleri gör",
+          group: "Grup",
+        };
 
   // fetch
   useEffect(() => {
@@ -49,7 +70,9 @@ const JournalGrid = () => {
     (async () => {
       try {
         setLoading(true);
-        const { data } = await api.get("/journals");
+        const { data } = await api.get("/journals", {
+          params: { locale },
+        });
         const list = Array.isArray(data) ? data : [];
         if (!cancelled) {
           setJournals(
@@ -64,7 +87,7 @@ const JournalGrid = () => {
           );
         }
       } catch (e) {
-        console.error("GET /journals failed:", e?.response?.data || e);
+        console.error(copy.fetchError, e?.response?.data || e);
         if (!cancelled) setJournals([]);
       } finally {
         if (!cancelled) setLoading(false);
@@ -73,7 +96,7 @@ const JournalGrid = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [copy.fetchError, locale]);
 
   // breakpoints
   useEffect(() => {
@@ -141,7 +164,7 @@ const JournalGrid = () => {
       {/* Başlık */}
       <div className="max-w-6xl mx-auto text-center mb-8 md:mb-10">
         <h2 className="text-3xl md:text-4xl font-bold text-secondaryColor mb-2">
-          Haberler
+          {copy.title}
         </h2>
         <div className="h-1 w-20 bg-quaternaryColor mx-auto rounded" />
       </div>
@@ -156,11 +179,9 @@ const JournalGrid = () => {
         ) : len === 0 ? (
           <div className="text-center py-14 bg-white/40 backdrop-blur-xl rounded-2xl border border-white/30">
             <p className="text-secondaryColor font-semibold text-lg">
-              Henüz haber eklenmemiş.
+              {copy.emptyTitle}
             </p>
-            <p className="text-gray-600 mt-1">
-              Yakında yeni içeriklerle buradayız.
-            </p>
+            <p className="text-gray-600 mt-1">{copy.emptyText}</p>
           </div>
         ) : (
           <>
@@ -212,7 +233,7 @@ const JournalGrid = () => {
                 return (
                   <button
                     key={i}
-                    aria-label={`Grup ${i + 1}`}
+                    aria-label={`${copy.group} ${i + 1}`}
                     onClick={() => goToGroup(i)}
                     className={`h-2.5 rounded-full transition-all duration-300 ${
                       active ? "w-6 bg-quaternaryColor" : "w-2.5 bg-gray-300"
@@ -226,11 +247,11 @@ const JournalGrid = () => {
             {isMobile ? (
               <div className="flex justify-center md:justify-end mt-8">
                 <button
-                  onClick={() => navigate("/journal")}
+                  onClick={() => navigate(localizePath("/journal", locale))}
                   className="flex w-full items-center justify-center gap-2 text-sm text-white bg-quaternaryColor 
                              px-4 py-2.5 rounded-full"
                 >
-                  Tüm haberleri gör
+                  {copy.cta}
                   <span aria-hidden>→</span>
                 </button>
               </div>
@@ -244,12 +265,12 @@ const JournalGrid = () => {
                 className="flex justify-center md:justify-end mt-8"
               >
                 <button
-                  onClick={() => navigate("/journal")}
+                  onClick={() => navigate(localizePath("/journal", locale))}
                   className="flex items-center gap-2 text-sm text-white bg-quaternaryColor 
                              px-4 py-2 rounded-full hover:bg-opacity-90 hover:shadow-lg hover:bg-white/20 
                              transition-all duration-300"
                 >
-                  Tüm haberleri Gör
+                  {copy.cta}
                   <span aria-hidden>→</span>
                 </button>
               </motion.div>

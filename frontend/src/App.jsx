@@ -17,6 +17,11 @@ import ScrollToTop from "./components/Common/ScrollToTop.jsx";
 import ProgressCenter from "./admin/components/ProgressCenter.jsx";
 import SeoManager from "./components/SEO/SeoManager.jsx";
 import BackgroundVideo from "./components/Background/BackgroundVideo.jsx";
+import { LocaleProvider, useLocale } from "./i18n/LocaleContext.jsx";
+import {
+  localizePath,
+  stripLocalePrefix,
+} from "./i18n/routing.js";
 
 const HomePage = lazy(() => import("./pages/HomePage.jsx"));
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage.jsx"));
@@ -49,11 +54,15 @@ const ServiceListPage = lazy(() => import("./admin/pages/service/ServiceList.jsx
 const AddServicePage = lazy(() => import("./admin/pages/service/AddService.jsx"));
 const EditServicePage = lazy(() => import("./admin/pages/service/EditService.jsx"));
 
-const PageFallback = () => (
-  <div className="grid min-h-screen place-items-center bg-white text-slate-500">
-    Yukleniyor...
-  </div>
-);
+const PageFallback = () => {
+  const { locale } = useLocale();
+
+  return (
+    <div className="grid min-h-screen place-items-center bg-white text-slate-500">
+      {locale === "en" ? "Loading..." : "Yukleniyor..."}
+    </div>
+  );
+};
 
 const wrapLazy = (Component) => (
   <Suspense fallback={<PageFallback />}>
@@ -80,6 +89,14 @@ const publicRoutes = [
   { path: "/iletisim", element: wrapLazy(ContactPage) },
   { path: "/kvkk", element: wrapLazy(KvkkPage) },
 ];
+
+const localizedPublicRoutes = publicRoutes.flatMap((route) => [
+  route,
+  {
+    ...route,
+    path: localizePath(route.path, "en"),
+  },
+]);
 
 const adminRoutes = [
   { path: "dashboard", element: wrapLazy(DashboardPage) },
@@ -111,7 +128,7 @@ const AppRoutes = () => {
   return (
     <AnimatePresence mode="sync">
       <Routes location={location} key={location.pathname}>
-        {publicRoutes.map(({ path, element }) => (
+        {localizedPublicRoutes.map(({ path, element }) => (
           <Route key={path} path={path} element={element} />
         ))}
 
@@ -144,7 +161,9 @@ const AppRoutes = () => {
 
 const AppShell = () => {
   const location = useLocation();
-  const showHomeBackground = location.pathname === "/";
+  const showHomeBackground =
+    !location.pathname.startsWith("/admin") &&
+    stripLocalePrefix(location.pathname) === "/";
 
   return (
     <>
@@ -166,20 +185,22 @@ export default function App() {
 
   return (
     <Router>
-      <ScrollToTop />
-      <ProgressCenter />
-      <SeoManager />
-      {/* Onay banner'ı */}
-      <CookieConsent
-        visible={showBanner}
-        onAccept={accept}
-        onDecline={decline}
-      />
+      <LocaleProvider>
+        <ScrollToTop />
+        <ProgressCenter />
+        <SeoManager />
+        {/* Onay banner'ı */}
+        <CookieConsent
+          visible={showBanner}
+          onAccept={accept}
+          onDecline={decline}
+        />
 
-      {/* Analytics tracker (admin rotalarını kendi içinde filtreliyor) */}
-      <AnalyticsTracker />
+        {/* Analytics tracker (admin rotalarını kendi içinde filtreliyor) */}
+        <AnalyticsTracker />
 
-      <AppShell />
+        <AppShell />
+      </LocaleProvider>
     </Router>
   );
 }

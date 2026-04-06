@@ -6,6 +6,8 @@ import { X } from "lucide-react";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
+import { localizePath, stripLocalePrefix } from "../../i18n/routing.js";
 
 const normalizeTypeToPath = (type = "", id = "", fallbackPath = "") => {
   if (fallbackPath) return fallbackPath;
@@ -24,32 +26,52 @@ const normalizeTypeToPath = (type = "", id = "", fallbackPath = "") => {
 };
 
 const typeLabelMap = {
-  blog: "Blog",
-  blogs: "Blog",
-  journal: "Haberler",
-  journals: "Haberler",
-  news: "Haberler",
-  project: "Projeler",
-  projects: "Projeler",
-  "project-detail": "Projeler",
-  service: "Hizmetler",
-  services: "Hizmetler",
-  about: "Hakkımızda",
-  whyus: "Neden Biz?",
-  contact: "İletişim",
-  iletisim: "İletişim",
-  kvkk: "KVKK",
+  tr: {
+    blog: "Blog",
+    blogs: "Blog",
+    journal: "Haberler",
+    journals: "Haberler",
+    news: "Haberler",
+    project: "Projeler",
+    projects: "Projeler",
+    "project-detail": "Projeler",
+    service: "Hizmetler",
+    services: "Hizmetler",
+    about: "Hakkımızda",
+    whyus: "Neden Biz?",
+    contact: "İletişim",
+    iletisim: "İletişim",
+    kvkk: "KVKK",
+  },
+  en: {
+    blog: "Blog",
+    blogs: "Blog",
+    journal: "News",
+    journals: "News",
+    news: "News",
+    project: "Projects",
+    projects: "Projects",
+    "project-detail": "Projects",
+    service: "Services",
+    services: "Services",
+    about: "About",
+    whyus: "Why Us?",
+    contact: "Contact",
+    iletisim: "Contact",
+    kvkk: "KVKK",
+  },
 };
 
-const getTypeLabel = (item = {}) => {
+const getTypeLabel = (item = {}, locale = "tr") => {
+  const labels = typeLabelMap[locale] || typeLabelMap.tr;
   const type = String(item.type || "").toLowerCase();
-  if (type && typeLabelMap[type]) return typeLabelMap[type];
+  if (type && labels[type]) return labels[type];
 
-  const path = String(item.path || item.pathname || "");
-  if (!path.startsWith("/")) return "Diğer";
+  const path = stripLocalePrefix(String(item.path || item.pathname || ""));
+  if (!path.startsWith("/")) return locale === "en" ? "Other" : "Diğer";
 
   const segment = path.split("/")[1] || "";
-  return typeLabelMap[segment] || "Diğer";
+  return labels[segment] || (locale === "en" ? "Other" : "Diğer");
 };
 
 const getResultKey = (item = {}, index = 0) =>
@@ -108,6 +130,7 @@ const SearchResultList = ({
   onHover,
   onPick,
   mode = "dropdown",
+  locale = "tr",
 }) => {
   if (!results.length) return null;
 
@@ -154,7 +177,7 @@ const SearchResultList = ({
                     {item.title}
                   </span>
                   <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {getTypeLabel(item)}
+                    {getTypeLabel(item, locale)}
                   </span>
                 </div>
 
@@ -183,7 +206,11 @@ const SearchResultList = ({
               </div>
 
               <span className="shrink-0 text-xs font-medium text-slate-400">
-                {isOverlay ? "İncele" : getTypeLabel(item)}
+                {isOverlay
+                  ? locale === "en"
+                    ? "Open"
+                    : "İncele"
+                  : getTypeLabel(item, locale)}
               </span>
             </div>
           </li>
@@ -209,9 +236,11 @@ SearchResultList.propTypes = {
   onHover: PropTypes.func.isRequired,
   onPick: PropTypes.func.isRequired,
   mode: PropTypes.oneOf(["dropdown", "overlay"]),
+  locale: PropTypes.oneOf(["tr", "en"]),
 };
 
 const SearchBar = ({ onFocusChange }) => {
+  const { locale } = useLocale();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -238,6 +267,48 @@ const SearchBar = ({ onFocusChange }) => {
 
   const resultLimit = overlayOpen ? 24 : 7;
   const isMobileViewport = viewport.width < 768;
+  const copy =
+    locale === "en"
+      ? {
+          openSearch: "Open search",
+          searchPlaceholder: "How can we help?",
+          overlayPlaceholder:
+            "Search titles, categories, service areas, or content",
+          closeSearchLayer: "Close search layer",
+          close: "Close",
+          smartSearch: "Smart Search",
+          smartSearchText:
+            "Results are ranked by title, category, tag, sub-service, and content matches.",
+          startSearching: "Start searching",
+          resultsCount: (count) => `${count} results`,
+          refineSearch: "Refine your search",
+          refineSearchText:
+            "Try a service name, project category, blog tag, news content, or a sub-service area.",
+          noResults: "No results found",
+          noResultsText:
+            "Try a different keyword, category, or a shorter phrase.",
+          searchError: "Search error:",
+        }
+      : {
+          openSearch: "Aramayı aç",
+          searchPlaceholder: "Nasıl yardımcı olabiliriz?",
+          overlayPlaceholder:
+            "Başlık, kategori, hizmet alanı veya içerik ara",
+          closeSearchLayer: "Arama katmanını kapat",
+          close: "Kapat",
+          smartSearch: "Akıllı Arama",
+          smartSearchText:
+            "Başlık, kategori, etiket, alt hizmet ve içerik eşleşmelerine göre sıralanır.",
+          startSearching: "Aramaya başla",
+          resultsCount: (count) => `${count} sonuç`,
+          refineSearch: "Aramayı derinleştir",
+          refineSearchText:
+            "Hizmet adı, proje kategorisi, blog etiketi, haber içeriği veya alt hizmet alanı gibi ifadeler yaz.",
+          noResults: "Sonuç bulunamadı",
+          noResultsText:
+            "Farklı bir anahtar kelime, kategori veya daha kısa bir ifade dene.",
+          searchError: "Arama hatası:",
+        };
 
   const overlayFrame = useMemo(() => {
     const mobile = viewport.width < 768;
@@ -397,7 +468,7 @@ const SearchBar = ({ onFocusChange }) => {
       const path = normalizeTypeToPath(item?.type, id, item?.path);
       if (!path) return;
 
-      navigate(path);
+      navigate(localizePath(path, locale));
       setQuery("");
       setResults([]);
       setHighlightIndex(-1);
@@ -405,7 +476,7 @@ const SearchBar = ({ onFocusChange }) => {
       setDropdownPos(null);
       closeOverlay();
     },
-    [closeOverlay, navigate]
+    [closeOverlay, locale, navigate]
   );
 
   useEffect(() => {
@@ -431,7 +502,9 @@ const SearchBar = ({ onFocusChange }) => {
 
     const timer = setTimeout(() => {
       api
-        .get(`/search?q=${encodeURIComponent(trimmed)}&limit=${resultLimit}`)
+        .get(
+          `/search?q=${encodeURIComponent(trimmed)}&limit=${resultLimit}&locale=${locale}`
+        )
         .then((response) => {
           if (
             cancelled ||
@@ -455,7 +528,7 @@ const SearchBar = ({ onFocusChange }) => {
         })
         .catch((error) => {
           if (cancelled || requestSeq !== searchRequestSeqRef.current) return;
-          console.error("Arama hatası:", error);
+          console.error(copy.searchError, error);
           setDropdownVisible(false);
           setResults([]);
           setHighlightIndex(-1);
@@ -467,8 +540,10 @@ const SearchBar = ({ onFocusChange }) => {
       clearTimeout(timer);
     };
   }, [
+    copy.searchError,
     isDesktopInputActive,
     isMobileViewport,
+    locale,
     openSuggestions,
     overlayOpen,
     query,
@@ -584,10 +659,10 @@ const SearchBar = ({ onFocusChange }) => {
                 type="button"
                 onClick={handleMobileTrigger}
                 className="flex w-full items-center justify-between rounded-full border border-gray-300 bg-white px-5 py-3 text-left text-[16px] text-brandDark shadow transition hover:shadow-lg"
-                aria-label="Aramayı aç"
+                aria-label={copy.openSearch}
               >
                 <span className={query ? "text-brandDark" : "text-gray-400"}>
-                  {query || "Nasıl yardımcı olabiliriz?"}
+                  {query || copy.searchPlaceholder}
                 </span>
                 <FaSearch className="shrink-0 text-gray-500" />
               </button>
@@ -599,7 +674,7 @@ const SearchBar = ({ onFocusChange }) => {
                 onKeyDown={handleKeyDown}
                 onFocus={handleSearchFocus}
                 onBlur={handleSearchBlur}
-                placeholder="Nasıl yardımcı olabiliriz?"
+                placeholder={copy.searchPlaceholder}
                 inputClassName="w-full rounded-full border border-gray-300 bg-white px-10 py-3 text-[16px] text-brandDark shadow transition placeholder:text-gray-400 hover:shadow-lg focus:border-quaternaryColor focus:outline-none focus:ring-2 focus:ring-quaternaryColor sm:text-lg"
                 iconClassName="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500"
               />
@@ -633,6 +708,7 @@ const SearchBar = ({ onFocusChange }) => {
                   highlightIndex={highlightIndex}
                   onHover={setHighlightIndex}
                   onPick={go}
+                  locale={locale}
                 />
               </motion.div>
             )}
@@ -647,7 +723,7 @@ const SearchBar = ({ onFocusChange }) => {
               <>
                 <motion.button
                   type="button"
-                  aria-label="Arama katmanını kapat"
+                  aria-label={copy.closeSearchLayer}
                   className="fixed inset-0 z-[120000] cursor-default bg-white/24 backdrop-blur-md"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -699,7 +775,7 @@ const SearchBar = ({ onFocusChange }) => {
                             onKeyDown={handleKeyDown}
                             onFocus={handleSearchFocus}
                             onBlur={handleSearchBlur}
-                            placeholder="Başlık, kategori, hizmet alanı veya içerik ara"
+                            placeholder={copy.overlayPlaceholder}
                             inputClassName="w-full rounded-[24px] border border-slate-200/90 bg-white/92 px-12 py-3.5 text-[16px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-quaternaryColor focus:outline-none focus:ring-2 focus:ring-quaternaryColor/50 sm:text-base"
                             iconClassName="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                           />
@@ -708,7 +784,7 @@ const SearchBar = ({ onFocusChange }) => {
                           type="button"
                           onClick={closeOverlay}
                           className="grid size-11 place-items-center rounded-2xl border border-white/80 bg-white/80 text-slate-700 transition hover:bg-white"
-                          aria-label="Kapat"
+                          aria-label={copy.close}
                         >
                           <X size={20} />
                         </button>
@@ -717,16 +793,16 @@ const SearchBar = ({ onFocusChange }) => {
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                            Akıllı Arama
+                            {copy.smartSearch}
                           </p>
                           <p className="text-sm text-slate-600">
-                            Başlık, kategori, etiket, alt hizmet ve içerik eşleşmelerine göre sıralanır.
+                            {copy.smartSearchText}
                           </p>
                         </div>
                         <div className="rounded-full border border-white/80 bg-white/75 px-3 py-1.5 text-xs font-medium text-slate-500">
                           {query.trim().length >= 2
-                            ? `${results.length} sonuç`
-                            : "Aramaya başla"}
+                            ? copy.resultsCount(results.length)
+                            : copy.startSearching}
                         </div>
                       </div>
                     </div>
@@ -736,10 +812,10 @@ const SearchBar = ({ onFocusChange }) => {
                         <div className="grid h-full place-items-center rounded-[28px] border border-dashed border-white/80 bg-white/45 p-8 text-center">
                           <div className="max-w-xl space-y-3">
                             <p className="text-base font-semibold text-slate-800">
-                              Aramayı derinleştir
+                              {copy.refineSearch}
                             </p>
                             <p className="text-sm leading-6 text-slate-600">
-                              Hizmet adı, proje kategorisi, blog etiketi, haber içeriği veya alt hizmet alanı gibi ifadeler yaz.
+                              {copy.refineSearchText}
                             </p>
                           </div>
                         </div>
@@ -750,15 +826,16 @@ const SearchBar = ({ onFocusChange }) => {
                           onHover={setHighlightIndex}
                           onPick={go}
                           mode="overlay"
+                          locale={locale}
                         />
                       ) : (
                         <div className="grid h-full place-items-center rounded-[28px] border border-dashed border-white/80 bg-white/45 p-8 text-center">
                           <div className="max-w-xl space-y-3">
                             <p className="text-base font-semibold text-slate-800">
-                              Sonuç bulunamadı
+                              {copy.noResults}
                             </p>
                             <p className="text-sm leading-6 text-slate-600">
-                              Farklı bir anahtar kelime, kategori veya daha kısa bir ifade dene.
+                              {copy.noResultsText}
                             </p>
                           </div>
                         </div>

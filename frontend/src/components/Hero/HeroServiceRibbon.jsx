@@ -4,12 +4,15 @@ import { Link } from "react-router-dom";
 import api from "../../api";
 import useViewportActivation from "../../hooks/useViewportActivation";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
+import { localizePath } from "../../i18n/routing.js";
 
 const PANEL_WIDTH = 300;
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 const HeroServiceRibbon = () => {
+  const { locale } = useLocale();
   const [services, setServices] = useState([]);
   const [activePanel, setActivePanel] = useState(null);
   const [viewportRef, inView] = useViewportActivation({
@@ -22,23 +25,34 @@ const HeroServiceRibbon = () => {
   const chipRefs = useRef({});
   const closeTimerRef = useRef(null);
 
+  const copy =
+    locale === "en"
+      ? {
+          loadError: "Hero service ribbon could not be loaded:",
+          subServices: "Sub-services",
+        }
+      : {
+          loadError: "Hero hizmet şeridi yüklenemedi:",
+          subServices: "Alt Hizmetler",
+        };
+
   useEffect(() => {
     let mounted = true;
 
     api
-      .get("/services")
+      .get("/services", { params: { locale } })
       .then(({ data }) => {
         if (!mounted) return;
         setServices(Array.isArray(data) ? data : []);
       })
       .catch((error) => {
-        console.error("Hero hizmet şeridi yüklenemedi:", error);
+        console.error(copy.loadError, error);
       });
 
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [copy.loadError, locale]);
 
   useEffect(() => {
     const clearTimer = () => {
@@ -150,7 +164,11 @@ const HeroServiceRibbon = () => {
                   onMouseEnter={() => openPanel(service, key)}
                 >
                   <Link
-                    to={service?._id ? `/services/${service._id}` : "/services"}
+                    to={
+                      service?._id
+                        ? localizePath(`/services/${service._id}`, locale)
+                        : localizePath("/services", locale)
+                    }
                     state={service?._id ? { title: service?.title || "", service } : undefined}
                     className={`inline-flex min-h-[52px] min-w-[158px] max-w-[186px] items-center justify-center rounded-full border px-4 py-2 text-center text-[11px] font-semibold leading-[1.05rem] text-white transition sm:min-h-[54px] sm:min-w-[172px] sm:max-w-[198px] sm:text-[12px] ${
                       isActive
@@ -194,7 +212,7 @@ const HeroServiceRibbon = () => {
                     {activePanel.service.title}
                   </div>
                   <div className="mt-1 text-base font-semibold text-slate-800">
-                    Alt Hizmetler
+                    {copy.subServices}
                   </div>
                 </div>
                 <div className="mt-3 space-y-1">
@@ -203,8 +221,11 @@ const HeroServiceRibbon = () => {
                       key={subService?._id || `${activePanel.service._id}-${index}`}
                       to={
                         activePanel.service?._id && (subService?._id || subService?.id)
-                          ? `/services/${activePanel.service._id}/sub-services/${subService?._id || subService?.id}`
-                          : "/services"
+                          ? localizePath(
+                              `/services/${activePanel.service._id}/sub-services/${subService?._id || subService?.id}`,
+                              locale
+                            )
+                          : localizePath("/services", locale)
                       }
                       state={
                         activePanel.service?._id

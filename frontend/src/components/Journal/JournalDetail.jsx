@@ -12,15 +12,18 @@ import {
   ChevronRight,
   Play,
 } from "lucide-react";
+import { useLocale } from "../../i18n/LocaleContext";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
 };
 
-const fmtDate = (v) => (v ? new Date(v).toLocaleDateString("tr-TR") : "");
+const fmtDate = (v, locale) =>
+  v ? new Date(v).toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR") : "";
 
 const JournalDetail = () => {
+  const { locale } = useLocale();
   const { id } = useParams();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +44,9 @@ const JournalDetail = () => {
     setLoading(true);
     (async () => {
       try {
-        const { data } = await api.get(`/journals/${id}`);
+        const { data } = await api.get(`/journals/${id}`, {
+          params: { locale },
+        });
         setItem(data);
         setLikes(data?.likesCount ?? 0);
       } catch (e) {
@@ -51,10 +56,10 @@ const JournalDetail = () => {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, locale]);
 
   const heroUrl = item?.cover?.url || "";
-  const dateText = fmtDate(item?.createdAt);
+  const dateText = fmtDate(item?.createdAt, locale);
 
   // Tüm medya: kapak + assets (image/video)
   const media = useMemo(() => {
@@ -92,7 +97,10 @@ const JournalDetail = () => {
       });
       setLikes(data?.likesCount ?? likes + 1);
       setLiked(true);
-      setLikeStatus({ type: "success", text: "Begeni kaydedildi." });
+      setLikeStatus({
+        type: "success",
+        text: locale === "en" ? "Like saved." : "Begeni kaydedildi.",
+      });
       setLikeFormOpen(false);
       setLikeEmail("");
     } catch (e) {
@@ -101,12 +109,17 @@ const JournalDetail = () => {
         setLikes(e?.response?.data?.likesCount ?? likes);
         setLikeStatus({
           type: "info",
-          text: "Bu haberi zaten begenmissiniz.",
+          text:
+            locale === "en"
+              ? "You have already liked this news item."
+              : "Bu haberi zaten begenmissiniz.",
         });
       } else {
         setLikeStatus({
           type: "error",
-          text: e?.response?.data?.message || "Begeni eklenemedi.",
+          text:
+            e?.response?.data?.message ||
+            (locale === "en" ? "Like could not be added." : "Begeni eklenemedi."),
         });
       }
     } finally {
@@ -147,7 +160,9 @@ const JournalDetail = () => {
   if (loading) {
     return (
       <div className="min-h-[60vh] grid place-items-center">
-        <div className="animate-pulse text-gray-500">Yükleniyor…</div>
+        <div className="animate-pulse text-gray-500">
+          {locale === "en" ? "Loading..." : "Yükleniyor…"}
+        </div>
       </div>
     );
   }
@@ -155,7 +170,7 @@ const JournalDetail = () => {
   if (!item) {
     return (
       <div className="text-center py-20 text-red-500 text-xl font-semibold">
-        Haber bulunamadı.
+        {locale === "en" ? "News item not found." : "Haber bulunamadı."}
       </div>
     );
   }
@@ -208,8 +223,8 @@ const JournalDetail = () => {
                     ? "bg-white text-quaternaryColor border-white"
                     : "bg-white/15 text-white border-white/40 hover:bg-white/25"
                 }`}
-                aria-label="Beğen"
-                title="Beğen"
+                aria-label={locale === "en" ? "Like" : "Beğen"}
+                title={locale === "en" ? "Like" : "Beğen"}
               >
                 <Heart className={liked ? "fill-current" : ""} size={16} />
                 {likes}
@@ -218,14 +233,16 @@ const JournalDetail = () => {
             {likeFormOpen && !liked && (
               <div className="mt-4 max-w-sm rounded-2xl border border-white/30 bg-white/10 p-3 backdrop-blur">
                 <label className="mb-2 block text-xs font-medium text-white/85">
-                  Haberi begendiginizi kaydetmek icin e-posta adresiniz
+                  {locale === "en"
+                    ? "Enter your email address to save that you liked this news item"
+                    : "Haberi begendiginizi kaydetmek icin e-posta adresiniz"}
                 </label>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <input
                     type="email"
                     value={likeEmail}
                     onChange={(e) => setLikeEmail(e.target.value)}
-                    placeholder="ornek@mail.com"
+                    placeholder={locale === "en" ? "example@mail.com" : "ornek@mail.com"}
                     className="w-full rounded-xl border border-white/25 bg-white/90 px-3 py-2 text-sm text-slate-800 outline-none focus:border-white"
                   />
                   <button
@@ -234,7 +251,13 @@ const JournalDetail = () => {
                     disabled={liking || !likeEmail.trim()}
                     className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-60"
                   >
-                    {liking ? "Kaydediliyor..." : "Gonder"}
+                    {liking
+                      ? locale === "en"
+                        ? "Saving..."
+                        : "Kaydediliyor..."
+                      : locale === "en"
+                      ? "Submit"
+                      : "Gonder"}
                   </button>
                 </div>
               </div>
@@ -285,7 +308,7 @@ const JournalDetail = () => {
             >
               <div className="rounded-2xl bg-white/85 backdrop-blur shadow border p-4 sticky top-6">
                 <h3 className="text-base font-semibold text-brandBlue mb-3">
-                  Medya Galerisi
+                  {locale === "en" ? "Media Gallery" : "Medya Galerisi"}
                 </h3>
 
                 {/* Horizontal strip with snap */}
@@ -298,7 +321,15 @@ const JournalDetail = () => {
                         onClick={() => openLightbox(i)}
                         className="relative shrink-0 snap-start focus:outline-none rounded-xl overflow-hidden border bg-white hover:shadow transition"
                         style={{ width: 140, height: 210 }}
-                        title={m.type === "video" ? "Videoyu aç" : "Görseli aç"}
+                        title={
+                          m.type === "video"
+                            ? locale === "en"
+                              ? "Open video"
+                              : "Videoyu aç"
+                            : locale === "en"
+                            ? "Open image"
+                            : "Görseli aç"
+                        }
                       >
                         {m.type === "video" ? (
                           <>
@@ -329,7 +360,9 @@ const JournalDetail = () => {
 
                 {/* Küçük ipucu */}
                 <p className="mt-2 text-[11px] text-gray-500">
-                  Kaydırın veya bir medyaya tıklayın.
+                  {locale === "en"
+                    ? "Swipe or tap any media item."
+                    : "Kaydırın veya bir medyaya tıklayın."}
                 </p>
               </div>
             </motion.aside>
@@ -384,6 +417,7 @@ export default JournalDetail;
 
 /* -------------------- Lightbox Component -------------------- */
 const Lightbox = ({ items, index, onClose, onPrev, onNext }) => {
+  const { locale } = useLocale();
   const [curr, setCurr] = useState(index);
   const startX = useRef(null);
 
@@ -425,7 +459,7 @@ const Lightbox = ({ items, index, onClose, onPrev, onNext }) => {
       <button
         onClick={onClose}
         className="absolute top-4 right-4 md:top-6 md:right-6 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/30 text-white"
-        aria-label="Kapat"
+        aria-label={locale === "en" ? "Close" : "Kapat"}
       >
         <X />
       </button>
@@ -439,7 +473,7 @@ const Lightbox = ({ items, index, onClose, onPrev, onNext }) => {
               setCurr((p) => (p - 1 + items.length) % items.length);
             }}
             className="hidden sm:flex absolute left-4 md:left-6 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/30 text-white"
-            aria-label="Önceki"
+            aria-label={locale === "en" ? "Previous" : "Önceki"}
           >
             <ChevronLeft />
           </button>
@@ -449,7 +483,7 @@ const Lightbox = ({ items, index, onClose, onPrev, onNext }) => {
               setCurr((p) => (p + 1) % items.length);
             }}
             className="hidden sm:flex absolute right-4 md:right-6 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/30 text-white"
-            aria-label="Sonraki"
+            aria-label={locale === "en" ? "Next" : "Sonraki"}
           >
             <ChevronRight />
           </button>
@@ -498,7 +532,7 @@ const Lightbox = ({ items, index, onClose, onPrev, onNext }) => {
                     : "border-white/30"
                 }`}
                 style={{ width: 72, height: 48 }}
-                aria-label={`Medya ${i + 1}`}
+                aria-label={`${locale === "en" ? "Media" : "Medya"} ${i + 1}`}
               >
                 {m.type === "video" ? (
                   <video

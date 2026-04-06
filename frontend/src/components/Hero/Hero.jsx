@@ -6,6 +6,7 @@ import SearchBar from "../SearchBar/SearchBar";
 import LinksSection from "../Links/LinksSection";
 import BrandsSection from "../Brands/BrandsSection";
 import HeroServiceRibbon from "./HeroServiceRibbon.jsx";
+import { useLocale } from "../../i18n/LocaleContext.jsx";
 
 const clamp01 = (value) => Math.min(Math.max(value, 0), 1);
 const easeOutCubic = (value) => 1 - Math.pow(1 - clamp01(value), 3);
@@ -17,6 +18,7 @@ const easeInOutCubic = (value) => {
 };
 
 const Hero = ({ targetId = "after-hero" }) => {
+  const { locale } = useLocale();
   const linksRef = useRef(null);
   const mobileHeroRef = useRef(null);
   const mobileDetailsRef = useRef(null);
@@ -26,6 +28,17 @@ const Hero = ({ targetId = "after-hero" }) => {
   const [mobileArrowDismissed, setMobileArrowDismissed] = useState(false);
   const [mobileArrowVisible, setMobileArrowVisible] = useState(true);
   const [mobileSearchFocused, setMobileSearchFocused] = useState(false);
+
+  const copy =
+    locale === "en"
+      ? {
+          title: "Insulation,\nExpertly Done",
+          subtitle: "Welcome to Babil.",
+        }
+      : {
+          title: "Yalıtımda Uzman",
+          subtitle: "Babil'e Hoş Geldiniz.",
+        };
 
   useEffect(() => {
     let frameId = 0;
@@ -199,11 +212,11 @@ const Hero = ({ targetId = "after-hero" }) => {
               }}
               className="mx-auto max-w-[22rem] text-center will-change-transform"
             >
-              <h1 className="text-[42px] xs:text-[48px] font-extrabold text-white drop-shadow-lg leading-[0.95]">
-                Yalıtımda Uzman
+              <h1 className="whitespace-pre-line text-[42px] xs:text-[48px] font-extrabold text-white drop-shadow-lg leading-[0.95]">
+                {copy.title}
               </h1>
               <p className="mt-3 text-lg xs:text-xl text-gray-100">
-                Babil&#39;e Hoş Geldiniz.
+                {copy.subtitle}
               </p>
             </motion.div>
           </div>
@@ -297,11 +310,11 @@ const Hero = ({ targetId = "after-hero" }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.3 }}
           >
-            <h1 className="text-5xl font-bold text-white drop-shadow-lg">
-              Yalıtımda Uzman
+            <h1 className="whitespace-pre-line text-5xl font-bold text-white drop-shadow-lg leading-[0.95]">
+              {copy.title}
             </h1>
             <p className="mt-2 text-xl text-gray-300">
-              Babil&#39;e Hoş Geldiniz.
+              {copy.subtitle}
             </p>
           </motion.div>
 

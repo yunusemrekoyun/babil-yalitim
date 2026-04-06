@@ -6,23 +6,27 @@ import NavbarPage from "../components/Navbar/NavbarPage";
 import Footer from "../components/Footer/Footer";
 import BlogDetail from "../components/Blog/BlogDetail";
 import Breadcrumb from "../components/ui/Breadcrumb";
-import api from "../api"; // 👈 eklendi
+import api from "../api";
+import { useLocale } from "../i18n/LocaleContext";
 
 const BlogDetailPage = () => {
-  const { id } = useParams(); // 👈 eklendi
-  const [blogTitle, setBlogTitle] = useState(""); // 👈 eklendi
+  const { id } = useParams();
+  const { locale } = useLocale();
+  const [blogTitle, setBlogTitle] = useState("");
 
   useEffect(() => {
     if (!id) return;
     (async () => {
       try {
-        const { data } = await api.get(`/blogs/${id}`);
+        const { data } = await api.get(`/blogs/${id}`, {
+          params: { locale },
+        });
         setBlogTitle(data?.title || "");
       } catch {
         setBlogTitle(""); // hata durumunda boş bırak
       }
     })();
-  }, [id]);
+  }, [id, locale]);
 
   return (
     <>
@@ -35,19 +39,15 @@ const BlogDetailPage = () => {
       >
         <NavbarPage />
 
-        {/* Breadcrumb */}
         <div className="max-w-7xl mx-auto px-4 md:px-8 pt-8">
           <Breadcrumb
             titleMap={{
               blog: "Blog",
-              // Eğer route'unuz /blog/detail/:id ise şu satırı da isteğe göre ekleyin:
-              // detail: "Detay",
-              [id]: blogTitle || "Yükleniyor...", // 👈 id yerine başlık
+              [id]: blogTitle || (locale === "en" ? "Loading..." : "Yükleniyor..."),
             }}
           />
         </div>
 
-        {/* Content */}
         <section className="w-full flex flex-col items-center px-4 md:px-8 py-8 md:py-12">
           <div className="w-full max-w-7xl">
             <BlogDetail />

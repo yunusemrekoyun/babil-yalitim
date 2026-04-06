@@ -7,6 +7,7 @@ import LoadErrorState from "../../components/LoadErrorState";
 import ToastAlert from "../../components/ToastAlert";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import OrderSelect from "../../components/OrderSelect";
+import BlogTranslationModal from "../../components/BlogTranslationModal";
 import { getAdminFeedbackMessage } from "../../utils/mediaFeedback";
 import { getMediaUrl, getVideoPosterUrl } from "../../../utils/media";
 
@@ -79,6 +80,8 @@ const BlogList = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTargetId, setConfirmTargetId] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [translationOpen, setTranslationOpen] = useState(false);
+  const [translationTarget, setTranslationTarget] = useState(null);
 
   const fetchBlogs = useCallback(async () => {
     try {
@@ -159,6 +162,16 @@ const BlogList = () => {
   const cancelDelete = () => {
     setConfirmOpen(false);
     setConfirmTargetId(null);
+  };
+
+  const openTranslationModal = (blog) => {
+    setTranslationTarget(blog);
+    setTranslationOpen(true);
+  };
+
+  const closeTranslationModal = () => {
+    setTranslationOpen(false);
+    setTranslationTarget(null);
   };
 
   const hasActiveFilters = Boolean(q.trim());
@@ -292,6 +305,17 @@ const BlogList = () => {
                     Yorumlar
                   </Link>
                   <button
+                    type="button"
+                    onClick={() => openTranslationModal(blog)}
+                    className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition ${
+                      blog.hasEnglishTranslation
+                        ? "bg-emerald-600 hover:bg-emerald-700"
+                        : "bg-indigo-600 hover:bg-indigo-700"
+                    }`}
+                  >
+                    {blog.hasEnglishTranslation ? "EN Düzenle" : "EN Çeviri"}
+                  </button>
+                  <button
                     onClick={() => askDelete(blog._id)}
                     className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
                   >
@@ -396,6 +420,17 @@ const BlogList = () => {
                             Yorumlar
                           </Link>
                           <button
+                            type="button"
+                            onClick={() => openTranslationModal(blog)}
+                            className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition ${
+                              blog.hasEnglishTranslation
+                                ? "bg-emerald-600 hover:bg-emerald-700"
+                                : "bg-indigo-600 hover:bg-indigo-700"
+                            }`}
+                          >
+                            {blog.hasEnglishTranslation ? "EN Düzenle" : "EN Çeviri"}
+                          </button>
+                          <button
                             onClick={() => askDelete(blog._id)}
                             className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
                           >
@@ -434,6 +469,17 @@ const BlogList = () => {
           cancelDelete();
         }}
         loading={confirmLoading}
+      />
+
+      <BlogTranslationModal
+        open={translationOpen}
+        blogId={translationTarget?._id}
+        blogTitle={translationTarget?.title}
+        onClose={closeTranslationModal}
+        onSaved={async () => {
+          await fetchBlogs();
+          showToast("İngilizce blog çevirisi kaydedildi.", "success", 3000);
+        }}
       />
     </div>
   );
