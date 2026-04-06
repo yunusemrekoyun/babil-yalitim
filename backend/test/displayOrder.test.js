@@ -31,6 +31,33 @@ test("normalizeOrderedItems sira alanini 1'den baslayarak normalize eder", () =>
   );
 });
 
+test("normalizeOrderedItems mongoose benzeri subdocument alanlarini korur", () => {
+  const ordered = normalizeOrderedItems([
+    {
+      toObject() {
+        return {
+          _id: "sub-a",
+          title: "Alt Hizmet A",
+          type: "Tip",
+          category: "Kategori",
+          usageAreas: ["teras"],
+          description: "Aciklama",
+          displayOrder: 3,
+        };
+      },
+      displayOrder: 3,
+      _id: "sub-a",
+    },
+  ]);
+
+  assert.equal(ordered[0].title, "Alt Hizmet A");
+  assert.equal(ordered[0].type, "Tip");
+  assert.equal(ordered[0].category, "Kategori");
+  assert.deepEqual(ordered[0].usageAreas, ["teras"]);
+  assert.equal(ordered[0].description, "Aciklama");
+  assert.equal(ordered[0].displayOrder, 1);
+});
+
 test("reorderOrderedItems hedef kaydi istenen pozisyona tasir", () => {
   const ordered = reorderOrderedItems(
     [

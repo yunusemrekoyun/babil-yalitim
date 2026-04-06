@@ -5,6 +5,13 @@ const toPositiveInt = (value) => {
   return parsed;
 };
 
+const toPlainItem = (item) => {
+  if (!item || typeof item !== "object") return item;
+  if (typeof item.toObject === "function") return item.toObject();
+  if (item._doc && typeof item._doc === "object") return { ...item._doc };
+  return { ...item };
+};
+
 const getStableTime = (item) => {
   const raw = item?.createdAt || item?.updatedAt || 0;
   const time = new Date(raw).getTime();
@@ -33,7 +40,10 @@ const compareOrderedItems = (left, right) => {
 const normalizeOrderedItems = (items = []) =>
   [...items]
     .sort(compareOrderedItems)
-    .map((item, index) => ({ ...item, displayOrder: index + 1 }));
+    .map((item, index) => ({
+      ...toPlainItem(item),
+      displayOrder: index + 1,
+    }));
 
 const reorderOrderedItems = (items = [], targetId, desiredOrder) => {
   const normalized = normalizeOrderedItems(items);
@@ -50,7 +60,10 @@ const reorderOrderedItems = (items = [], targetId, desiredOrder) => {
   const insertAt = Math.min(Math.max(nextOrder - 1, 0), normalized.length);
   normalized.splice(insertAt, 0, target);
 
-  return normalized.map((item, index) => ({ ...item, displayOrder: index + 1 }));
+  return normalized.map((item, index) => ({
+    ...toPlainItem(item),
+    displayOrder: index + 1,
+  }));
 };
 
 const syncCollectionDisplayOrder = async (Model, targetId = null, desiredOrder = null) => {
