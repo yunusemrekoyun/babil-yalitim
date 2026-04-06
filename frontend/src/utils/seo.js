@@ -7,82 +7,88 @@ import {
 } from "../i18n/routing.js";
 
 const getDefaultMeta = (locale) => ({
-  title: SITE_TITLE,
-  description:
+  title:
     locale === "en"
-      ? "Waterproofing, insulation solutions, projects, blog posts and field updates."
-      : SITE_DESCRIPTION,
+      ? `${SITE_TITLE} | Waterproofing & Structural Protection Systems`
+      : `${SITE_TITLE} | Su Yalitimi ve Yapi Koruma Sistemleri`,
+  description: getAboutContent(locale).footerText || SITE_DESCRIPTION,
 });
 
 const MATCHERS = [
   {
     test: (pathname) => pathname === "/",
     getMeta: (locale) => ({
-      title: `${locale === "en" ? "Home" : "Ana Sayfa"} | ${SITE_TITLE}`,
-      description:
+      title:
         locale === "en"
-          ? "Insulation services, completed projects, blog posts and company updates."
-          : SITE_DESCRIPTION,
+          ? `${SITE_TITLE} | Waterproofing & Structural Protection Systems`
+          : `${SITE_TITLE} | Su Yalitimi ve Yapi Koruma Sistemleri`,
+      description: getAboutContent(locale).footerText || SITE_DESCRIPTION,
     }),
   },
   {
     test: (pathname) => pathname.startsWith("/services"),
     getMeta: (locale) => ({
-      title: `${locale === "en" ? "Services" : "Hizmetler"} | ${SITE_TITLE}`,
+      title: `${
+        locale === "en"
+          ? "Waterproofing & Insulation Services"
+          : "Su Yalitimi ve Izolasyon Hizmetleri"
+      } | ${SITE_TITLE}`,
       description:
         locale === "en"
-          ? "Service overview, application areas and detailed solution pages."
-          : "Sunulan hizmetler, uygulama alanlari ve detayli cozum sayfalari.",
+          ? "Professional waterproofing, insulation and structural protection services, application areas, and detailed solution pages."
+          : "Profesyonel su yalitimi, izolasyon ve yapi koruma hizmetleri, uygulama alanlari ve detayli cozum sayfalari.",
     }),
   },
   {
     test: (pathname) => pathname.startsWith("/projects"),
     getMeta: (locale) => ({
-      title: `${locale === "en" ? "Projects" : "Projeler"} | ${SITE_TITLE}`,
+      title: `${locale === "en" ? "Reference Projects" : "Referans Projeler"} | ${SITE_TITLE}`,
       description:
         locale === "en"
-          ? "Completed projects and application details."
-          : "Tamamlanan projeler ve uygulama detaylari.",
+          ? "Reference waterproofing and structural protection projects completed with the right materials, the right application, and expert workmanship."
+          : "Dogru malzeme, dogru uygulama ve uzman iscilikle tamamlanan su yalitimi ve yapi koruma referans projeleri.",
     }),
   },
   {
     test: (pathname) => pathname.startsWith("/project-detail"),
     getMeta: (locale) => ({
-      title: `${locale === "en" ? "Project Detail" : "Proje Detayi"} | ${SITE_TITLE}`,
+      title: `${locale === "en" ? "Project Details" : "Proje Detayi"} | ${SITE_TITLE}`,
       description:
         locale === "en"
-          ? "Selected project media, description and execution details."
-          : "Secili proje icin medya, aciklama ve uygulama bilgileri.",
+          ? "Selected project media, scope, and execution details from our waterproofing and structural protection portfolio."
+          : "Su yalitimi ve yapi koruma portfoyumuzdan secili projelere ait medya, kapsam ve uygulama bilgileri.",
     }),
   },
   {
     test: (pathname) => pathname.startsWith("/blog/"),
     getMeta: (locale) => ({
-      title: `${locale === "en" ? "Blog Detail" : "Blog Detayi"} | ${SITE_TITLE}`,
+      title: `${locale === "en" ? "Technical Blog" : "Teknik Blog"} | ${SITE_TITLE}`,
       description:
         locale === "en"
-          ? "Technical content and blog post detail page."
-          : "Teknik icerik ve blog yazisi detay sayfasi.",
+          ? "Technical content, application insights, and field-based blog details on waterproofing and insulation."
+          : "Su yalitimi ve izolasyon alaninda teknik icerikler, uygulama notlari ve saha odakli blog detaylari.",
     }),
   },
   {
     test: (pathname) => pathname === "/blog",
     getMeta: (locale) => ({
-      title: `Blog | ${SITE_TITLE}`,
+      title: `${locale === "en" ? "Technical Blog" : "Teknik Blog"} | ${SITE_TITLE}`,
       description:
         locale === "en"
-          ? "Technical notes, guides and recent blog posts."
-          : "Teknik notlar, rehberler ve guncel blog yazilari.",
+          ? "Technical notes, guides, and recent blog posts on waterproofing, insulation, and structural protection."
+          : "Su yalitimi, izolasyon ve yapi koruma alaninda teknik notlar, rehberler ve guncel blog yazilari.",
     }),
   },
   {
     test: (pathname) => pathname.startsWith("/journal") || pathname.startsWith("/journals"),
     getMeta: (locale) => ({
-      title: `${locale === "en" ? "News" : "Haberler"} | ${SITE_TITLE}`,
+      title: `${
+        locale === "en" ? "Field News & Announcements" : "Saha Haberleri ve Duyurular"
+      } | ${SITE_TITLE}`,
       description:
         locale === "en"
-          ? "News, announcements and field updates."
-          : "Haberler, duyurular ve saha guncellemeleri.",
+          ? "News, announcements, and field updates from Babil's waterproofing and structural protection projects."
+          : "Babil'in su yalitimi ve yapi koruma projelerinden haberler, duyurular ve saha guncellemeleri.",
     }),
   },
   {
@@ -95,21 +101,23 @@ const MATCHERS = [
   {
     test: (pathname) => pathname === "/whyus",
     getMeta: (locale) => ({
-      title: `${locale === "en" ? "Why Us" : "Neden Biz"} | ${SITE_TITLE}`,
+      title: `${locale === "en" ? "Why Babil" : "Neden Babil"} | ${SITE_TITLE}`,
       description:
         locale === "en"
-          ? "Why this team and service model should be preferred."
-          : "Neden bu ekip ve bu hizmet modeli tercih edilmeli.",
+          ? "Discover why Babil's team, material selection, and application discipline make the difference."
+          : "Babil'in ekibi, malzeme secimi ve uygulama disipliniyle neden fark yarattigini kesfedin.",
     }),
   },
   {
     test: (pathname) => pathname === "/iletisim",
     getMeta: (locale) => ({
-      title: `${locale === "en" ? "Contact" : "Iletisim"} | ${SITE_TITLE}`,
+      title: `${
+        locale === "en" ? "Contact & Quote Request" : "Iletisim ve Teklif Talebi"
+      } | ${SITE_TITLE}`,
       description:
         locale === "en"
-          ? "Contact details and quotation request form."
-          : "Iletisim bilgileri ve teklif talep formu.",
+          ? "Reach Babil Insulation for contact, site inspection, and quotation requests."
+          : "Iletisim, kesif ve teklif talepleriniz icin Babil Yalitim ile iletisime gecin.",
     }),
   },
   {

@@ -16,13 +16,28 @@ function hasAnalyticsConsent(req) {
   return queryConsent === "true";
 }
 
+function clampText(value, maxLength = 255) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  return text.slice(0, maxLength);
+}
+
+function normalizePathValue(value = "") {
+  const raw = clampText(value, 512);
+  if (!raw) return "/";
+  const [pathOnly = "/"] = raw.split(/[?#]/, 1);
+  if (!pathOnly) return "/";
+  return pathOnly.startsWith("/") ? pathOnly : `/${pathOnly}`;
+}
+
 function getSessionId(req) {
-  return (
+  const raw =
     req.headers["x-session-id"] ||
     req.body?.sessionId ||
     req.query?.sessionId ||
-    uuidv4()
-  );
+    uuidv4();
+
+  return clampText(raw, 128) || uuidv4();
 }
 
 function toSafeNumber(value, fallback = 0) {
@@ -32,11 +47,28 @@ function toSafeNumber(value, fallback = 0) {
 
 function guessSection(path = "") {
   if (!path) return "other";
-  if (path.startsWith("/blog")) return "blog";
-  if (path.startsWith("/journal")) return "journal";
-  if (path.startsWith("/projects")) return "projects";
-  if (path.startsWith("/services")) return "services";
-  if (path === "/") return "home";
+
+  const pathValue = normalizePathValue(path);
+  const normalizedPath = pathValue.startsWith("/en/")
+    ? pathValue.slice(3)
+    : pathValue === "/en"
+      ? "/"
+      : pathValue;
+
+  if (normalizedPath === "/") return "home";
+  if (normalizedPath.startsWith("/blog")) return "blog";
+  if (normalizedPath.startsWith("/journal")) return "journal";
+  if (
+    normalizedPath.startsWith("/projects") ||
+    normalizedPath.startsWith("/project-detail")
+  ) {
+    return "projects";
+  }
+  if (normalizedPath.startsWith("/services")) return "services";
+  if (normalizedPath.startsWith("/about")) return "about";
+  if (normalizedPath.startsWith("/whyus")) return "whyus";
+  if (normalizedPath.startsWith("/iletisim")) return "contact";
+  if (normalizedPath.startsWith("/kvkk")) return "kvkk";
   return "other";
 }
 
@@ -67,6 +99,27 @@ function readGeoFromHeaders(req) {
   };
 }
 
+function anonymizeIp(ip = "") {
+  const value = clampText(ip, 128);
+  if (!value) return null;
+
+  if (value.includes(".")) {
+    const parts = value.split(".");
+    if (parts.length === 4) {
+      return `${parts[0]}.${parts[1]}.${parts[2]}.0`;
+    }
+  }
+
+  if (value.includes(":")) {
+    const parts = value.split(":");
+    if (parts.length > 2) {
+      return `${parts.slice(0, 4).join(":")}::`;
+    }
+  }
+
+  return value;
+}
+
 const recordVisit = async (req, res) => {
   try {
     if (!hasAnalyticsConsent(req)) return res.status(204).end();
@@ -74,6 +127,7 @@ const recordVisit = async (req, res) => {
     const sessionId = getSessionId(req);
 
     const { path, duration, scrollDepth, section, userId } = req.body;
+    const normalizedPath = normalizePathValue(path);
     const ip = extractClientIp(req);
     const geo = readGeoFromHeaders(req);
     const ua = new UAParser(req.headers["user-agent"]).getResult();
@@ -81,18 +135,18 @@ const recordVisit = async (req, res) => {
     const visit = await Visit.create({
       sessionId,
       userId: userId || null,
-      ip: ip || null,
-      country: geo?.country || null,
-      city: geo?.city || null,
-      path: path || "/",
-      referrer: req.get("referer") || null,
-      userAgent: req.headers["user-agent"] || null,
-      browser: ua.browser?.name || null,
-      os: ua.os?.name || null,
-      device: ua.device?.type || "desktop",
+      ip: anonymizeIp(ip),
+      country: clampText(geo?.country, 8) || null,
+      city: clampText(geo?.city, 120) || null,
+      path: normalizedPath,
+      referrer: clampText(req.get("referer"), 1024) || null,
+      userAgent: clampText(req.headers["user-agent"], 512) || null,
+      browser: clampText(ua.browser?.name, 64) || null,
+      os: clampText(ua.os?.name, 64) || null,
+      device: clampText(ua.device?.type || "desktop", 32) || "desktop",
       duration: toSafeNumber(duration, 0),
       scrollDepth: toSafeNumber(scrollDepth, 0),
-      section: section || guessSection(path),
+      section: clampText(section, 32) || guessSection(normalizedPath),
     });
 
     res.setHeader("x-session-id", sessionId);
@@ -280,4 +334,6 @@ module.exports = {
   getTimeseries,
   hasAnalyticsConsent,
   getSessionId,
+  guessSection,
+  anonymizeIp,
 };

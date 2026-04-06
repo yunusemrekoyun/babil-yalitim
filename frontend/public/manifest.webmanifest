@@ -1,7 +1,7 @@
 {
-  "name": "Babil Yalitim",
+  "name": "Babil Yalitim ve Izolasyon",
   "short_name": "Babil",
-  "description": "Su yalitimi, izolasyon ve proje icerikleri.",
+  "description": "Su yalitimi ve yapi koruma sistemlerinde kalici cozumler.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

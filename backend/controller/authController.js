@@ -4,7 +4,6 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 
 const ADMIN_USER = process.env.ADMIN_USER;
-const ADMIN_PASS = process.env.ADMIN_PASS;
 const ADMIN_PASS_HASH = process.env.ADMIN_PASS_HASH;
 const JWT_SECRET = process.env.JWT_SECRET;
 const ACCESS_TOKEN_EXPIRES_IN =
@@ -21,15 +20,19 @@ const COOKIE_OPTIONS = {
   domain: COOKIE_DOMAIN, // genelde boş bırakılır; çoklu subdomain varsa ayarla
 };
 
-async function verifyPassword(plain, { plainEnv, hashEnv }) {
-  if (hashEnv?.trim()) {
-    try {
-      return await bcrypt.compare(plain, hashEnv.trim());
-    } catch {
-      return false;
-    }
+async function verifyPassword(plain, hashEnv) {
+  if (!hashEnv?.trim()) return false;
+  try {
+    return await bcrypt.compare(plain, hashEnv.trim());
+  } catch {
+    return false;
   }
-  if (plainEnv?.trim()) return plain === plainEnv.trim();
+}
+
+function getConfigError() {
+  if (!ADMIN_USER || !JWT_SECRET || !ADMIN_PASS_HASH?.trim()) {
+    return "Sunucu yapılandırma hatası: ADMIN_USER, ADMIN_PASS_HASH ve JWT_SECRET tanımlı olmalı.";
+  }
   return false;
 }
 
@@ -45,9 +48,10 @@ function issueTokens(username) {
 
 exports.login = async (req, res) => {
   try {
-    if (!ADMIN_USER || !JWT_SECRET) {
+    const configError = getConfigError();
+    if (configError) {
       return res.status(500).json({
-        message: "Sunucu yapılandırma hatası: ADMIN_USER/JWT_SECRET eksik.",
+        message: configError,
       });
     }
 
@@ -58,10 +62,7 @@ exports.login = async (req, res) => {
         .json({ message: "Kullanıcı adı veya şifre hatalı" });
     }
 
-    const ok = await verifyPassword(password, {
-      plainEnv: ADMIN_PASS,
-      hashEnv: ADMIN_PASS_HASH,
-    });
+    const ok = await verifyPassword(password, ADMIN_PASS_HASH);
     if (!ok) {
       return res
         .status(401)

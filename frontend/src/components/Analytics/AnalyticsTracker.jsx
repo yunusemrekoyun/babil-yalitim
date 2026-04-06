@@ -17,7 +17,7 @@ const AnalyticsTracker = () => {
 
   const startTimeRef = useRef(Date.now());
   const maxScrollRef = useRef(0);
-  const lastPathRef = useRef(pathname);
+  const lastPathRef = useRef(null);
 
   // Admin rotalarını tamamen ignore et
   const isAdmin = pathname.startsWith("/admin");
@@ -70,7 +70,7 @@ const AnalyticsTracker = () => {
       // Admin sayfasında geziyorsa önceki public sayfanın kaydını flush et
       startTimeRef.current = Date.now();
       maxScrollRef.current = 0;
-      lastPathRef.current = pathname;
+      lastPathRef.current = null;
       return;
     }
 
@@ -78,8 +78,8 @@ const AnalyticsTracker = () => {
     const prevPath = lastPathRef.current;
     const durationSec = Math.round((now - startTimeRef.current) / 1000);
 
-    // Önceki public sayfa için kayıt gönder (ilk girişte prevPath===currPath olabilir)
-    if (prevPath && consent === "true") {
+    // İlk render'da sahte bir "önceki sayfa" kaydı üretme.
+    if (prevPath && consent === "true" && prevPath !== pathname) {
       sendVisit({
         path: prevPath,
         duration: durationSec,

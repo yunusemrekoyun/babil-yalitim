@@ -2,12 +2,12 @@ const fs = require("fs/promises");
 const path = require("path");
 const { randomUUID } = require("crypto");
 const sharp = require("sharp");
-const ffmpeg = require("fluent-ffmpeg");
-const ffmpegPath = require("ffmpeg-static");
-
-if (ffmpegPath) {
-  ffmpeg.setFfmpegPath(ffmpegPath);
-}
+const {
+  probeMedia,
+  generateVideoPoster,
+  remuxVideoForStreaming,
+  transcodeVideoVariant,
+} = require("../utils/ffmpeg");
 
 const MEDIA_ROOT = path.resolve(
   process.env.MEDIA_ROOT || path.join(__dirname, "..", "media")
@@ -137,14 +137,6 @@ const moveOrWriteFile = async (file, absoluteFilePath) => {
   }
 };
 
-const probeVideo = (absoluteFilePath) =>
-  new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(absoluteFilePath, (error, data) => {
-      if (error) return reject(error);
-      resolve(data || {});
-    });
-  });
-
 const getPosterStorageKey = (storageKey = "") => {
   const normalized = normalizePathPart(storageKey);
   if (!normalized) return "";
@@ -159,63 +151,6 @@ const getVideoVariantStorageKey = (storageKey = "", label, format = "mp4") => {
   return path.posix.join(parsed.dir, `${parsed.name}.${label}.${format}`);
 };
 
-const generateVideoPoster = (absoluteVideoPath, absolutePosterPath) =>
-  new Promise((resolve, reject) => {
-    ffmpeg(absoluteVideoPath)
-      .outputOptions(["-frames:v 1", "-q:v 2"])
-      .output(absolutePosterPath)
-      .on("end", resolve)
-      .on("error", reject)
-      .run();
-  });
-
-const remuxVideoForStreaming = (absoluteVideoPath, absoluteOutputPath) =>
-  new Promise((resolve, reject) => {
-    ffmpeg(absoluteVideoPath)
-      .outputOptions(["-map", "0", "-c", "copy", "-movflags", "+faststart"])
-      .output(absoluteOutputPath)
-      .on("end", resolve)
-      .on("error", reject)
-      .run();
-  });
-
-const transcodeVideoVariant = (
-  absoluteVideoPath,
-  absoluteOutputPath,
-  { size, crf, includeAudio }
-) =>
-  new Promise((resolve, reject) => {
-    const command = ffmpeg(absoluteVideoPath)
-      .format("mp4")
-      .videoCodec("libx264")
-      .outputOptions([
-        "-preset",
-        "medium",
-        "-crf",
-        String(crf),
-        "-movflags",
-        "+faststart",
-        "-pix_fmt",
-        "yuv420p",
-        "-profile:v",
-        "high",
-        "-level",
-        "4.1",
-      ])
-      .size(size)
-      .output(absoluteOutputPath)
-      .on("end", resolve)
-      .on("error", reject);
-
-    if (includeAudio) {
-      command.audioCodec("aac").audioBitrate(VIDEO_AUDIO_BITRATE);
-    } else {
-      command.noAudio();
-    }
-
-    command.run();
-  });
-
 const prepareVideoForDelivery = async (absoluteFilePath) => {
   const extension = path.extname(absoluteFilePath || "").toLowerCase();
   if (![".mp4", ".mov"].includes(extension)) {
@@ -225,7 +160,9 @@ const prepareVideoForDelivery = async (absoluteFilePath) => {
   const tempOutputPath = `${absoluteFilePath}.faststart${extension}`;
 
   try {
-    await remuxVideoForStreaming(absoluteFilePath, tempOutputPath);
+    await remuxVideoForStreaming(absoluteFilePath, tempOutputPath, {
+      faststart: true,
+    });
     await safeUnlink(absoluteFilePath);
     await fs.rename(tempOutputPath, absoluteFilePath);
     return true;
@@ -236,7 +173,7 @@ const prepareVideoForDelivery = async (absoluteFilePath) => {
 };
 
 const extractVideoMeta = async (absoluteFilePath) => {
-  const probe = await probeVideo(absoluteFilePath);
+  const probe = await probeMedia(absoluteFilePath);
   const stream =
     (probe.streams || []).find((item) => item.codec_type === "video") || {};
   const format = probe.format || {};
@@ -325,6 +262,7 @@ const buildVideoVariants = async (absoluteFilePath, storageKey, metadata = {}) =
         size,
         crf: plan.crf,
         includeAudio: plan.includeAudio,
+        audioBitrate: VIDEO_AUDIO_BITRATE,
       });
       createdVariantPaths.push(absoluteVariantPath);
 

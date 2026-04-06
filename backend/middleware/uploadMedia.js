@@ -3,13 +3,8 @@ const os = require("os");
 const path = require("path");
 const sharp = require("sharp");
 const multer = require("multer");
-const ffmpeg = require("fluent-ffmpeg");
-const ffmpegPath = require("ffmpeg-static");
+const { ffmpegPath, remuxVideoForStreaming } = require("../utils/ffmpeg");
 const { buildMediaLimitSummary } = require("../utils/uploadErrors");
-
-if (ffmpegPath) {
-  ffmpeg.setFfmpegPath(ffmpegPath);
-}
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, os.tmpdir()),
@@ -148,18 +143,9 @@ const optimizeVideoWithoutQualityDrop = async (file) => {
   const safeExtension =
     extension in videoMimeByExtension ? extension : path.extname(file.path || "") || ".mp4";
   const outputPath = `${file.path}.optimized${safeExtension}`;
-  const outputOptions = ["-map_metadata", "-1", "-c", "copy"];
-
-  if ([".mp4", ".mov"].includes(safeExtension)) {
-    outputOptions.push("-movflags", "+faststart");
-  }
-
-  await new Promise((resolve, reject) => {
-    ffmpeg(file.path)
-      .outputOptions(outputOptions)
-      .on("end", resolve)
-      .on("error", reject)
-      .save(outputPath);
+  await remuxVideoForStreaming(file.path, outputPath, {
+    stripMetadata: true,
+    faststart: [".mp4", ".mov"].includes(safeExtension),
   });
 
   const stat = await fs.stat(outputPath);

@@ -5,7 +5,7 @@ describe("buildPageMeta", () => {
   it("anasayfa metalarini uretir", () => {
     const meta = buildPageMeta("/", "https://example.com");
 
-    expect(meta.title).toMatch(/Ana Sayfa/);
+    expect(meta.title).toMatch(/Su Yalitimi ve Yapi Koruma Sistemleri/);
     expect(meta.canonical).toBe("https://example.com/");
   });
 

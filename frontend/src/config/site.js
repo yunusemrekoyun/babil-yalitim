@@ -1,8 +1,9 @@
-export const SITE_NAME = import.meta.env.VITE_SITE_NAME || "Babil Yalitim";
+export const SITE_NAME =
+  import.meta.env.VITE_SITE_NAME || "Babil Yalitim ve Izolasyon";
 export const SITE_TITLE = import.meta.env.VITE_SITE_TITLE || SITE_NAME;
 export const SITE_DESCRIPTION =
   import.meta.env.VITE_SITE_DESCRIPTION ||
-  "Su yalitimi, izolasyon cozumleri, projeler ve teknik icerikler.";
+  "Babil Yalitim, su yalitimi ve yapi koruma sistemlerinde dogru malzeme, dogru uygulama ve uzman iscilikle kalici cozumler sunar.";
 
 export const CONTACT_PHONE_DISPLAY =
   import.meta.env.VITE_CONTACT_PHONE_DISPLAY || "+90 555 123 45 67";

@@ -1,6 +1,13 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { SITE_DESCRIPTION, SITE_TITLE } from "../../config/site";
+import {
+  CONTACT_ADDRESS,
+  CONTACT_EMAIL,
+  CONTACT_PHONES,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE,
+} from "../../config/site";
 import { buildPageMeta } from "../../utils/seo";
 import { useLocale } from "../../i18n/LocaleContext";
 
@@ -37,6 +44,19 @@ function ensureAlternate(hrefLang) {
     document.head.appendChild(link);
   }
   return link;
+}
+
+function ensureJsonLd(id) {
+  let script = document.head.querySelector(
+    `script[type='application/ld+json'][data-schema-id='${id}']`
+  );
+  if (!script) {
+    script = document.createElement("script");
+    script.setAttribute("type", "application/ld+json");
+    script.setAttribute("data-schema-id", id);
+    document.head.appendChild(script);
+  }
+  return script;
 }
 
 export default function SeoManager() {
@@ -88,10 +108,42 @@ export default function SeoManager() {
       meta.description || SITE_DESCRIPTION
     );
 
+    const ogSiteName = ensureMeta("meta[property='og:site_name']", {
+      property: "og:site_name",
+    });
+    ogSiteName.setAttribute("content", SITE_NAME);
+
     ensureCanonical().setAttribute("href", meta.canonical);
     Object.entries(meta.alternates || {}).forEach(([hrefLang, href]) => {
       ensureAlternate(hrefLang).setAttribute("href", href);
     });
+
+    const logoUrl = `${origin}/favicon.png`;
+    const primaryPhone = CONTACT_PHONES[0]?.link || "";
+    const orgSchema = {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: origin,
+      logo: logoUrl,
+      email: CONTACT_EMAIL,
+      telephone: primaryPhone,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: CONTACT_ADDRESS,
+      },
+    };
+
+    const websiteSchema = {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: SITE_TITLE,
+      url: origin,
+      inLanguage: locale === "en" ? "en" : "tr",
+    };
+
+    ensureJsonLd("organization").textContent = JSON.stringify(orgSchema);
+    ensureJsonLd("website").textContent = JSON.stringify(websiteSchema);
   }, [location.pathname, locale]);
 
   return null;

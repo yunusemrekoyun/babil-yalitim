@@ -11,15 +11,15 @@ const ProjectsPage = () => {
     locale === "en"
       ? {
           breadcrumb: "Projects",
-          title: "Projects",
+          title: "Reference Projects",
           description:
-            "A selection of our completed work. Solutions delivered with quality, continuity, and aesthetics.",
+            "Selected waterproofing and structural protection projects delivered with the right materials, the right application, and expert workmanship.",
         }
       : {
           breadcrumb: "Projelerimiz",
-          title: "Projelerimiz",
+          title: "Referans Projeler",
           description:
-            "Gerçekleştirdiğimiz çalışmalardan seçkiler. Kalite, süreklilik ve estetikten ödün vermeden ürettiğimiz çözümler.",
+            "Dogru malzeme, dogru uygulama ve uzman iscilikle tamamladigimiz su yalitimi ve yapi koruma projelerinden seckiler.",
         };
 
   return (
