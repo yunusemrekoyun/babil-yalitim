@@ -42,18 +42,39 @@ export default function LanguageSwitcher({
       aria-label={ariaLabel}
     >
       {[
-        { code: "tr", label: "TR" },
-        { code: "en", label: "EN" },
+        {
+          code: "tr",
+          label: "TR",
+          flag: "https://flagcdn.com/w20/tr.png",
+          flag2x: "https://flagcdn.com/w40/tr.png",
+          flagAlt: "Türk bayrağı",
+        },
+        {
+          code: "en",
+          label: "EN",
+          flag: "https://flagcdn.com/w20/gb.png",
+          flag2x: "https://flagcdn.com/w40/gb.png",
+          flagAlt: "British flag",
+        },
       ].map((item) => (
         <button
           key={item.code}
           type="button"
           onClick={() => handleSwitch(item.code)}
-          className={`${buttonClassName} ${
+          className={`${buttonClassName} flex items-center gap-1.5 ${
             locale === item.code ? activeClassName : idleClassName
           }`}
           aria-pressed={locale === item.code}
         >
+          <img
+            src={item.flag}
+            srcSet={`${item.flag} 1x, ${item.flag2x} 2x`}
+            alt={item.flagAlt}
+            width={16}
+            height={12}
+            className="rounded-[2px] object-cover"
+            loading="eager"
+          />
           {item.label}
         </button>
       ))}

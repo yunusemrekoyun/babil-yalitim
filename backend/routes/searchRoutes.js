@@ -55,82 +55,63 @@ router.get("/", searchLimiter, async (req, res) => {
   }
 
   try {
+    const isEn = locale === "en";
+
+    const blogFields = isEn
+      ? ["translations.en.title", "translations.en.content", "translations.en.tags"]
+      : ["title", "content", "tags"];
+
+    const journalFields = isEn
+      ? ["translations.en.title", "translations.en.content"]
+      : ["title", "content"];
+
+    const projectFields = isEn
+      ? ["translations.en.title", "translations.en.description", "translations.en.category"]
+      : ["title", "description", "category"];
+
+    const serviceFields = isEn
+      ? [
+          "translations.en.title",
+          "translations.en.type",
+          "translations.en.category",
+          "translations.en.usageAreas",
+          "translations.en.description",
+          "subServices.translations.en.title",
+          "subServices.translations.en.type",
+          "subServices.translations.en.category",
+          "subServices.translations.en.usageAreas",
+          "subServices.translations.en.description",
+        ]
+      : [
+          "title",
+          "type",
+          "category",
+          "usageAreas",
+          "description",
+          "subServices.title",
+          "subServices.type",
+          "subServices.category",
+          "subServices.usageAreas",
+          "subServices.description",
+        ];
+
     const [blogs, journals, projects, services] = await Promise.all([
-      Blog.find(
-        buildMongoTokenQuery(
-          [
-            "title",
-            "content",
-            "tags",
-            "translations.en.title",
-            "translations.en.content",
-            "translations.en.tags",
-          ],
-          query,
-          locale
-        ) || {}
-      )
+      Blog.find(buildMongoTokenQuery(blogFields, query, locale) || {})
         .select("_id title content tags translations createdAt updatedAt")
         .sort({ updatedAt: -1, createdAt: -1 })
         .limit(80)
         .lean(),
-      Journal.find(
-        buildMongoTokenQuery(
-          ["title", "content", "translations.en.title", "translations.en.content"],
-          query,
-          locale
-        ) || {}
-      )
+      Journal.find(buildMongoTokenQuery(journalFields, query, locale) || {})
         .select("_id title content translations createdAt updatedAt")
         .sort({ updatedAt: -1, createdAt: -1 })
         .limit(80)
         .lean(),
-      Project.find(
-        buildMongoTokenQuery(
-          [
-            "title",
-            "description",
-            "category",
-            "translations.en.title",
-            "translations.en.description",
-            "translations.en.category",
-          ],
-          query,
-          locale
-        ) || {}
-      )
+      Project.find(buildMongoTokenQuery(projectFields, query, locale) || {})
         .select("_id title description category translations createdAt updatedAt")
         .sort({ updatedAt: -1, createdAt: -1 })
         .limit(80)
         .lean(),
-      Service.find(
-        buildMongoTokenQuery(
-          [
-            "title",
-            "type",
-            "category",
-            "usageAreas",
-            "description",
-            "subServices.title",
-            "subServices.type",
-            "subServices.category",
-            "subServices.usageAreas",
-            "subServices.description",
-            "translations.en.title",
-            "translations.en.type",
-            "translations.en.category",
-            "translations.en.usageAreas",
-            "translations.en.description",
-            "subServices.translations.en.title",
-            "subServices.translations.en.type",
-            "subServices.translations.en.category",
-            "subServices.translations.en.usageAreas",
-            "subServices.translations.en.description",
-          ],
-          query,
-          locale
-        ) || {}
-      )
+      Service.find(buildMongoTokenQuery(serviceFields, query, locale) || {})
         .select(
           "_id title type category usageAreas description subServices translations createdAt updatedAt"
         )
