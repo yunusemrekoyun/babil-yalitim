@@ -120,19 +120,19 @@ export default function HomePage() {
         content: <AboutSection />,
       },
     ],
-    [isMobile, siteSettings.homeProjectsVisible]
+    [isMobile, siteSettings.homeProjectsVisible],
   );
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
       <div className="relative z-10">
-        {/* Navbar’a bir id verelim ki yüksekliğini hesaplayabilelim (opsiyonel) */}
-        <div id="site-navbar">
-          <Navbar />
+        {/* Desktop: navbar + hero birlikte tam 100vh kaplar */}
+        <div className="md:flex md:flex-col md:h-screen">
+          <div id="site-navbar" className="md:shrink-0">
+            <Navbar />
+          </div>
+          <Hero targetId="after-hero" />
         </div>
-
-        {/* ↓↓↓ Hero’ya tıklanınca kaydıracağımız hedefin id’si */}
-        <Hero targetId="after-hero" />
 
         {/* Hedef çıpa: sayfanın “devamı” buradan başlıyor */}
         <div id="after-hero" />

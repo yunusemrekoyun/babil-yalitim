@@ -71,56 +71,65 @@ const NavbarPage = () => {
   return (
     <header className="w-full z-30 relative">
       {/* ✅ Masaüstü */}
-      <motion.nav
-        className="hidden md:grid container mx-auto grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 py-4 md:py-6 uppercase font-semibold text-[11px] lg:text-sm xl:text-base text-neutral-800"
-        variants={SlideAllIn}
-        initial="hidden"
-        animate="visible"
-      >
-        {/* Sol butonlar */}
-        <div className="flex flex-wrap items-center justify-start gap-2 min-w-0">
-          {navItems.slice(0, 3).map((item) => (
-            <Link
-              key={item.path}
-              to={localizePath(item.path, locale)}
-              className={`min-w-[106px] lg:min-w-[118px] xl:min-w-[132px] text-center px-3 lg:px-4 py-2 rounded-full transition
-                ${
-                  currentPath === stripLocalePrefix(item.path)
-                    ? "bg-white text-black"
-                    : "border border-gray-500 hover:bg-gray-100"
-                }
-              `}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
+      <div className="hidden md:block">
+        <motion.nav
+          className="container mx-auto grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 pt-4 md:pt-6 uppercase font-semibold text-[11px] lg:text-sm xl:text-base text-neutral-800"
+          variants={SlideAllIn}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Sol butonlar */}
+          <div className="flex items-center justify-start gap-2 min-w-0">
+            {navItems.slice(0, 3).map((item) => (
+              <Link
+                key={item.path}
+                to={localizePath(item.path, locale)}
+                className={`min-w-[106px] lg:min-w-[118px] xl:min-w-[132px] text-center px-3 lg:px-4 py-2 rounded-full transition
+                  ${
+                    currentPath === stripLocalePrefix(item.path)
+                      ? "bg-white text-black"
+                      : "border border-gray-500 hover:bg-gray-100"
+                  }
+                `}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
 
-        {/* Logo */}
-        <Link to={localizePath("/", locale)} className="justify-self-center">
-          <img src={Logo} alt={copy.logoAlt} className="w-[156px] lg:w-[178px] xl:w-[200px]" />
-        </Link>
+          {/* Logo */}
+          <Link to={localizePath("/", locale)} className="justify-self-center">
+            <img
+              src={Logo}
+              alt={copy.logoAlt}
+              className="w-[156px] lg:w-[178px] xl:w-[200px]"
+            />
+          </Link>
 
-        {/* Sağ butonlar + dil seçici */}
-        <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
-          {navItems.slice(3).map((item) => (
-            <Link
-              key={item.path}
-              to={localizePath(item.path, locale)}
-              className={`min-w-[106px] lg:min-w-[118px] xl:min-w-[132px] text-center px-3 lg:px-4 py-2 rounded-full transition
-                ${
-                  currentPath === stripLocalePrefix(item.path)
-                    ? "bg-white text-black"
-                    : "border border-gray-500 hover:bg-gray-100"
-                }
-              `}
-            >
-              {item.label}
-            </Link>
-          ))}
-          <LanguageSwitcher theme="light" className="ml-1 shrink-0" />
+          {/* Sağ butonlar */}
+          <div className="flex items-center justify-end gap-2 min-w-0">
+            {navItems.slice(3).map((item) => (
+              <Link
+                key={item.path}
+                to={localizePath(item.path, locale)}
+                className={`min-w-[106px] lg:min-w-[118px] xl:min-w-[132px] text-center px-3 lg:px-4 py-2 rounded-full transition
+                  ${
+                    currentPath === stripLocalePrefix(item.path)
+                      ? "bg-white text-black"
+                      : "border border-gray-500 hover:bg-gray-100"
+                  }
+                `}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </motion.nav>
+
+        <div className="container mx-auto mt-3 flex justify-end">
+          <LanguageSwitcher theme="light" className="shrink-0" />
         </div>
-      </motion.nav>
+      </div>
 
       {/* ✅ Mobil Navbar */}
       <div className="md:hidden border-b border-gray-300 bg-white px-4 py-3 text-neutral-800">

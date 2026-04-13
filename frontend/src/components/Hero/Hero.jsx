@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { motion } from "framer-motion";
 import SearchBar from "../SearchBar/SearchBar";
-import LinksSection from "../Links/LinksSection";
 import BrandsSection from "../Brands/BrandsSection";
 import HeroServiceRibbon from "./HeroServiceRibbon.jsx";
 import { useLocale } from "../../i18n/LocaleContext.jsx";
@@ -19,7 +18,6 @@ const easeInOutCubic = (value) => {
 
 const Hero = ({ targetId = "after-hero" }) => {
   const { locale } = useLocale();
-  const linksRef = useRef(null);
   const mobileHeroRef = useRef(null);
   const mobileDetailsRef = useRef(null);
   const mobileArrowRef = useRef(null);
@@ -167,7 +165,6 @@ const Hero = ({ targetId = "after-hero" }) => {
   }, [mobileDetailsProgress]);
 
   const scrollToTarget = () => {
-    // Önce dışarıdaki çıpa (tercih edilen)
     const external = document.getElementById(targetId);
     const header = document.getElementById("site-navbar");
     const headerH = header ? header.offsetHeight : 0;
@@ -179,13 +176,8 @@ const Hero = ({ targetId = "after-hero" }) => {
       return;
     }
 
-    // Fallback: içerideki LinksSection’a (desktop’ta zaten görünür)
-    const el = linksRef.current;
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      const top = rect.top + window.scrollY - headerH - 8;
-      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-    }
+    // Fallback: bir ekran aşağı kaydır
+    window.scrollTo({ top: window.scrollY + window.innerHeight, behavior: "smooth" });
   };
 
   return (
@@ -303,66 +295,71 @@ const Hero = ({ targetId = "after-hero" }) => {
       </section>
 
       {/* ======== DESKTOP ======== */}
-      <section className="hidden md:flex min-h-screen flex-col justify-center items-center bg-gradient-to-t from-white/10 to-transparent px-8 relative">
-        <div className="container max-w-[92%] xs:max-w-[85%] sm:max-w-4xl mx-auto relative z-20 flex flex-col items-center text-center gap-6 px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.3 }}
-          >
-            <h1 className="whitespace-pre-line text-5xl font-bold text-white drop-shadow-lg leading-[0.95]">
-              {copy.title}
-            </h1>
-            <p className="mt-2 text-xl text-gray-300">
-              {copy.subtitle}
-            </p>
-          </motion.div>
+      <section className="hidden md:flex flex-1 flex-col items-center bg-gradient-to-t from-white/10 to-transparent px-8 relative">
+        {/* Merkez içerik — flex-1 ile kalan alanı alır, min-h-0 flex shrink için gerekli */}
+        <div className="flex-1 min-h-0 flex flex-col justify-center items-center w-full">
+          <div className="container max-w-[92%] sm:max-w-4xl mx-auto relative z-20 flex flex-col items-center text-center gap-4 xl:gap-5 px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.3 }}
+            >
+              <h1 className="whitespace-pre-line font-bold text-white drop-shadow-lg leading-[0.95] text-4xl lg:text-[2.75rem] xl:text-5xl">
+                {copy.title}
+              </h1>
+              <p className="mt-2 text-gray-300 text-base lg:text-lg xl:text-xl">
+                {copy.subtitle}
+              </p>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.5 }}
-            className="relative z-30 w-full"
-          >
-            <HeroServiceRibbon />
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1, delay: 0.5 }}
+              className="relative z-30 w-full"
+            >
+              <HeroServiceRibbon />
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.58 }}
-            className="w-16 h-1 bg-quaternaryColor rounded-full"
-          />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1, delay: 0.58 }}
+              className="w-16 h-1 bg-quaternaryColor rounded-full"
+            />
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.72 }}
-            className="relative z-20 w-full"
-          >
-            <SearchBar />
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.72 }}
+              className="relative z-20 w-full"
+            >
+              <SearchBar />
+            </motion.div>
+          </div>
         </div>
 
+        {/* Markalar — alta sabitlenir, kesinlikle küçülmez */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.9 }}
-          className="relative z-10 w-full mt-8 px-6"
+          className="relative z-10 w-full shrink-0"
         >
-          <BrandsSection />
+          <BrandsSection compact />
         </motion.div>
 
+        {/* Aşağı ok — viewport'un dibinde, kesinlikle küçülmez */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.0 }}
-          className="w-full flex justify-center mt-4 z-20"
+          className="w-full flex justify-center py-2 z-10 shrink-0"
         >
           <motion.button
             onClick={scrollToTarget}
             aria-label="Aşağı kaydır"
-            className="transform-gpu-soft rounded-full border border-white/30 bg-white/15 backdrop-blur-xl shadow-[0_6px_30px_rgba(0,0,0,0.2)] p-3.5 hover:bg-white/25 transition"
+            className="transform-gpu-soft rounded-full border border-white/30 bg-white/15 backdrop-blur-xl shadow-[0_6px_30px_rgba(0,0,0,0.2)] p-3 hover:bg-white/25 transition"
             animate={{ y: [0, 10, 0] }}
             transition={{
               repeat: Infinity,
@@ -372,8 +369,8 @@ const Hero = ({ targetId = "after-hero" }) => {
             }}
           >
             <svg
-              width="22"
-              height="22"
+              width="20"
+              height="20"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -388,13 +385,6 @@ const Hero = ({ targetId = "after-hero" }) => {
             </svg>
           </motion.button>
         </motion.div>
-
-        <div
-          ref={linksRef}
-          className="w-full flex justify-center mt-16 px-4 z-10"
-        >
-          <LinksSection />
-        </div>
       </section>
     </>
   );
