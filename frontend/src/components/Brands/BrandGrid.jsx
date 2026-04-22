@@ -1,5 +1,5 @@
 // frontend/src/components/Brands/BrandGrid.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BrandItem from "./BrandItem";
 import useViewportActivation from "../../hooks/useViewportActivation";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
@@ -46,7 +46,8 @@ const brands = [
   },
 ];
 
-const MOBILE_LOOP_COPIES = 3;
+const LOOP_COPIES = 3;
+const RESUME_DELAY_MS = 1000;
 
 const BrandGrid = () => {
   const [ref, inView] = useViewportActivation({
@@ -54,53 +55,93 @@ const BrandGrid = () => {
     rootMargin: "120px 0px",
   });
   const { allowMarquee, isMobile, tier } = usePerformanceProfile();
-  const mobileScrollRef = useRef(null);
+  const scrollRef = useRef(null);
   const autoScrollRef = useRef(0);
   const resumeTimerRef = useRef(0);
-  const [mobilePaused, setMobilePaused] = useState(false);
+  const dragStateRef = useRef({
+    isDragging: false,
+    startX: 0,
+    startScrollLeft: 0,
+    moved: false,
+    pointerId: null,
+  });
+  const suppressClickRef = useRef(false);
+  const [isPaused, setIsPaused] = useState(false);
   const fullList = useMemo(
     () => [...brands, ...brands, ...brands],
     []
   );
+  const autoScrollSpeed =
+    tier === "low"
+      ? isMobile
+        ? 0.32
+        : 0.42
+      : tier === "standard"
+        ? isMobile
+          ? 0.5
+          : 0.64
+        : isMobile
+          ? 0.66
+          : 0.8;
+
+  const normalizeScrollPosition = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const segmentWidth = el.scrollWidth / LOOP_COPIES;
+    if (!segmentWidth) return;
+
+    if (el.scrollLeft >= segmentWidth * 2) {
+      el.scrollLeft -= segmentWidth;
+    } else if (el.scrollLeft <= 0) {
+      el.scrollLeft += segmentWidth;
+    }
+  }, []);
 
   useEffect(() => {
-    if (!isMobile) return undefined;
-
-    const el = mobileScrollRef.current;
+    const el = scrollRef.current;
     if (!el) return undefined;
 
-    const segmentWidth = el.scrollWidth / MOBILE_LOOP_COPIES;
+    const segmentWidth = el.scrollWidth / LOOP_COPIES;
     if (segmentWidth > 0 && el.scrollLeft === 0) {
       el.scrollLeft = segmentWidth;
     }
 
-    return undefined;
-  }, [isMobile]);
+    const syncPosition = () => {
+      const nextSegmentWidth = el.scrollWidth / LOOP_COPIES;
+      if (!nextSegmentWidth) return;
+      if (el.scrollLeft === 0) {
+        el.scrollLeft = nextSegmentWidth;
+        return;
+      }
+      normalizeScrollPosition();
+    };
+
+    window.addEventListener("resize", syncPosition);
+    return () => {
+      window.removeEventListener("resize", syncPosition);
+    };
+  }, [normalizeScrollPosition]);
 
   useEffect(() => {
-    if (!isMobile) return undefined;
-
-    const el = mobileScrollRef.current;
+    const el = scrollRef.current;
     if (!el) return undefined;
-
-    const speed =
-      tier === "low" ? 0.34 : tier === "standard" ? 0.54 : 0.72;
 
     const step = () => {
       autoScrollRef.current = window.requestAnimationFrame(step);
 
-      if (!allowMarquee || mobilePaused) return;
-
-      const segmentWidth = el.scrollWidth / MOBILE_LOOP_COPIES;
-      if (!segmentWidth) return;
-
-      if (el.scrollLeft <= 1) {
-        el.scrollLeft += segmentWidth;
-      } else if (el.scrollLeft >= segmentWidth * 2 - 2) {
-        el.scrollLeft -= segmentWidth;
+      if (
+        !allowMarquee ||
+        !inView ||
+        isPaused ||
+        dragStateRef.current.isDragging
+      ) {
+        return;
       }
 
-      el.scrollLeft -= speed;
+      normalizeScrollPosition();
+      el.scrollLeft += autoScrollSpeed;
+      normalizeScrollPosition();
     };
 
     autoScrollRef.current = window.requestAnimationFrame(step);
@@ -110,7 +151,7 @@ const BrandGrid = () => {
         window.cancelAnimationFrame(autoScrollRef.current);
       }
     };
-  }, [allowMarquee, isMobile, mobilePaused, tier]);
+  }, [allowMarquee, autoScrollSpeed, inView, isPaused, normalizeScrollPosition]);
 
   useEffect(() => {
     return () => {
@@ -123,66 +164,90 @@ const BrandGrid = () => {
     };
   }, []);
 
-  const normalizeMobileScroll = () => {
-    const el = mobileScrollRef.current;
-    if (!el) return;
-
-    const segmentWidth = el.scrollWidth / MOBILE_LOOP_COPIES;
-    if (!segmentWidth) return;
-
-    if (el.scrollLeft >= segmentWidth * 2) {
-      el.scrollLeft -= segmentWidth;
-    } else if (el.scrollLeft <= 0) {
-      el.scrollLeft += segmentWidth;
-    }
-  };
-
-  const pauseMobile = () => {
+  const pauseAutoplay = useCallback(() => {
     if (resumeTimerRef.current) {
       window.clearTimeout(resumeTimerRef.current);
       resumeTimerRef.current = 0;
     }
-    setMobilePaused(true);
-  };
+    setIsPaused(true);
+  }, []);
 
-  const resumeMobileSoon = () => {
+  const scheduleResume = useCallback(() => {
     if (resumeTimerRef.current) {
       window.clearTimeout(resumeTimerRef.current);
     }
 
     resumeTimerRef.current = window.setTimeout(() => {
-      setMobilePaused(false);
+      setIsPaused(false);
       resumeTimerRef.current = 0;
-    }, 850);
+    }, RESUME_DELAY_MS);
+  }, []);
+
+  const handlePointerDown = (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    const el = scrollRef.current;
+    if (!el) return;
+
+    pauseAutoplay();
+    dragStateRef.current = {
+      isDragging: true,
+      startX: event.clientX,
+      startScrollLeft: el.scrollLeft,
+      moved: false,
+      pointerId: event.pointerId,
+    };
+
+    el.setPointerCapture?.(event.pointerId);
   };
 
-  if (isMobile) {
-    return (
-      <div ref={ref} id="brands" className="relative mt-2 w-full overflow-hidden">
-        <div
-          ref={mobileScrollRef}
-          className="no-scrollbar overflow-x-auto overscroll-x-contain"
-          style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}
-          onScroll={normalizeMobileScroll}
-          onTouchStart={pauseMobile}
-          onTouchMove={pauseMobile}
-          onTouchEnd={resumeMobileSoon}
-          onTouchCancel={resumeMobileSoon}
-          onPointerDown={pauseMobile}
-          onPointerUp={resumeMobileSoon}
-          onPointerCancel={resumeMobileSoon}
-        >
-          <div className="flex w-max items-center py-1">
-            {fullList.map((brand, index) => (
-              <div key={`${brand.id}-${index}`} className="mx-2.5 shrink-0">
-                <BrandItem brand={brand} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handlePointerMove = (event) => {
+    const el = scrollRef.current;
+    const dragState = dragStateRef.current;
+    if (!el || !dragState.isDragging) return;
+
+    const deltaX = event.clientX - dragState.startX;
+    if (Math.abs(deltaX) > 6) {
+      dragState.moved = true;
+    }
+
+    el.scrollLeft = dragState.startScrollLeft - deltaX;
+    normalizeScrollPosition();
+  };
+
+  const finishDrag = () => {
+    const dragState = dragStateRef.current;
+    if (!dragState.isDragging) return;
+
+    if (dragState.moved) {
+      suppressClickRef.current = true;
+    }
+
+    dragStateRef.current = {
+      isDragging: false,
+      startX: 0,
+      startScrollLeft: 0,
+      moved: false,
+      pointerId: null,
+    };
+
+    scheduleResume();
+  };
+
+  const handlePointerUp = () => {
+    const el = scrollRef.current;
+    if (el && dragStateRef.current.pointerId !== null) {
+      el.releasePointerCapture?.(dragStateRef.current.pointerId);
+    }
+    finishDrag();
+  };
+
+  const handleClickCapture = (event) => {
+    if (!suppressClickRef.current) return;
+    suppressClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  };
 
   return (
     <div
@@ -191,15 +256,29 @@ const BrandGrid = () => {
       className="relative mt-2 w-full overflow-hidden sm:mt-5"
     >
       <div
-        className={`flex whitespace-nowrap animate-brand-marquee ${
-          allowMarquee && inView ? "" : "motion-paused"
+        ref={scrollRef}
+        className={`no-scrollbar overflow-x-auto overscroll-x-contain select-none ${
+          isMobile ? "" : "cursor-grab active:cursor-grabbing"
         }`}
+        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}
+        onScroll={normalizeScrollPosition}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={finishDrag}
+        onLostPointerCapture={finishDrag}
+        onClickCapture={handleClickCapture}
       >
-        {fullList.map((brand, index) => (
-          <div key={`${brand.id}-${index}`} className="mx-3 sm:mx-8">
-            <BrandItem brand={brand} />
-          </div>
-        ))}
+        <div className="flex w-max items-center py-1">
+          {fullList.map((brand, index) => (
+            <div
+              key={`${brand.id}-${index}`}
+              className={isMobile ? "mx-2.5 shrink-0" : "mx-3 shrink-0 sm:mx-8"}
+            >
+              <BrandItem brand={brand} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

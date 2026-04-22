@@ -295,19 +295,19 @@ const Hero = ({ targetId = "after-hero" }) => {
       </section>
 
       {/* ======== DESKTOP ======== */}
-      <section className="hidden md:flex flex-1 flex-col items-center bg-gradient-to-t from-white/10 to-transparent px-8 relative">
+      <section className="desktop-short-hero hidden md:flex flex-1 flex-col items-center bg-gradient-to-t from-white/10 to-transparent px-8 relative">
         {/* Merkez içerik — flex-1 ile kalan alanı alır, min-h-0 flex shrink için gerekli */}
-        <div className="flex-1 min-h-0 flex flex-col justify-center items-center w-full">
-          <div className="container max-w-[92%] sm:max-w-4xl mx-auto relative z-20 flex flex-col items-center text-center gap-4 xl:gap-5 px-4">
+        <div className="desktop-short-hero-center flex-1 min-h-0 flex flex-col justify-center items-center w-full">
+          <div className="desktop-short-hero-stack container max-w-[92%] sm:max-w-4xl mx-auto relative z-20 flex flex-col items-center text-center gap-4 xl:gap-5 px-4">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.3 }}
             >
-              <h1 className="whitespace-pre-line font-bold text-white drop-shadow-lg leading-[0.95] text-4xl lg:text-[2.75rem] xl:text-5xl">
+              <h1 className="desktop-short-hero-title whitespace-pre-line font-bold text-white drop-shadow-lg leading-[0.95] text-4xl lg:text-[2.75rem] xl:text-5xl">
                 {copy.title}
               </h1>
-              <p className="mt-2 text-gray-300 text-base lg:text-lg xl:text-xl">
+              <p className="desktop-short-hero-subtitle mt-2 text-gray-300 text-base lg:text-lg xl:text-xl">
                 {copy.subtitle}
               </p>
             </motion.div>
@@ -316,7 +316,7 @@ const Hero = ({ targetId = "after-hero" }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 1, delay: 0.5 }}
-              className="relative z-30 w-full"
+              className="desktop-short-hero-ribbon relative z-30 w-full"
             >
               <HeroServiceRibbon />
             </motion.div>
@@ -332,7 +332,7 @@ const Hero = ({ targetId = "after-hero" }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.72 }}
-              className="relative z-20 w-full"
+              className="desktop-short-hero-search relative z-20 w-full"
             >
               <SearchBar />
             </motion.div>
@@ -344,7 +344,7 @@ const Hero = ({ targetId = "after-hero" }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.9 }}
-          className="relative z-10 w-full shrink-0"
+          className="desktop-short-hero-brands relative z-10 w-full shrink-0"
         >
           <BrandsSection compact />
         </motion.div>
@@ -354,12 +354,12 @@ const Hero = ({ targetId = "after-hero" }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.0 }}
-          className="w-full flex justify-center py-2 z-10 shrink-0"
+          className="desktop-short-hero-arrow w-full flex justify-center py-2 z-10 shrink-0"
         >
           <motion.button
             onClick={scrollToTarget}
             aria-label="Aşağı kaydır"
-            className="transform-gpu-soft rounded-full border border-white/30 bg-white/15 backdrop-blur-xl shadow-[0_6px_30px_rgba(0,0,0,0.2)] p-3 hover:bg-white/25 transition"
+            className="desktop-short-hero-arrow-btn transform-gpu-soft rounded-full border border-white/30 bg-white/15 backdrop-blur-xl shadow-[0_6px_30px_rgba(0,0,0,0.2)] p-3 hover:bg-white/25 transition"
             animate={{ y: [0, 10, 0] }}
             transition={{
               repeat: Infinity,

@@ -118,7 +118,7 @@ export default function Navbar() {
   return (
     <header className="w-full z-30 relative">
       {/* ===== Masaüstü ===== */}
-      <nav className="hidden md:flex relative container mx-auto items-center justify-center py-5 text-white uppercase font-semibold text-sm lg:text-base select-none">
+      <nav className="desktop-short-nav hidden md:flex relative container mx-auto items-center justify-center py-5 text-white uppercase font-semibold text-sm lg:text-base select-none">
         {/* Logo + görünmez hover alanı */}
         <div
           className="relative"
@@ -130,7 +130,7 @@ export default function Navbar() {
             <img
               src={Logo}
               alt={copy.logoAlt}
-              className="w-full pointer-events-none"
+              className="desktop-short-nav-logo w-full pointer-events-none"
             />
             <span className="absolute inset-[-18px]" />
           </Link>
