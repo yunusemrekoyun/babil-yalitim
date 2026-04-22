@@ -216,16 +216,12 @@ export default function Navbar() {
       </nav>
 
       {/* ===== Mobil (light/glass tasarım) ===== */}
-      <div className="md:hidden sticky top-0 z-40 px-4 py-3 text-white">
+      <div className="md:hidden sticky top-0 z-40 px-4 text-white" style={{ height: "80px" }}>
         {/* bar'ı şeffaf tut, okunabilirlik için çok hafif cam efekti ve çizgi */}
         <div className="absolute inset-0 bg-white/10 backdrop-blur-xl border-b border-white/20 pointer-events-none" />
-        <div className="relative flex min-h-[3rem] items-center justify-center">
-          <div className="absolute left-0 z-10">
-            <LanguageSwitcher className="scale-[0.92]" />
-          </div>
+        <div className="relative h-full flex items-center justify-center">
           <Link to={localizePath("/", locale)} className="relative z-10 shrink-0">
-            {/* logo daha büyük */}
-            <img src={Logo} alt={copy.logoAlt} className="h-14 w-auto" />
+            <img src={Logo} alt={copy.logoAlt} className="h-[130px] w-auto max-w-[calc(100vw-4rem)] object-contain" />
           </Link>
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -270,6 +266,9 @@ export default function Navbar() {
                   {it.label}
                 </Link>
               ))}
+              <div className="mt-2">
+                <LanguageSwitcher />
+              </div>
             </div>
 
             {/* kapatma butonu (üst sağ) – kontrastlı */}

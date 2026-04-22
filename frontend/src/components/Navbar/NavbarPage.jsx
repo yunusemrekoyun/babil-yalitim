@@ -132,13 +132,10 @@ const NavbarPage = () => {
       </div>
 
       {/* ✅ Mobil Navbar */}
-      <div className="md:hidden border-b border-gray-300 bg-white px-4 py-3 text-neutral-800">
-        <div className="relative flex min-h-[3rem] items-center justify-center">
-          <div className="absolute left-0 z-10">
-            <LanguageSwitcher theme="light" className="scale-[0.92]" />
-          </div>
+      <div className="md:hidden border-b border-gray-300 bg-white px-4 text-neutral-800" style={{ height: "80px" }}>
+        <div className="relative h-full flex items-center justify-center">
           <Link to={localizePath("/", locale)} className="shrink-0">
-            <img src={Logo} alt={copy.logoAlt} className="h-14 w-auto" />
+            <img src={Logo} alt={copy.logoAlt} className="h-[107px] w-auto max-w-[calc(100vw-4rem)] object-contain" />
           </Link>
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -176,6 +173,9 @@ const NavbarPage = () => {
                 {item.label}
               </Link>
             ))}
+            <div className="mt-2">
+              <LanguageSwitcher theme="light" />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

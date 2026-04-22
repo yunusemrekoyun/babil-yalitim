@@ -67,7 +67,7 @@ const WhyUs = () => {
             {FEATURES.map(({ icon: Icon, title, desc }) => (
               <div
                 key={title}
-                className="group rounded-2xl border border-white/40 bg-white/25 backdrop-blur-xl
+                className="group rounded-2xl border border-white/40 bg-secondaryColor/95 backdrop-blur-xl
                            shadow-[0_12px_40px_rgba(0,0,0,0.12)] p-5 md:p-6 flex gap-4 items-start"
               >
                 <div className="flex-shrink-0 rounded-xl bg-quaternaryColor/90 p-3 text-white shadow">
@@ -96,7 +96,7 @@ const WhyUs = () => {
                 variants={item}
                 className="group rounded-2xl border border-white/40 bg-white/25 backdrop-blur-xl
                            shadow-[0_12px_40px_rgba(0,0,0,0.12)] p-5 md:p-6 flex gap-4 items-start
-                           hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgba(0,0,0,0.16)] transition"
+                           hover:bg-secondaryColor/95 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgba(0,0,0,0.16)] transition-all duration-500"
               >
                 <div className="flex-shrink-0 rounded-xl bg-quaternaryColor/90 p-3 text-white shadow">
                   <Icon className="h-5 w-5" />
