@@ -275,7 +275,7 @@ const BrandGrid = () => {
               key={`${brand.id}-${index}`}
               className={isMobile ? "mx-2.5 shrink-0" : "mx-3 shrink-0 sm:mx-8"}
             >
-              <BrandItem brand={brand} />
+              <BrandItem brand={brand} disableLink={isMobile} />
             </div>
           ))}
         </div>
