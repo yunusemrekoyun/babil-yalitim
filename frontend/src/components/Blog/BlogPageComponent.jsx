@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
+import usePagedList from "../../hooks/usePagedList";
 import api from "../../api";
 import BlogItem from "./BlogItem";
 import { useLocale } from "../../i18n/LocaleContext.jsx";
@@ -92,6 +93,8 @@ const BlogPageComponent = () => {
     });
   }, [allLabel, blogs, q, tag]);
 
+  const { visible, hasMore, remaining, showMore } = usePagedList(filtered);
+
   if (loading) {
     return (
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -164,15 +167,31 @@ const BlogPageComponent = () => {
             : "Aramanızla eşleşen blog bulunamadı."}
         </div>
       ) : (
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
-      >
-        {filtered.map((b, i) => (
-          <BlogItem key={b._id || i} item={b} index={i} />
-        ))}
-      </motion.div>
+      <>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {visible.map((b, i) => (
+            <BlogItem key={b._id || i} item={b} index={i} />
+          ))}
+        </motion.div>
+
+        {hasMore && (
+          <div className="mt-8 flex justify-center">
+            <button
+              type="button"
+              onClick={showMore}
+              className="rounded-full border border-quaternaryColor bg-white/80 px-6 py-3 text-sm font-semibold text-quaternaryColor transition hover:bg-quaternaryColor hover:text-white"
+            >
+              {locale === "en"
+                ? `Show more (${remaining} left)`
+                : `Daha fazla göster (${remaining} kaldı)`}
+            </button>
+          </div>
+        )}
+      </>
       )}
     </>
   );

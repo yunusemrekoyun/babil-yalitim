@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 import ServiceItem from "./ServiceItem";
+import usePagedList from "../../hooks/usePagedList";
 import {
   fetchServicesCached,
   getCachedServices,
@@ -65,6 +66,8 @@ const Services = ({ q }) => {
     });
   }, [allLabel, cat, q, services]);
 
+  const { visible, hasMore, remaining, showMore } = usePagedList(filtered);
+
   if (loading)
     return (
       <div className="py-16 text-center text-gray-500">
@@ -107,18 +110,34 @@ const Services = ({ q }) => {
           {locale === "en" ? "No matching results found." : "Sonuç bulunamadı."}
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((svc, i) => (
-            <motion.div
-              key={svc._id || i}
-              initial={{ opacity: 0, y: 28 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: i * 0.04 }}
-            >
-              <ServiceItem service={svc} priority={i < 4} />
-            </motion.div>
-          ))}
-        </div>
+        <>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {visible.map((svc, i) => (
+              <motion.div
+                key={svc._id || i}
+                initial={{ opacity: 0, y: 28 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: Math.min(i, 8) * 0.04 }}
+              >
+                <ServiceItem service={svc} priority={i < 4} />
+              </motion.div>
+            ))}
+          </div>
+
+          {hasMore && (
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                onClick={showMore}
+                className="rounded-full border border-quaternaryColor bg-white/80 px-6 py-3 text-sm font-semibold text-quaternaryColor transition hover:bg-quaternaryColor hover:text-white"
+              >
+                {locale === "en"
+                  ? `Show more (${remaining} left)`
+                  : `Daha fazla göster (${remaining} kaldı)`}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );

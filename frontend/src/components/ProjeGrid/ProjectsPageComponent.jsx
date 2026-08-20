@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ProjectItem from "./ProjectItem";
 import api from "../../api";
+import usePagedList from "../../hooks/usePagedList";
 import { useLocale } from "../../i18n/LocaleContext";
 
 const ProjectsPageComponent = () => {
@@ -61,6 +62,8 @@ const ProjectsPageComponent = () => {
       return okCat && haystack.includes(txt);
     });
   }, [allLabel, cat, projects, q]);
+
+  const { visible, hasMore, remaining, showMore } = usePagedList(filtered);
 
   const hasProjects = projects.length > 0;
 
@@ -139,15 +142,31 @@ const ProjectsPageComponent = () => {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((project, index) => (
-            <ProjectItem
-              key={project._id || index}
-              project={project}
-              index={index}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {visible.map((project, index) => (
+              <ProjectItem
+                key={project._id || index}
+                project={project}
+                index={index}
+              />
+            ))}
+          </div>
+
+          {hasMore && (
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                onClick={showMore}
+                className="rounded-full border border-quaternaryColor bg-white/80 px-6 py-3 text-sm font-semibold text-quaternaryColor transition hover:bg-quaternaryColor hover:text-white"
+              >
+                {locale === "en"
+                  ? `Show more (${remaining} left)`
+                  : `Daha fazla göster (${remaining} kaldı)`}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );
