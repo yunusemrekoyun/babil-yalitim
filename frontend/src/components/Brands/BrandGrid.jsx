@@ -1,5 +1,5 @@
 // frontend/src/components/Brands/BrandGrid.jsx
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import BrandItem from "./BrandItem";
 import useViewportActivation from "../../hooks/useViewportActivation";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
@@ -55,78 +55,78 @@ const BrandGrid = () => {
     rootMargin: "120px 0px",
   });
   const { allowMarquee, isMobile, tier } = usePerformanceProfile();
-  const scrollRef = useRef(null);
+
+  const wrapperRef = useRef(null);
+  const innerRef = useRef(null);
   const autoScrollRef = useRef(0);
   const resumeTimerRef = useRef(0);
+  // Tracks current translateX as a float — no integer snapping
+  const posRef = useRef(0);
+  // Cached segment width, updated on mount and resize (avoids layout reads every frame)
+  const segWidthRef = useRef(0);
   const dragStateRef = useRef({
     isDragging: false,
     startX: 0,
-    startScrollLeft: 0,
+    startPos: 0,
     moved: false,
     pointerId: null,
   });
   const suppressClickRef = useRef(false);
   const [isPaused, setIsPaused] = useState(false);
-  const fullList = useMemo(
-    () => [...brands, ...brands, ...brands],
-    []
-  );
+
+  const fullList = useMemo(() => [...brands, ...brands, ...brands], []);
+
   const autoScrollSpeed =
     tier === "low"
-      ? isMobile
-        ? 0.32
-        : 0.42
+      ? isMobile ? 0.32 : 0.42
       : tier === "standard"
-        ? isMobile
-          ? 0.5
-          : 0.64
-        : isMobile
-          ? 0.66
-          : 0.8;
+        ? isMobile ? 0.5 : 0.64
+        : isMobile ? 0.66 : 0.8;
 
-  const normalizeScrollPosition = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    const segmentWidth = el.scrollWidth / LOOP_COPIES;
-    if (!segmentWidth) return;
-
-    if (el.scrollLeft >= segmentWidth * 2) {
-      el.scrollLeft -= segmentWidth;
-    } else if (el.scrollLeft <= 0) {
-      el.scrollLeft += segmentWidth;
+  // Write position directly to DOM via transform — GPU-composited, sub-pixel smooth
+  const applyPos = useCallback((pos) => {
+    posRef.current = pos;
+    if (innerRef.current) {
+      innerRef.current.style.transform = `translate3d(${pos}px, 0, 0)`;
     }
   }, []);
 
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return undefined;
+  // Keep translateX within [-2*seg, 0) so the middle copy is always visible
+  const normalizePos = useCallback((pos) => {
+    const seg = segWidthRef.current;
+    if (!seg) return pos;
+    let p = pos;
+    while (p <= -2 * seg) p += seg;
+    while (p >= 0) p -= seg;
+    return p;
+  }, []);
 
-    const segmentWidth = el.scrollWidth / LOOP_COPIES;
-    if (segmentWidth > 0 && el.scrollLeft === 0) {
-      el.scrollLeft = segmentWidth;
+  const updateSegWidth = useCallback(() => {
+    segWidthRef.current = innerRef.current
+      ? innerRef.current.scrollWidth / LOOP_COPIES
+      : 0;
+  }, []);
+
+  // Initialize position synchronously before first paint to avoid flash
+  useLayoutEffect(() => {
+    updateSegWidth();
+    if (segWidthRef.current > 0) {
+      applyPos(-segWidthRef.current);
     }
+  }, [updateSegWidth, applyPos]);
 
-    const syncPosition = () => {
-      const nextSegmentWidth = el.scrollWidth / LOOP_COPIES;
-      if (!nextSegmentWidth) return;
-      if (el.scrollLeft === 0) {
-        el.scrollLeft = nextSegmentWidth;
-        return;
-      }
-      normalizeScrollPosition();
-    };
-
-    window.addEventListener("resize", syncPosition);
-    return () => {
-      window.removeEventListener("resize", syncPosition);
-    };
-  }, [normalizeScrollPosition]);
-
+  // Re-normalize on resize
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return undefined;
+    const sync = () => {
+      updateSegWidth();
+      applyPos(normalizePos(posRef.current));
+    };
+    window.addEventListener("resize", sync, { passive: true });
+    return () => window.removeEventListener("resize", sync);
+  }, [updateSegWidth, applyPos, normalizePos]);
 
+  // Auto-scroll animation — runs every rAF, float speed applied directly (no truncation)
+  useEffect(() => {
     const step = () => {
       autoScrollRef.current = window.requestAnimationFrame(step);
 
@@ -139,44 +139,30 @@ const BrandGrid = () => {
         return;
       }
 
-      normalizeScrollPosition();
-      el.scrollLeft += autoScrollSpeed;
-      normalizeScrollPosition();
+      applyPos(normalizePos(posRef.current - autoScrollSpeed));
     };
 
     autoScrollRef.current = window.requestAnimationFrame(step);
-
     return () => {
-      if (autoScrollRef.current) {
-        window.cancelAnimationFrame(autoScrollRef.current);
-      }
+      if (autoScrollRef.current) window.cancelAnimationFrame(autoScrollRef.current);
     };
-  }, [allowMarquee, autoScrollSpeed, inView, isPaused, normalizeScrollPosition]);
+  }, [allowMarquee, autoScrollSpeed, inView, isPaused, normalizePos, applyPos]);
 
   useEffect(() => {
     return () => {
-      if (resumeTimerRef.current) {
-        window.clearTimeout(resumeTimerRef.current);
-      }
-      if (autoScrollRef.current) {
-        window.cancelAnimationFrame(autoScrollRef.current);
-      }
+      if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+      if (autoScrollRef.current) window.cancelAnimationFrame(autoScrollRef.current);
     };
   }, []);
 
   const pauseAutoplay = useCallback(() => {
-    if (resumeTimerRef.current) {
-      window.clearTimeout(resumeTimerRef.current);
-      resumeTimerRef.current = 0;
-    }
+    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = 0;
     setIsPaused(true);
   }, []);
 
   const scheduleResume = useCallback(() => {
-    if (resumeTimerRef.current) {
-      window.clearTimeout(resumeTimerRef.current);
-    }
-
+    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
     resumeTimerRef.current = window.setTimeout(() => {
       setIsPaused(false);
       resumeTimerRef.current = 0;
@@ -186,47 +172,37 @@ const BrandGrid = () => {
   const handlePointerDown = (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
 
-    const el = scrollRef.current;
-    if (!el) return;
-
     pauseAutoplay();
     dragStateRef.current = {
       isDragging: true,
       startX: event.clientX,
-      startScrollLeft: el.scrollLeft,
+      startPos: posRef.current,
       moved: false,
       pointerId: event.pointerId,
     };
-
-    el.setPointerCapture?.(event.pointerId);
+    wrapperRef.current?.setPointerCapture?.(event.pointerId);
   };
 
   const handlePointerMove = (event) => {
-    const el = scrollRef.current;
-    const dragState = dragStateRef.current;
-    if (!el || !dragState.isDragging) return;
+    const ds = dragStateRef.current;
+    if (!ds.isDragging) return;
 
-    const deltaX = event.clientX - dragState.startX;
-    if (Math.abs(deltaX) > 6) {
-      dragState.moved = true;
-    }
+    const deltaX = event.clientX - ds.startX;
+    if (Math.abs(deltaX) > 6) ds.moved = true;
 
-    el.scrollLeft = dragState.startScrollLeft - deltaX;
-    normalizeScrollPosition();
+    applyPos(normalizePos(ds.startPos + deltaX));
   };
 
   const finishDrag = () => {
-    const dragState = dragStateRef.current;
-    if (!dragState.isDragging) return;
+    const ds = dragStateRef.current;
+    if (!ds.isDragging) return;
 
-    if (dragState.moved) {
-      suppressClickRef.current = true;
-    }
+    if (ds.moved) suppressClickRef.current = true;
 
     dragStateRef.current = {
       isDragging: false,
       startX: 0,
-      startScrollLeft: 0,
+      startPos: 0,
       moved: false,
       pointerId: null,
     };
@@ -235,9 +211,8 @@ const BrandGrid = () => {
   };
 
   const handlePointerUp = () => {
-    const el = scrollRef.current;
-    if (el && dragStateRef.current.pointerId !== null) {
-      el.releasePointerCapture?.(dragStateRef.current.pointerId);
+    if (wrapperRef.current && dragStateRef.current.pointerId !== null) {
+      wrapperRef.current.releasePointerCapture?.(dragStateRef.current.pointerId);
     }
     finishDrag();
   };
@@ -256,12 +231,11 @@ const BrandGrid = () => {
       className="relative mt-2 w-full overflow-hidden sm:mt-5"
     >
       <div
-        ref={scrollRef}
-        className={`no-scrollbar overflow-x-auto overscroll-x-contain select-none ${
+        ref={wrapperRef}
+        className={`select-none ${
           isMobile ? "" : "cursor-grab active:cursor-grabbing"
         }`}
-        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}
-        onScroll={normalizeScrollPosition}
+        style={{ touchAction: "pan-x" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -269,7 +243,11 @@ const BrandGrid = () => {
         onLostPointerCapture={finishDrag}
         onClickCapture={handleClickCapture}
       >
-        <div className="flex w-max items-center py-1">
+        <div
+          ref={innerRef}
+          className="flex w-max items-center py-1"
+          style={{ willChange: "transform" }}
+        >
           {fullList.map((brand, index) => (
             <div
               key={`${brand.id}-${index}`}
