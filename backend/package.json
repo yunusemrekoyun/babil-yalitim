@@ -10,7 +10,8 @@
     "test": "node --test",
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "media:backfill": "node scripts/backfill-media.js"
+    "media:backfill": "node scripts/backfill-media.js",
+    "media:optimize": "node scripts/optimize-existing-media.js"
   },
   "keywords": [],
   "author": "",

@@ -121,22 +121,56 @@ const remuxVideoForStreaming = (
 const transcodeVideoVariant = (
   absoluteVideoPath,
   absoluteOutputPath,
-  { size = "", crf = 23, includeAudio = true, audioBitrate = "128k" } = {}
+  {
+    size = "",
+    crf = 23,
+    includeAudio = true,
+    audioBitrate = "128k",
+    fps = 0,
+    // Verilirse CRF yerine hedef bitrate kullanilir. CRF bir kalite hedefi
+    // oldugu icin kotu kodlanmis (ornegin Baseline profil, gurultulu) bazi
+    // kaynaklarda cikti kaynaktan buyuk olabiliyor; o durumda boyutu garanti
+    // altina almanin tek yolu bitrate sinirlamak.
+    bitrateKbps = 0,
+  } = {}
 ) => {
   const args = ["-y", "-i", absoluteVideoPath];
+  const filters = [];
   const scaleFilter = getScaleFilter(size);
 
   if (scaleFilter) {
-    args.push("-vf", scaleFilter);
+    filters.push(scaleFilter);
   }
+
+  // fps yalnızca çağıran taraf kaynak kare hızını ölçüp sınırın üstünde
+  // bulduğunda gönderilir. Telefonla çekilen 60 fps videolar decode maliyetini
+  // iki katına çıkardığı için asıl kazanç burada.
+  if (Number(fps) > 0) {
+    filters.push(`fps=${Number(fps)}`);
+  }
+
+  if (filters.length) {
+    args.push("-vf", filters.join(","));
+  }
+
+  const rateArgs =
+    Number(bitrateKbps) > 0
+      ? [
+          "-b:v",
+          `${Math.round(bitrateKbps)}k`,
+          "-maxrate",
+          `${Math.round(bitrateKbps * 1.3)}k`,
+          "-bufsize",
+          `${Math.round(bitrateKbps * 2)}k`,
+        ]
+      : ["-crf", String(crf)];
 
   args.push(
     "-c:v",
     "libx264",
     "-preset",
     "medium",
-    "-crf",
-    String(crf),
+    ...rateArgs,
     "-movflags",
     "+faststart",
     "-pix_fmt",
