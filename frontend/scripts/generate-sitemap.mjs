@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { loadEnv } from "vite";
 
-const SITE_FALLBACK = "https://www.babilyalitim.cloud";
+const SITE_FALLBACK = "https://babilyalitim.com";
 const STATIC_PATHS = [
   "/",
   "/services",

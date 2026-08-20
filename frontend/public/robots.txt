@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.babilyalitim.cloud/sitemap.xml
+Disallow: /api/
+
+Sitemap: https://babilyalitim.com/sitemap.xml
