@@ -54,7 +54,10 @@ api.interceptors.request.use(
 
     // Küçük sağlamlaştırmalar
     config.headers["Accept"] = "application/json";
-    config.headers["X-Requested-With"] = "XMLHttpRequest";
+    // X-Requested-With bilerek gönderilmiyor: sunucuda hiçbir yerde okunmuyor
+    // ama CORS-safelisted olmadığı için her çapraz-origin GET isteğini
+    // preflight'a zorluyordu. Kaldırılınca GET'ler "basit istek" oluyor ve
+    // sayfa başına 5 fazladan tur atmıyoruz.
 
     return config;
   },

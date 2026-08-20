@@ -75,6 +75,9 @@ app.use(
       return cb(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
+    // Preflight sonucunu 24 saat onbellekle. Varsayilanda bu header hic
+    // gonderilmedigi icin tarayici her istekte yeniden OPTIONS atiyordu.
+    maxAge: 86400,
   })
 );
 
