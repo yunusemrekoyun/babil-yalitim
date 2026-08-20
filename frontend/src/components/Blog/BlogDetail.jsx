@@ -978,7 +978,7 @@ const MediaThumb = ({
               : "Görseli büyüt"}
           </span>
           {showCaption && m?.caption ? (
-            <p className="mt-3 line-clamp-2 text-sm font-medium text-white/92">
+            <p className="mt-3 line-clamp-2 text-sm font-medium text-white/90">
               {m.caption}
             </p>
           ) : null}
@@ -1069,7 +1069,7 @@ const HeroMediaCard = ({
               : "Medyayı büyüt"}
           </div>
           {media?.caption ? (
-            <p className="mt-4 max-w-xl text-sm leading-6 text-white/88 md:text-base">
+            <p className="mt-4 inline-block max-w-xl rounded-2xl border border-white/20 bg-black/40 px-4 py-2.5 text-sm leading-6 text-white/90 backdrop-blur-md md:text-base">
               {media.caption}
             </p>
           ) : null}

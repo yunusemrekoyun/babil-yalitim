@@ -37,6 +37,31 @@
     />
     <meta name="twitter:image" content="/og-default.jpg" />
     <title>Babil Yalitim ve Izolasyon | Su Yalitimi ve Yapi Koruma Sistemleri</title>
+    <script>
+      /* Admin panelinin temasini React yuklenmeden once uygular.
+         Tailwind koyu varyantlari `:is(.dark *)` olarak derledigi icin `dark`
+         sinifinin <html> uzerinde olmasi gerekiyor; React'e birakilirsa ilk
+         boyama acik temayla yapiliyor ve metinler bir an okunmuyor.
+         Yalnizca /admin altinda calisir, herkese acik sayfalara dokunmaz. */
+      (function () {
+        try {
+          if (window.location.pathname.indexOf("/admin") !== 0) return;
+          var stored = window.localStorage.getItem("admin-theme");
+          var isDark =
+            stored === "dark" ||
+            stored === "light"
+              ? stored === "dark"
+              : window.matchMedia("(prefers-color-scheme: dark)").matches;
+          if (isDark) document.documentElement.classList.add("dark");
+          document.documentElement.setAttribute(
+            "data-admin-theme",
+            isDark ? "dark" : "light"
+          );
+        } catch (e) {
+          /* localStorage kapaliysa React tarafi devralir */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

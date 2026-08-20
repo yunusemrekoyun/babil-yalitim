@@ -534,7 +534,7 @@ const VideoModal = ({ item, onClose }) => {
         </div>
 
         {item.title ? (
-          <div className="mt-3 text-center text-sm font-medium text-white/82">
+          <div className="mt-3 text-center text-sm font-medium text-white/80">
             {item.title}
           </div>
         ) : null}

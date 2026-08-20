@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import PropTypes from "prop-types";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
@@ -31,7 +31,12 @@ const AdminLayout = ({ children }) => {
     };
   }, []);
 
-  useEffect(() => {
+  // useEffect değil useLayoutEffect: Tailwind koyu varyantları `:is(.dark *)`
+  // olarak derliyor, yani `dark` sınıfının bir ÜST elemanda olması gerekiyor.
+  // Aşağıdaki kapsayıcıya verilen sınıf kendi arka planı için yeterli değil;
+  // `<html>`e eklenmesi şart. useEffect kullanılırsa bu ilk boyamadan sonra
+  // olduğu için panel bir an açık temayla çizilip metinler okunmuyor.
+  useLayoutEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
     root.classList.toggle("dark", theme === "dark");
