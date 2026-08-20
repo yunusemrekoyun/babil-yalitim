@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import api from "../../api";
+import { fetchServicesFullCached } from "../../utils/servicesCache";
 import useViewportActivation from "../../hooks/useViewportActivation";
 import { usePerformanceProfile } from "../../performance/PerformanceProvider";
 import { useLocale } from "../../i18n/LocaleContext.jsx";
@@ -39,11 +39,10 @@ const HeroServiceRibbon = () => {
   useEffect(() => {
     let mounted = true;
 
-    api
-      .get("/services", { params: { locale } })
-      .then(({ data }) => {
+    fetchServicesFullCached({ locale })
+      .then((list) => {
         if (!mounted) return;
-        setServices(Array.isArray(data) ? data : []);
+        setServices(Array.isArray(list) ? list : []);
       })
       .catch((error) => {
         console.error(copy.loadError, error);

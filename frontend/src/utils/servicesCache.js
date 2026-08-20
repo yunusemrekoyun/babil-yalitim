@@ -47,6 +47,40 @@ export const fetchServicesCached = async ({ force = false, locale = "tr" } = {})
   return request;
 };
 
+// Tam hizmet listesi (subServices dahil). Summary bu alani dondurmedigi icin
+// ayri tutuluyor. HeroServiceRibbon sayfada iki kez render edildiginden
+// (masaustu + mobil) ayni istegin iki kez gitmesini bu onbellek engelliyor.
+const fullCaches = new Map();
+const fullInflightPromises = new Map();
+
+export const fetchServicesFullCached = async ({ force = false, locale = "tr" } = {}) => {
+  const normalizedLocale = normalizeLocale(locale);
+  const cachedServices = fullCaches.get(normalizedLocale) || null;
+  const inflightPromise = fullInflightPromises.get(normalizedLocale) || null;
+
+  if (!force && Array.isArray(cachedServices)) {
+    return cachedServices;
+  }
+
+  if (!force && inflightPromise) {
+    return inflightPromise;
+  }
+
+  const request = api
+    .get("/services", { params: { locale: normalizedLocale } })
+    .then(({ data }) => {
+      const list = normalizeList(data);
+      fullCaches.set(normalizedLocale, list);
+      return list;
+    })
+    .finally(() => {
+      fullInflightPromises.delete(normalizedLocale);
+    });
+
+  fullInflightPromises.set(normalizedLocale, request);
+  return request;
+};
+
 export const findCachedServiceById = (id, locale = "tr") => {
   const cachedServices = caches.get(normalizeLocale(locale)) || null;
   if (!id || !Array.isArray(cachedServices)) return null;

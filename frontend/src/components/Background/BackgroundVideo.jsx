@@ -27,6 +27,11 @@ export default function BackgroundVideo({
     isMobile,
   } = usePerformanceProfile();
   const [ready, setReady] = useState(false);
+  // Hero videosu birkaç MB ve API ile aynı HTTP/2 bağlantısını paylaşıyor.
+  // Hemen indirmeye başlarsa /api yanıtları ve kart medyaları onun arkasında
+  // kuyruğa giriyor; sayfa içeriği saniyelerce boş kalıyor. Poster zaten
+  // anında geldiği için görsel bir kayıp olmadan indirmeyi erteliyoruz.
+  const [videoStarted, setVideoStarted] = useState(false);
 
   const chosenVideoUrl = isMobile ? mobileVideoUrl || desktopVideoUrl : desktopVideoUrl;
   const shouldUseVideo = Boolean(chosenVideoUrl);
@@ -56,7 +61,12 @@ export default function BackgroundVideo({
     posterUrl,
   ]);
 
-  const placeholderUrl = getMediaUrl(posterUrl) || fallbackImageUrl || fallbackSrc;
+  // Masaüstü ve mobil videolarının en-boy oranları farklı olduğu için
+  // poster de cihaza göre seçilmeli; aksi halde video yüklenince görüntü zıplıyor.
+  const placeholderUrl =
+    getMediaUrl((isMobile && mobileImageUrl) || posterUrl) ||
+    fallbackImageUrl ||
+    fallbackSrc;
 
   useEffect(() => {
     setReady(false);
@@ -64,6 +74,38 @@ export default function BackgroundVideo({
 
   useEffect(() => {
     if (!shouldUseVideo || !videoUrl) return undefined;
+
+    let cancelled = false;
+    let idleId = 0;
+    let floorTimerId = 0;
+    let fallbackTimerId = 0;
+    const start = () => {
+      if (!cancelled) setVideoStarted(true);
+    };
+
+    // Yalnızca requestIdleCallback yetmiyor: React mount olur olmaz tarayıcı
+    // "boştayım" diyor ve video, sayfanın kendi API çağrıları başlamadan önce
+    // indirilmeye başlıyor. Bu yüzden önce sabit bir alt sınır bekliyoruz,
+    // ardından tarayıcının gerçekten boşa çıkmasını.
+    floorTimerId = window.setTimeout(() => {
+      if (cancelled) return;
+      if ("requestIdleCallback" in window) {
+        idleId = window.requestIdleCallback(start, { timeout: 3000 });
+      } else {
+        fallbackTimerId = window.setTimeout(start, 300);
+      }
+    }, 2000);
+
+    return () => {
+      cancelled = true;
+      if (idleId) window.cancelIdleCallback?.(idleId);
+      if (floorTimerId) window.clearTimeout(floorTimerId);
+      if (fallbackTimerId) window.clearTimeout(fallbackTimerId);
+    };
+  }, [shouldUseVideo, videoUrl]);
+
+  useEffect(() => {
+    if (!shouldUseVideo || !videoUrl || !videoStarted) return undefined;
 
     const video = videoRef.current;
     if (!video) return undefined;
@@ -181,7 +223,7 @@ export default function BackgroundVideo({
       window.removeEventListener("focus", handleResumeSignal);
       window.removeEventListener("pageshow", handleResumeSignal);
     };
-  }, [active, isMobile, placeholderUrl, shouldUseVideo, videoUrl]);
+  }, [active, isMobile, placeholderUrl, shouldUseVideo, videoUrl, videoStarted]);
 
   return (
     <div
@@ -215,7 +257,7 @@ export default function BackgroundVideo({
           />
           <video
             ref={videoRef}
-            src={videoUrl}
+            src={videoStarted ? videoUrl : undefined}
             className={`absolute inset-0 h-full w-full object-cover bg-slate-950 transition-opacity duration-500 ${
               ready ? "opacity-100" : "opacity-0"
             }`}

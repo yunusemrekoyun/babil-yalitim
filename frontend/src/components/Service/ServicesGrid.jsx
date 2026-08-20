@@ -194,6 +194,7 @@ const ServiceGrid = () => {
                 <ServiceGridItem
                   item={items[index]}
                   isCenter={slot === "center"}
+                  isNeighbor={slot === "prev1" || slot === "next1"}
                   shouldAutoplay={slot === "center" && inView}
                   priority
                   detailState={items[index]?._id ? { title: items[index]?.title || "", service: items[index] } : undefined}
@@ -232,6 +233,7 @@ const ServiceGrid = () => {
                 <ServiceGridItem
                   item={item}
                   isCenter={i === currentIndex}
+                  isNeighbor={Math.abs(i - currentIndex) === 1}
                   shouldAutoplay={i === currentIndex && inView}
                   priority={i === currentIndex}
                   detailState={item?._id ? { title: item?.title || "", service: item } : undefined}

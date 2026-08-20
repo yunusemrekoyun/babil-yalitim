@@ -31,6 +31,7 @@ const pickFirstImageAndVideo = (images = []) => {
 const ServiceGridItem = ({
   item,
   isCenter,
+  isNeighbor = false,
   shouldAutoplay,
   registerVideoRef,
   detailState,
@@ -87,8 +88,14 @@ const ServiceGridItem = ({
     "w-[84vw] max-w-[22rem] h-[25rem] sm:w-[320px] sm:h-[480px] object-cover rounded-[22px] shadow-lg";
 
   const autoplayAllowed = !saveData && !prefersReducedMotion;
+  // Hemen yanindaki kartlar da metadata cekiyor. Aksi halde her kaydirmada
+  // video sifirdan indirilmeye basliyor ve merkeze gelen kart bos kaliyor.
   const preloadMode =
-    isCenter && autoplayAllowed ? "auto" : isCenter ? "metadata" : "none";
+    isCenter && autoplayAllowed
+      ? "auto"
+      : isCenter || isNeighbor
+        ? "metadata"
+        : "none";
 
   useEffect(() => {
     const video = videoRef.current;
@@ -217,6 +224,7 @@ ServiceGridItem.propTypes = {
     imageUrl: PropTypes.string,
   }),
   isCenter: PropTypes.bool,
+  isNeighbor: PropTypes.bool,
   shouldAutoplay: PropTypes.bool,
   registerVideoRef: PropTypes.func,
   detailState: PropTypes.object,

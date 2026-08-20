@@ -167,13 +167,18 @@ const AppShell = () => {
 
   return (
     <>
-      <BackgroundVideo
-        active={showHomeBackground}
-        desktopVideoUrl={HERO_DESKTOP}
-        mobileImageUrl={HERO_MOBILE}
-        mobileVideoUrl={HERO_MOBILE_VIDEO}
-        posterUrl={HERO_POSTER}
-      />
+      {/* Sadece ana sayfada mount ediliyor. Daha önce her sayfada render edilip
+          yalnızca opaklığı değiştiriliyordu; video görünmese de indirilmeye
+          devam ettiği için her rotada boşuna trafik ve decode yükü oluşuyordu. */}
+      {showHomeBackground && (
+        <BackgroundVideo
+          active
+          desktopVideoUrl={HERO_DESKTOP}
+          mobileImageUrl={HERO_MOBILE}
+          mobileVideoUrl={HERO_MOBILE_VIDEO}
+          posterUrl={HERO_POSTER}
+        />
+      )}
       <AppRoutes />
     </>
   );
