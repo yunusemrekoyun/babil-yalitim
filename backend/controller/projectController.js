@@ -80,7 +80,7 @@ const parseDate = (v) => {
 exports.getProjects = async (req, res) => {
   try {
     const locale = normalizeLocale(req.query.locale);
-    await syncCollectionDisplayOrder(Project);
+    // Sıralama sort ile geliyor; normalizasyon yazma işlemlerinde yapılıyor.
     const items = await Project.find().sort({ displayOrder: 1, createdAt: 1, _id: 1 });
     res.json(items.map((item) => serializePublicProject(item, locale)));
   } catch (err) {
@@ -332,7 +332,6 @@ exports.updateProject = async (req, res) => {
 exports.getProjectCovers = async (req, res) => {
   try {
     const locale = normalizeLocale(req.query.locale);
-    await syncCollectionDisplayOrder(Project);
     // Sadece gerekli alanları çek (performans)
     const items = await Project.find(
       {},

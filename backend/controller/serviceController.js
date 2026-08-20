@@ -348,7 +348,7 @@ const wantsSummaryPayload = (req) => {
 const getServices = async (req, res) => {
   try {
     const locale = normalizeLocale(req.query.locale);
-    await syncCollectionDisplayOrder(Service);
+    // Sıralama sort ile geliyor; normalizasyon yazma işlemlerinde yapılıyor.
 
     if (wantsSummaryPayload(req)) {
       const services = await Service.find(

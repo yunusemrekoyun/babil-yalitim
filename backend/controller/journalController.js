@@ -74,7 +74,7 @@ const emailToHash = (emailRaw) => {
 exports.getJournals = async (req, res) => {
   try {
     const locale = normalizeLocale(req.query.locale);
-    await syncCollectionDisplayOrder(Journal);
+    // Sıralama sort ile geliyor; normalizasyon yazma işlemlerinde yapılıyor.
     const items = await Journal.find().sort({ displayOrder: 1, createdAt: 1, _id: 1 });
     res.json(items.map((item) => serializePublicJournal(item, locale)));
   } catch (err) {

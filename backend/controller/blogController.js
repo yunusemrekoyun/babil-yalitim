@@ -91,7 +91,8 @@ const buildEnglishTranslationPayload = (payload = {}) => {
 exports.getBlogs = async (_req, res) => {
   try {
     const locale = normalizeLocale(_req.query.locale);
-    await syncCollectionDisplayOrder(Blog);
+    // Sıralama sort ile geliyor; normalizasyon yazma işlemlerinde yapılıyor.
+    // Okuma isteğinde bulkWrite çalıştırmıyoruz.
     const items = await Blog.find().sort({ displayOrder: 1, createdAt: 1, _id: 1 });
     const lean = items.map((blog) => serializePublicBlog(blog, locale));
     res.json(lean);
@@ -446,7 +447,8 @@ exports.deleteComment = async (req, res) => {
     const c = (b.comments || []).id(commentId);
     if (!c) return res.status(404).json({ message: "Yorum bulunamadı" });
 
-    c.remove();
+    // Mongoose 7+ subdocument.remove() metodunu kaldırdı; DocumentArray.pull() kullanılır.
+    b.comments.pull(commentId);
     await b.save();
     res.json({ message: "Yorum silindi" });
   } catch (err) {
