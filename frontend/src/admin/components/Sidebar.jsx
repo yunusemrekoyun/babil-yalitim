@@ -12,6 +12,7 @@ import {
   X,
   Home,
   Sparkles,
+  HardDrive,
 } from "lucide-react";
 
 const links = [
@@ -20,6 +21,7 @@ const links = [
   { path: "/admin/journals", label: "Haberler", icon: Newspaper },
   { path: "/admin/projects", label: "Projeler", icon: FolderKanban },
   { path: "/admin/services", label: "Hizmetler", icon: Wrench },
+  { path: "/admin/storage", label: "Depolama", icon: HardDrive },
 ];
 
 const Sidebar = ({ isOpen, onClose }) => {

@@ -40,6 +40,7 @@ const KvkkPage = lazy(() => import("./pages/KVKKPage.jsx"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
 const LoginPage = lazy(() => import("./admin/pages/Login.jsx"));
 const DashboardPage = lazy(() => import("./admin/pages/Dashboard.jsx"));
+const StoragePage = lazy(() => import("./admin/pages/Storage.jsx"));
 const BlogListPage = lazy(() => import("./admin/pages/blog/BlogList.jsx"));
 const AddBlogPage = lazy(() => import("./admin/pages/blog/AddBlog.jsx"));
 const EditBlogPage = lazy(() => import("./admin/pages/blog/EditBlog.jsx"));
@@ -100,6 +101,7 @@ const localizedPublicRoutes = publicRoutes.flatMap((route) => [
 
 const adminRoutes = [
   { path: "dashboard", element: wrapLazy(DashboardPage) },
+  { path: "storage", element: wrapLazy(StoragePage) },
   { path: "blogs", element: wrapLazy(BlogListPage) },
   { path: "blogs/add", element: wrapLazy(AddBlogPage) },
   { path: "blogs/edit/:id", element: wrapLazy(EditBlogPage) },
