@@ -1,4 +1,4 @@
-import img1 from "../../assets/about.png";
+import img1 from "../../assets/about.webp";
 import { Users, CheckCircle, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";

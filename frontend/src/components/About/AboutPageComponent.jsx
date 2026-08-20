@@ -10,9 +10,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import img1 from "../../assets/1.png";
+import img1 from "../../assets/1.webp";
 import img2 from "../../assets/2.jpg";
-import img3 from "../../assets/3.jpg";
+import img3 from "../../assets/3.webp";
 import { getAboutContent } from "../../content/aboutContent";
 import { useLocale } from "../../i18n/LocaleContext.jsx";
 import { localizePath } from "../../i18n/routing.js";
