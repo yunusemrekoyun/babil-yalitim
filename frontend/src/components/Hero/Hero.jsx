@@ -339,15 +339,9 @@ const Hero = ({ targetId = "after-hero" }) => {
           </div>
         </div>
 
-        {/* Markalar — alta sabitlenir, kesinlikle küçülmez */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.9 }}
-          className="desktop-short-hero-brands relative z-10 w-full shrink-0"
-        >
-          <BrandsSection compact />
-        </motion.div>
+        {/* Markalar artık hero'nun içinde değil; HomePage okun indiği noktaya
+            koyuyor. Küçük laptop ekranlarında hero'daki her şey sıkışıp videodaki
+            uygulamayı örtüyordu. Mobil hero kendi markalarını göstermeye devam eder. */}
 
         {/* Aşağı ok — viewport'un dibinde, kesinlikle küçülmez */}
         <motion.div

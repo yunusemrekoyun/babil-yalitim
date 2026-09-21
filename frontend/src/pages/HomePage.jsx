@@ -11,6 +11,7 @@ import AboutSection from "../components/About/AboutSection";
 import GlassSection from "../components/Layout/GlassSection";
 import DeferredSection from "../components/Layout/DeferredSection";
 import BlogGrid from "../components/Blog/BlogGrid";
+import BrandsSection from "../components/Brands/BrandsSection";
 import { usePerformanceProfile } from "../performance/PerformanceProvider";
 import api from "../api";
 import {
@@ -136,6 +137,12 @@ export default function HomePage() {
 
         {/* Hedef çıpa: sayfanın “devamı” buradan başlıyor */}
         <div id="after-hero" />
+
+        {/* Markalar masaüstünde hero'nun dışında; ok ile inilince ilk görülen blok.
+            Mobil hero markaları kendi içinde gösterdiği için burada gizli. */}
+        <div className="hidden md:block pt-8">
+          <BrandsSection />
+        </div>
 
         <div className="bg-transparanColor space-y-12 w-full px-4 sm:px-6 md:px-8 py-12 sm:py-16 flex flex-col items-center justify-center">
           {sections.map((section) => (
