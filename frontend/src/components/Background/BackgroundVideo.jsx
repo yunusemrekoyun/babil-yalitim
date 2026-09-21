@@ -42,6 +42,12 @@ export default function BackgroundVideo({
     [chosenVideoUrl]
   );
 
+  // Masaüstü videosu 16:9; laptop ekranları tarayıcı çubuğuyla birlikte daha
+  // geniş kaldığı için üstten ve alttan kırpılıyor. Uygulanan zemin karenin
+  // altında olduğundan kırpmayı tamamen üste (duvar/gökyüzü) veriyoruz.
+  // Poster de aynı hizada olmalı, yoksa video açılınca görüntü zıplar.
+  const framingClass = isMobile ? "object-center" : "object-bottom";
+
   const fallbackImageUrl = useMemo(() => {
     const imageUrl = (isMobile && mobileImageUrl) || posterUrl || "";
     if (!imageUrl) return fallbackSrc;
@@ -238,7 +244,7 @@ export default function BackgroundVideo({
         <img
           src={placeholderUrl}
           alt=""
-          className="absolute inset-0 h-full w-full object-cover bg-slate-950"
+          className={`absolute inset-0 h-full w-full object-cover bg-slate-950 ${framingClass}`}
           loading="eager"
           decoding="async"
           {...priorityProps}
@@ -248,7 +254,7 @@ export default function BackgroundVideo({
           <img
             src={placeholderUrl}
             alt=""
-            className={`absolute inset-0 h-full w-full object-cover bg-slate-950 transition-opacity duration-500 ${
+            className={`absolute inset-0 h-full w-full object-cover bg-slate-950 transition-opacity duration-500 ${framingClass} ${
               ready ? "opacity-0" : "opacity-100"
             }`}
             loading="eager"
@@ -258,7 +264,7 @@ export default function BackgroundVideo({
           <video
             ref={videoRef}
             src={videoStarted ? videoUrl : undefined}
-            className={`absolute inset-0 h-full w-full object-cover bg-slate-950 transition-opacity duration-500 ${
+            className={`absolute inset-0 h-full w-full object-cover bg-slate-950 transition-opacity duration-500 ${framingClass} ${
               ready ? "opacity-100" : "opacity-0"
             }`}
             autoPlay
